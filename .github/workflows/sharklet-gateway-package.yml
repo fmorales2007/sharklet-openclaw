@@ -1,0 +1,78 @@
+# Builds a self-contained OpenClaw package (gateway + Control UI) from this
+# fork on Linux, the same way upstream packages its install-smoke candidates.
+# scripts/deploy-gateway.sh installs the resulting artifact on the gateway host.
+#
+# Upstream workflows stay disabled in this repository; see
+# scripts/disable-upstream-workflows.sh. Only sharklet-*.yml files run here.
+name: Sharklet gateway package
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "sharklet-gateway-*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sharklet-gateway-package-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: Package gateway
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      CI: "1"
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+
+      - name: Enable pnpm (version pinned by package.json)
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and pack
+        run: |
+          node scripts/package-openclaw-for-docker.mjs \
+            --source-dir "$PWD" \
+            --output-dir "$RUNNER_TEMP/package" \
+            --output-name openclaw-sharklet.tgz \
+            --allow-unreleased-changelog
+
+      - name: Record build identity
+        working-directory: ${{ runner.temp }}/package
+        run: |
+          sha256sum openclaw-sharklet.tgz > openclaw-sharklet.tgz.sha256
+          {
+            echo "commit=${GITHUB_SHA}"
+            echo "ref=${GITHUB_REF}"
+            echo "version=$(tar -xzOf openclaw-sharklet.tgz package/package.json | jq -r .version)"
+            echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } > build-info.txt
+          cat build-info.txt openclaw-sharklet.tgz.sha256
+          ls -la
+
+      - name: Upload package
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: openclaw-sharklet-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/package/openclaw-sharklet.tgz
+            ${{ runner.temp }}/package/openclaw-sharklet.tgz.sha256
+            ${{ runner.temp }}/package/build-info.txt
+          retention-days: 30
+          if-no-files-found: error
