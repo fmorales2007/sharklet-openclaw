@@ -50,10 +50,19 @@ as_service() {
 install_release() {
   local release="$1"
   log "Installing $release as $SERVICE_USER"
-  as_service "npm install -g --no-fund --no-audit $release 2>&1 | tail -5"
+  # npm 11.16+ skips install scripts unless allowed. Like upstream's installer,
+  # allow only openclaw's own lifecycle; its other dependencies stay skipped.
+  as_service "npm install -g --no-fund --no-audit --allow-scripts=openclaw $release 2>&1 | tail -5"
 
   log "Turning off update checks so the official package is never installed over this build"
   as_service "openclaw config set update.checkOnStart false --strict-json && openclaw config set update.auto.enabled false --strict-json"
+
+  # openclaw.mjs finishes a skipped lifecycle on first run and refuses to start
+  # if it cannot; a marker still present here means the install is incomplete.
+  if ! as_service "test ! -e \$(npm root -g)/openclaw/.openclaw-lifecycle-pending"; then
+    echo "The package lifecycle did not complete (.openclaw-lifecycle-pending is still there)." >&2
+    exit 1
+  fi
 
   log "Restarting the gateway"
   as_service "openclaw gateway restart && openclaw gateway status" \
