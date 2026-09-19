@@ -14,6 +14,10 @@ on:
 
 permissions:
   contents: read
+  # Provenance attestation: what ties the tarball to this repository, workflow
+  # and commit. The checksum shipped next to it only proves the download is intact.
+  id-token: write
+  attestations: write
 
 concurrency:
   group: sharklet-gateway-package-${{ github.ref }}
@@ -42,6 +46,17 @@ jobs:
       - name: Enable pnpm (version pinned by package.json)
         run: corepack enable
 
+      - name: Locate the pnpm store
+        id: pnpm-store
+        run: echo "dir=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.dir }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -65,6 +80,11 @@ jobs:
           } > build-info.txt
           cat build-info.txt openclaw-sharklet.tgz.sha256
           ls -la
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: ${{ runner.temp }}/package/openclaw-sharklet.tgz
 
       - name: Upload package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

@@ -39,7 +39,9 @@ git fsck --connectivity-only            # must print nothing but "Checking ..."
 gh api -X PUT repos/fmorales2007/sharklet-openclaw/actions/permissions -F enabled=false
 git push origin main
 
-# 5. Rebase Sharklet's work and push it.
+# 5. Rebase Sharklet's work and push it. The tag is the way back if the rebase
+#    goes wrong: the push below rewrites the default branch.
+git tag "backup/custom-$(date -u +%Y%m%d)" custom
 git rebase main custom
 git push --force-with-lease origin custom
 
@@ -47,9 +49,27 @@ git push --force-with-lease origin custom
 gh api -X PUT repos/fmorales2007/sharklet-openclaw/actions/permissions -F enabled=true -f allowed_actions=selected
 gh api -X PUT repos/fmorales2007/sharklet-openclaw/actions/permissions/selected-actions -F github_owned_allowed=true -F verified_allowed=false
 bash scripts/disable-upstream-workflows.sh
+
+# 7. Check the policy came back the way it should: two active workflows, the rest disabled.
+gh api repos/fmorales2007/sharklet-openclaw/actions/workflows --paginate   --jq '.workflows[] | .state' | sort | uniq -c
+
+# 8. Run the tests on the rebased commit: the test workflow only fires on pull
+#    requests, so a push straight to custom is never tested by itself.
+gh workflow run sharklet-ui-tests.yml -R fmorales2007/sharklet-openclaw --ref custom
 ```
 
-Then build and deploy (below). Never use `openclaw update` or Settings → Updates on the gateway: they install the official npm package over this build.
+Then build and deploy (below). Never use `openclaw update` or Settings -> Updates on the gateway: they install the official npm package over this build.
+
+## Release checklist
+
+The gateway is a single machine with one operator, so each release runs in this order:
+
+- [ ] Snapshot and rebase, steps 1 to 8 above; tests green on the commit being shipped.
+- [ ] Tag the build: `git tag sharklet-gateway-<version>-<n> && git push origin sharklet-gateway-<version>-<n>` (this starts the package workflow).
+- [ ] `bash scripts/deploy-gateway.sh` — it backs up gateway state, verifies provenance, installs, restarts, and refuses to report success unless the running gateway reports the expected commit.
+- [ ] `bash scripts/deploy-ui.sh` — **always after the gateway**, so the served Control UI comes from the same commit. The gateway package carries its own UI, but `gateway.controlUi.root` is what gets served.
+- [ ] `openclaw doctor` on the server, and open the app from the phone and the PC.
+- [ ] If anything looks wrong: `bash scripts/deploy-gateway.sh --rollback` and `bash scripts/deploy-ui.sh --rollback`.
 
 ## Building and deploying
 
@@ -58,10 +78,25 @@ Then build and deploy (below). Never use `openclaw update` or Settings → Updat
 | Gateway + Control UI package | `.github/workflows/sharklet-gateway-package.yml`, on Ubuntu with upstream's packager. Run it by hand or push a `sharklet-gateway-<version>-<n>` tag. |
 | Install the gateway package  | `bash scripts/deploy-gateway.sh`, which picks the latest successful build (or takes `--run <id>`); `--rollback` goes back to the previous package.   |
 | Control UI only              | `bash scripts/deploy-ui.sh` builds locally and switches `/srv/sharklet-ui` atomically; `--rollback` goes back to the previous release.               |
-| Control UI tests             | `.github/workflows/sharklet-ui-tests.yml`, three shards on Linux, on every pull request into `custom`.                                               |
+| Control UI tests             | `.github/workflows/sharklet-ui-tests.yml`, three shards on Linux, on every pull request into `custom` and on demand.                                 |
 
 Run the scripts from Git Bash. On Windows, corepack's bare `pnpm` shim breaks under Git Bash, so bash scripts call `corepack pnpm`.
 
+Both deploy scripts only ship commits that are on `origin/custom`, and `deploy-ui.sh` also refuses a dirty working tree, so every release can be traced back to a commit (`sharklet-build-info.txt` inside each UI release, `build-info.txt` in each package artifact).
+
+Every default is overridable by environment variable, which is how to point the scripts at another host or another checkout:
+
+| Variable                                                  | Default                      | What it changes                                               |
+| --------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------- |
+| `SHARKLET_GATEWAY_HOST`                                   | `openclaw.tail438e44.ts.net` | Gateway host, reached over the tailnet                        |
+| `SHARKLET_GATEWAY_USER` / `SHARKLET_SERVICE_USER`         | `ubuntu` / `claw`            | SSH user and the user the gateway runs as                     |
+| `SHARKLET_SSH_KEY`                                        | `~/.ssh/openclaw_oracle`     | SSH key                                                       |
+| `SHARKLET_KEEP_RELEASES`                                  | `5`                          | Releases kept for rollback (must be a positive integer)       |
+| `SHARKLET_ALLOW_ANY_SOURCE` / `SHARKLET_ALLOW_ANY_COMMIT` | `0`                          | Deploy something that is not on `origin/custom`               |
+| `SHARKLET_SKIP_ATTESTATION`                               | `0`                          | Install a package built before provenance attestation existed |
+
 ## GitHub Actions policy
 
-Actions only runs `sharklet-*.yml` workflows. The upstream workflows (105 in `v2026.9.4`) stay disabled: many run on push, pull request or cron, and some use macOS runners, which bill private repositories at 10×. The only allowed actions are GitHub's own `actions/*`, pinned by commit SHA.
+Actions only runs `sharklet-*.yml` workflows. The upstream workflows (105 in `v2026.9.4`) stay disabled: many run on push, pull request or cron, and some use macOS runners, which bill private repositories at 10x. The only allowed actions are GitHub's own `actions/*`, pinned by commit SHA.
+
+Step 6 restores this by hand, and there is a window of a few seconds between enabling Actions and disabling upstream's workflows in which a `schedule:` trigger could fire. That is accepted: the disable API needs Actions enabled. Step 7 is what catches a policy that did not come back.
