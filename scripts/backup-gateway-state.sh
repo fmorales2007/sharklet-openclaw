@@ -48,10 +48,10 @@ as_service() {
 if [[ "$MODE" == "verify" ]]; then
   [[ -f "$VERIFY_FILE" ]] || { echo "No such archive: $VERIFY_FILE" >&2; exit 1; }
   log "Verifying $VERIFY_FILE on the server"
-  scp -i "$SSH_KEY" -q "$VERIFY_FILE" "$GATEWAY_USER@$GATEWAY_HOST:/tmp/verify-backup.tgz"
-  remote "sudo install -o '$SERVICE_USER' -g '$SERVICE_USER' -m 0600 /tmp/verify-backup.tgz '$REMOTE_DIR/verify-backup.tgz' && rm -f /tmp/verify-backup.tgz"
-  as_service "openclaw backup verify $REMOTE_DIR/verify-backup.tgz"
-  as_service "rm -f $REMOTE_DIR/verify-backup.tgz"
+  scp -i "$SSH_KEY" -q "$VERIFY_FILE" "$GATEWAY_USER@$GATEWAY_HOST:/tmp/verify-backup.tar.gz"
+  remote "sudo install -o '$SERVICE_USER' -g '$SERVICE_USER' -m 0600 /tmp/verify-backup.tar.gz '$REMOTE_DIR/verify-backup.tar.gz' && rm -f /tmp/verify-backup.tar.gz"
+  as_service "openclaw backup verify $REMOTE_DIR/verify-backup.tar.gz"
+  as_service "rm -f $REMOTE_DIR/verify-backup.tar.gz"
   echo "The archive is valid."
   exit 0
 fi
@@ -71,7 +71,7 @@ Environment=PATH=%h/.npm-global/bin:/usr/local/bin:/usr/bin:/bin
 WorkingDirectory=%h
 ExecStart=/bin/bash -lc 'openclaw backup create --verify --output %h/backups'
 # Keep two weeks of daily archives on the server; the copies pulled to the PC are the real safety net.
-ExecStartPost=/bin/bash -lc 'ls -1t %h/backups/*.tgz 2>/dev/null | tail -n +15 | xargs -r rm -f'
+ExecStartPost=/bin/bash -lc 'ls -1t %h/backups/*.tar.gz 2>/dev/null | tail -n +15 | xargs -r rm -f'
 UNIT
     sudo -u '$SERVICE_USER' tee '/home/$SERVICE_USER/.config/systemd/user/sharklet-backup.timer' >/dev/null <<'UNIT'
 [Unit]
@@ -95,7 +95,8 @@ fi
 log "Creating a backup on $GATEWAY_HOST"
 as_service "mkdir -p $REMOTE_DIR && openclaw backup create --verify --output $REMOTE_DIR"
 
-newest="$(as_service "ls -1t $REMOTE_DIR/*.tgz | head -1")"
+# openclaw writes <timestamp>-openclaw-backup.tar.gz, not .tgz.
+newest="$(as_service "ls -1t $REMOTE_DIR/*.tar.gz | head -1")"
 newest="$(printf '%s\n' "$newest" | tail -1 | tr -d '\r')"
 [[ -n "$newest" ]] || { echo "The backup was not written to $REMOTE_DIR." >&2; exit 1; }
 
@@ -103,16 +104,16 @@ log "Copying $(basename "$newest") to $LOCAL_DIR"
 mkdir -p "$LOCAL_DIR"
 scp -i "$SSH_KEY" -q "$GATEWAY_USER@$GATEWAY_HOST:$newest" "$LOCAL_DIR/" || {
   # The archive belongs to the service user, so fall back to a readable copy.
-  remote "sudo cp '$newest' /tmp/sharklet-backup.tgz && sudo chown '$GATEWAY_USER' /tmp/sharklet-backup.tgz"
-  scp -i "$SSH_KEY" -q "$GATEWAY_USER@$GATEWAY_HOST:/tmp/sharklet-backup.tgz" "$LOCAL_DIR/$(basename "$newest")"
-  remote "rm -f /tmp/sharklet-backup.tgz"
+  remote "sudo cp '$newest' /tmp/sharklet-backup.tar.gz && sudo chown '$GATEWAY_USER' /tmp/sharklet-backup.tar.gz"
+  scp -i "$SSH_KEY" -q "$GATEWAY_USER@$GATEWAY_HOST:/tmp/sharklet-backup.tar.gz" "$LOCAL_DIR/$(basename "$newest")"
+  remote "rm -f /tmp/sharklet-backup.tar.gz"
 }
 
 local_copy="$LOCAL_DIR/$(basename "$newest")"
 [[ -s "$local_copy" ]] || { echo "The local copy at $local_copy is missing or empty." >&2; exit 1; }
 
 # Keep the local history bounded without ever leaving zero copies.
-ls -1t "$LOCAL_DIR"/*.tgz 2>/dev/null | tail -n +$((KEEP_LOCAL + 1)) | xargs -r rm -f
+ls -1t "$LOCAL_DIR"/*.tar.gz 2>/dev/null | tail -n +$((KEEP_LOCAL + 1)) | xargs -r rm -f
 
 log "Done"
 echo "$(du -h "$local_copy" | cut -f1) in $local_copy"
