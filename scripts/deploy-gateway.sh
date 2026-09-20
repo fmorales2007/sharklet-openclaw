@@ -27,8 +27,6 @@ SERVICE_USER="${SHARKLET_SERVICE_USER:-claw}"
 SSH_KEY="${SHARKLET_SSH_KEY:-$HOME/.ssh/openclaw_oracle}"
 RELEASES_DIR="${SHARKLET_GATEWAY_RELEASES_DIR:-/srv/sharklet-gateway-releases}"
 KEEP_RELEASES="${SHARKLET_KEEP_RELEASES:-5}"
-# Builds packaged before provenance attestation was added need SHARKLET_SKIP_ATTESTATION=1.
-SKIP_ATTESTATION="${SHARKLET_SKIP_ATTESTATION:-0}"
 # Installing a commit that is not on custom is a mistake by default.
 ALLOW_ANY_COMMIT="${SHARKLET_ALLOW_ANY_COMMIT:-0}"
 
@@ -165,15 +163,29 @@ WORKDIR="$(mktemp -d -t sharklet-gateway-XXXXXX)"
 trap 'rm -rf "$WORKDIR"' EXIT
 gh run download "$RUN_ID" -R "$REPO" -n "openclaw-sharklet-$COMMIT" -D "$WORKDIR"
 
-if [[ "$SKIP_ATTESTATION" != "1" ]]; then
-  log "Verifying build provenance"
-  gh attestation verify "$WORKDIR/openclaw-sharklet.tgz" -R "$REPO" \
-    --signer-workflow "$REPO/.github/workflows/$WORKFLOW" || {
-    echo "Provenance check failed. Builds made before attestation was added need SHARKLET_SKIP_ATTESTATION=1." >&2
-    exit 1
-  }
-fi
-# Download integrity only: the checksum travels inside the same artifact.
+log "Verifying the package against channels outside the artifact"
+# The .sha256 shipped next to the tarball proves only that the download is
+# intact: both files come from the same artifact. GitHub's provenance
+# attestation is not available for user-owned private repositories, so the
+# independent checks here are the API (which artifact belongs to which commit)
+# and the digest the build printed into its own log.
+artifact_commit="$(gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts" \
+  --jq ".artifacts[] | select(.name == \"openclaw-sharklet-$COMMIT\") | .workflow_run.head_sha")"
+[[ "$artifact_commit" == "$COMMIT" ]] || {
+  echo "The artifact does not belong to commit $COMMIT (API reports: ${artifact_commit:-none})." >&2
+  exit 1
+}
+logged_digest="$(gh run view "$RUN_ID" -R "$REPO" --log \
+  | tr -d '\r' | grep -oE "[0-9a-f]{64}[[:space:]]+openclaw-sharklet\.tgz" | head -1 | cut -d' ' -f1)"
+[[ -n "$logged_digest" ]] || { echo "Run $RUN_ID logged no package digest." >&2; exit 1; }
+local_digest="$(sha256sum "$WORKDIR/openclaw-sharklet.tgz" | cut -d' ' -f1)"
+[[ "$local_digest" == "$logged_digest" ]] || {
+  echo "The downloaded package does not match the digest the build logged." >&2
+  echo "  build log: $logged_digest" >&2
+  echo "  download:  $local_digest" >&2
+  exit 1
+}
+echo "Package matches run $RUN_ID (${logged_digest:0:16}…) and commit ${COMMIT:0:8}."
 (cd "$WORKDIR" && sha256sum -c openclaw-sharklet.tgz.sha256)
 cat "$WORKDIR/build-info.txt"
 

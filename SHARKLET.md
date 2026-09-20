@@ -84,16 +84,17 @@ Run the scripts from Git Bash. On Windows, corepack's bare `pnpm` shim breaks un
 
 Both deploy scripts only ship commits that are on `origin/custom`, and `deploy-ui.sh` also refuses a dirty working tree, so every release can be traced back to a commit (`sharklet-build-info.txt` inside each UI release, `build-info.txt` in each package artifact).
 
+GitHub's provenance attestation is not available for user-owned private repositories, so `deploy-gateway.sh` checks the package against two channels outside the artifact instead: the API says which commit the artifact belongs to, and the build log carries the digest the package had when it was built.
+
 Every default is overridable by environment variable, which is how to point the scripts at another host or another checkout:
 
-| Variable                                                  | Default                      | What it changes                                               |
-| --------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------- |
-| `SHARKLET_GATEWAY_HOST`                                   | `openclaw.tail438e44.ts.net` | Gateway host, reached over the tailnet                        |
-| `SHARKLET_GATEWAY_USER` / `SHARKLET_SERVICE_USER`         | `ubuntu` / `claw`            | SSH user and the user the gateway runs as                     |
-| `SHARKLET_SSH_KEY`                                        | `~/.ssh/openclaw_oracle`     | SSH key                                                       |
-| `SHARKLET_KEEP_RELEASES`                                  | `5`                          | Releases kept for rollback (must be a positive integer)       |
-| `SHARKLET_ALLOW_ANY_SOURCE` / `SHARKLET_ALLOW_ANY_COMMIT` | `0`                          | Deploy something that is not on `origin/custom`               |
-| `SHARKLET_SKIP_ATTESTATION`                               | `0`                          | Install a package built before provenance attestation existed |
+| Variable                                                  | Default                      | What it changes                                         |
+| --------------------------------------------------------- | ---------------------------- | ------------------------------------------------------- |
+| `SHARKLET_GATEWAY_HOST`                                   | `openclaw.tail438e44.ts.net` | Gateway host, reached over the tailnet                  |
+| `SHARKLET_GATEWAY_USER` / `SHARKLET_SERVICE_USER`         | `ubuntu` / `claw`            | SSH user and the user the gateway runs as               |
+| `SHARKLET_SSH_KEY`                                        | `~/.ssh/openclaw_oracle`     | SSH key                                                 |
+| `SHARKLET_KEEP_RELEASES`                                  | `5`                          | Releases kept for rollback (must be a positive integer) |
+| `SHARKLET_ALLOW_ANY_SOURCE` / `SHARKLET_ALLOW_ANY_COMMIT` | `0`                          | Deploy something that is not on `origin/custom`         |
 
 ## GitHub Actions policy
 
