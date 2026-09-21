@@ -9,7 +9,7 @@
 //
 // The copy is written into upstream's en map at startup, the way its own lazy
 // locale fragments assign into it (i18n/locales/en.ts:6-12), instead of being
-// edited into en.ts. That keeps the eight upstream tests that pin "Ask OpenClaw"
+// edited into en.ts. That keeps the ten upstream test files that pin "Ask OpenClaw"
 // passing untouched and keeps en.ts, which upstream changes every release, out
 // of the monthly rebase. shell.test.ts fails if upstream renames a key we
 // replace, which would otherwise silently fall back to upstream's text.
