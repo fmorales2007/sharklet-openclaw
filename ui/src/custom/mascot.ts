@@ -17,6 +17,8 @@
 // Light DOM, not a shadow root: initMotion() watches the document for SMIL it
 // has to pause under reduced motion, and it cannot see inside shadow roots.
 
+import { html } from "lit";
+import { icons } from "../components/icons.ts";
 import { SHARKLET_MARK_SVG } from "./brand/mark.js";
 
 const DEFAULT_SIZE = 120;
@@ -78,7 +80,10 @@ class SharkletMascot extends HTMLElement {
 
   connectedCallback(): void {
     if (!this.hasAttribute("mood")) {
-      this.setAttribute("mood", "idle");
+      // A glyph standing in for upstream's claw (see replaceClawGlyph) swims,
+      // except in the recap row, which reports a turn that already finished.
+      const glyph = this.hasAttribute("data-glyph");
+      this.setAttribute("mood", glyph && !this.closest(".chat-turn-recap") ? "working" : "idle");
     }
     this.style.setProperty("--openclaw-mascot-size", `${this.#size}px`);
     this.#render();
@@ -118,6 +123,16 @@ class SharkletMascot extends HTMLElement {
     // The markup is our own generated art (custom/brand/*.js), never user input.
     this.innerHTML = svg;
   }
+}
+
+// Upstream's animated claw (icons-tools.ts:155) is what the chat shows while
+// the agent works, plus four more places (turn recap, background tasks,
+// sub-agents, settings save). One swap on the shared icons object reaches all
+// five without touching them; every consumer reads icons.claw at render time.
+export function replaceClawGlyph(): void {
+  Object.assign(icons, {
+    claw: html`<openclaw-mascot data-glyph .size=${22}></openclaw-mascot>`,
+  });
 }
 
 export function defineSharkletMascot(): void {

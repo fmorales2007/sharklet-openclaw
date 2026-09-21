@@ -30,3 +30,12 @@ openclaw-mascot > svg {
   width: 100%;
   height: auto;
 }
+
+/* The shark standing in for upstream's claw glyph. Upstream sizes and animates
+   the glyph's <svg> (.chat-reading-indicator svg: 18x18, a flex keyframe);
+   (0,1,2) outranks that, so the shark keeps its own shape and its own swim. */
+openclaw-mascot[data-glyph] > svg {
+  width: 100%;
+  height: auto;
+  animation: none;
+}

@@ -13,7 +13,8 @@
 //   - the font link should be in <head> before the first paint.
 
 import { installSharkletFonts } from "./fonts.ts";
-import { defineSharkletMascot } from "./mascot.ts";
+import { defineSharkletMascot, replaceClawGlyph } from "./mascot.ts";
 
 installSharkletFonts();
 defineSharkletMascot();
+replaceClawGlyph();
