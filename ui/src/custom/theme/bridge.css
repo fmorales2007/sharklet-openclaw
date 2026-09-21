@@ -252,6 +252,10 @@ html:root[data-theme-mode="dark"] {
   --space-7: var(--sk-s8);
   --space-8: var(--sk-s10);
   --widget-frame-inset: var(--sk-s3);
+
+  /* Controls take the arrow; the hand is for links. Both systems agree, and
+     upstream's cursor-policy test enforces it on every stylesheet. */
+  --cursor-action: var(--sk-cursor-action);
 }
 
 /* ---------------------------------------------------------------------------

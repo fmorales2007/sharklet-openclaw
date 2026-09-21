@@ -1,5 +1,5 @@
 /* GENERATED COPY - do not edit here.
- * Source: sharklet/docs/design-system/tokens.css (sha256 2f8b1bf9fbf6)
+ * Source: sharklet/docs/design-system/tokens.css (sha256 e4c7f9bbbb6a)
  * Remake it with: node docs/design-system/sync-to-fork.mjs
  * Editing this file instead of the source is how Adrift drifted. */
 
@@ -106,6 +106,10 @@
   --sk-h-sm: 28px;
   --sk-h-md: 34px;
   --sk-h-lg: 40px;
+
+  /* Cursor on controls: the arrow, as in a native app. The pointing hand is
+     for links only (Apple HIG; upstream's --cursor-action says the same). */
+  --sk-cursor-action: default;
 
   /* Motion */
   --sk-dur-micro: 140ms;

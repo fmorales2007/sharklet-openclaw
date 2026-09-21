@@ -1,5 +1,5 @@
 /* GENERATED COPY - do not edit here.
- * Source: sharklet/docs/design-system/components.css (sha256 7809148dfd59)
+ * Source: sharklet/docs/design-system/components.css (sha256 a81838baf3d4)
  * Remake it with: node docs/design-system/sync-to-fork.mjs
  * Editing this file instead of the source is how Adrift drifted. */
 
@@ -60,7 +60,7 @@
   font: 500 var(--sk-fs-ui)/1 var(--sk-font);
   letter-spacing: -0.005em;
   white-space: nowrap;
-  cursor: pointer;
+  cursor: var(--sk-cursor-action);
   user-select: none;
   transition:
     background-color var(--sk-dur-micro) var(--sk-ease),
@@ -141,7 +141,7 @@
   border-radius: var(--sk-r-control);
   background: transparent;
   color: var(--sk-text-2);
-  cursor: pointer;
+  cursor: var(--sk-cursor-action);
   transition:
     background-color var(--sk-dur-micro) var(--sk-ease),
     color var(--sk-dur-micro) var(--sk-ease);
@@ -270,7 +270,7 @@ textarea.sk-input {
   inset: 0;
   opacity: 0;
   margin: 0;
-  cursor: pointer;
+  cursor: var(--sk-cursor-action);
 }
 .sk-switch span {
   display: block;
@@ -326,7 +326,7 @@ textarea.sk-input {
   background: transparent;
   color: var(--sk-text-2);
   font: 500 var(--sk-fs-sm)/1 var(--sk-font);
-  cursor: pointer;
+  cursor: var(--sk-cursor-action);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -356,7 +356,7 @@ textarea.sk-input {
   padding: 10px 0;
   border: 0;
   background: none;
-  cursor: pointer;
+  cursor: var(--sk-cursor-action);
   font: 500 var(--sk-fs-ui)/1 var(--sk-font);
   color: var(--sk-text-2);
 }
@@ -390,7 +390,7 @@ textarea.sk-input {
   color: var(--sk-text-2);
   font: 500 var(--sk-fs-sm)/1 var(--sk-font);
   white-space: nowrap;
-  cursor: pointer;
+  cursor: var(--sk-cursor-action);
   transition:
     background-color var(--sk-dur-micro) var(--sk-ease),
     color var(--sk-dur-micro) var(--sk-ease);
@@ -604,7 +604,7 @@ textarea.sk-input {
   color: var(--sk-text);
   text-align: left;
   font: inherit;
-  cursor: pointer;
+  cursor: var(--sk-cursor-action);
 }
 .sk-menu-item:hover,
 .sk-menu-item[aria-selected="true"] {
@@ -830,7 +830,7 @@ textarea.sk-input {
   color: var(--sk-text-2);
   text-align: left;
   font: 500 var(--sk-fs-ui)/1 var(--sk-font);
-  cursor: pointer;
+  cursor: var(--sk-cursor-action);
   transition:
     background-color var(--sk-dur-micro) var(--sk-ease),
     color var(--sk-dur-micro) var(--sk-ease);
@@ -887,7 +887,7 @@ textarea.sk-input {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  cursor: pointer;
+  cursor: var(--sk-cursor-action);
 }
 .sk-chatrow:hover {
   background: var(--sk-fill);
@@ -916,7 +916,7 @@ textarea.sk-input {
   color: var(--sk-text);
   font: inherit;
   text-align: left;
-  cursor: pointer;
+  cursor: var(--sk-cursor-action);
 }
 .sk-profile:hover {
   background: var(--sk-fill);
@@ -973,7 +973,7 @@ textarea.sk-input {
   color: var(--sk-text);
   font: inherit;
   text-align: left;
-  cursor: pointer;
+  cursor: var(--sk-cursor-action);
   transition: box-shadow var(--sk-dur-micro) var(--sk-ease);
 }
 .sk-working:hover {
@@ -1033,7 +1033,7 @@ textarea.sk-input {
   background: transparent;
   color: var(--sk-text);
   font: inherit;
-  cursor: pointer;
+  cursor: var(--sk-cursor-action);
 }
 .sk-usage-btn:hover {
   background: var(--sk-fill);
@@ -1069,7 +1069,7 @@ textarea.sk-input {
   background: none;
   color: var(--sk-text-3);
   font: inherit;
-  cursor: pointer;
+  cursor: var(--sk-cursor-action);
 }
 .sk-upnext button:hover {
   color: var(--sk-text);
@@ -1569,7 +1569,7 @@ textarea.sk-input {
   border-radius: 50%;
   background: var(--sk-primary);
   color: var(--sk-on-primary);
-  cursor: pointer;
+  cursor: var(--sk-cursor-action);
   transition:
     background-color var(--sk-dur-micro) var(--sk-ease),
     transform var(--sk-dur-micro) var(--sk-ease);
@@ -1647,7 +1647,7 @@ textarea.sk-input {
   border-radius: 50%;
   background: var(--sk-glass);
   color: var(--sk-text-2);
-  cursor: pointer;
+  cursor: var(--sk-cursor-action);
   -webkit-backdrop-filter: var(--sk-glass-filter);
   backdrop-filter: var(--sk-glass-filter);
   box-shadow:
