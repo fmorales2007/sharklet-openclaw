@@ -3,8 +3,8 @@
  * The help button: components.css .sk-help-btn, fixed to the page's
  * bottom-right corner. Shown only where that corner is free — from 1160px the
  * chat column (upstream's composer, ~770px) leaves room beside it with the
- * sidebar open; below upstream's drawer breakpoint (layout.mobile.css) the top
- * bar carries upstream's own Help toggle. Hidden while a dock panel is open (it
+ * sidebar open. Narrower screens reach Help through upstream's own panel (the
+ * Home button, then its Help tab) or Settings → Help. Hidden while a dock panel is open (it
  * would sit on the panel's corner, where the Help panel has its send button),
  * during onboarding (the same agent is already in front) and when embedded.
  */

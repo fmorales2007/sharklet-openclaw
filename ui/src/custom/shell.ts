@@ -2,8 +2,9 @@
 //   - language: English unless Spanish (or another) is picked explicitly;
 //   - copy: the English strings where the product speaks as OpenClaw — the
 //     setup agent becomes Help, About and approvals say Sharklet;
-//   - the help button, bottom right on wide screens (narrow ones already have
-//     upstream's Help toggle in the top bar);
+//   - the help button, bottom right on wide screens (narrower ones reach Help
+//     through upstream's own panel — the Home button, then its Help tab — or
+//     Settings → Help);
 //   - density: data-density on <html>, persisted per browser and switched from
 //     the profile menu, beside upstream's light/dark toggle.
 //
