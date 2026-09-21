@@ -1,8 +1,8 @@
-// Sharklet: the one thing main.ts imports.
-//
-// The whitelist allows main.ts a single import line, so this module is it. It
-// pulls in the stylesheet layer and starts the two runtime pieces the CSS
-// cannot do on its own.
+// Sharklet's startup runtime: the pieces the CSS cannot do on its own, the fonts
+// and the mascot. main.ts imports it; the theme stylesheet (custom/theme/index.css)
+// is @imported at the end of styles.css instead, because only that keeps it in
+// upstream's single startup CSS file. The motion runtime (motion.js) is not
+// here either: the mascot loads it with the swim art, the first time a shark swims.
 //
 // It must be imported BEFORE ./app/app-host.ts. Two reasons:
 //   - the mascot override wins by registering <openclaw-mascot> first, since
@@ -12,15 +12,8 @@
 //     whitelist;
 //   - the font link should be in <head> before the first paint.
 
-import "./theme/index.css";
 import { installSharkletFonts } from "./fonts.ts";
-// motion.js is the synced copy of the approved runtime; see sync-to-fork.mjs.
-import { initMotion } from "./motion.js";
+import { defineSharkletMascot } from "./mascot.ts";
 
 installSharkletFonts();
-
-// CSS cannot stop the shark: it swims with SMIL, and only pauseAnimations()
-// stops that. initMotion follows the OS setting and the in-app one, reaches
-// SVGs that appear later, and applies [data-effort]. Without it, motion.md is
-// broken in silence on the loading screen — the first thing anyone sees.
-initMotion();
+defineSharkletMascot();

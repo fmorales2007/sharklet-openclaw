@@ -222,12 +222,8 @@ html:root[data-theme-mode="dark"] {
 
   --font-body: var(--sk-font);
   --font-chat: var(--sk-font);
-  /* Geist Mono is not in the fork yet (the woff2 still has to be subset and
-     added), so JetBrains Mono sits between it and the system stack: upstream
-     self-hosts it and always loads it, which beats falling through to whatever
-     mono the OS happens to have. Drop it from this line once Geist Mono is in
-     ui/public/fonts/. */
-  --mono: "Geist Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* Geist Mono is self-hosted in ui/public/fonts/ and linked by custom/fonts.ts. */
+  --mono: var(--sk-mono);
 }
 
 /* Compact density, restated.

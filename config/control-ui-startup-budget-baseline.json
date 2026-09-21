@@ -1,5 +1,5 @@
 {
-  "startupJsGzipBytes": 352531,
-  "reason": "Plugin discovery shell adds the canonical /plugins workspace route and navigation metadata; measured 352531 B startup gzip on Linux-equivalent local build. Fixed 358400 B cap retained.",
-  "updatedAt": "2026-09-09"
+  "startupJsGzipBytes": 354803,
+  "reason": "Sharklet theme runtime at startup: the <openclaw-mascot> override (must be defined before upstream's), its still mark, and the Geist/Geist Mono font loader. Swim art and motion.js load lazily. Measured +2272 B startup gzip over upstream alone on the owner's Windows build (353096 -> 355368 B); recorded as the Linux-equivalent 352531 + 2272. Fixed 358400 B cap retained.",
+  "updatedAt": "2026-09-21"
 }

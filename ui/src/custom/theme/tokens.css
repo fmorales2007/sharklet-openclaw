@@ -1,5 +1,5 @@
 /* GENERATED COPY - do not edit here.
- * Source: sharklet/docs/design-system/tokens.css @ ecb95b5
+ * Source: sharklet/docs/design-system/tokens.css (sha256 2f8b1bf9fbf6)
  * Remake it with: node docs/design-system/sync-to-fork.mjs
  * Editing this file instead of the source is how Adrift drifted. */
 
@@ -16,17 +16,17 @@
   color-scheme: light;
 
   /* Neutrals: cool grays */
-  --sk-canvas: #f5f7f9;        /* app background behind content */
-  --sk-sidebar: #eef1f5;       /* second neutral layer: sidebar, rails */
-  --sk-surface: #fdfeff;       /* content, cards, composer */
-  --sk-fill: #eceff3;          /* hover, secondary fills, chips */
-  --sk-fill-2: #e3e7ec;        /* pressed, selected neutral */
-  --sk-line: #dadee3;          /* hairlines */
-  --sk-line-strong: #c2c8cf;   /* input borders, dividers that must read */
+  --sk-canvas: #f5f7f9; /* app background behind content */
+  --sk-sidebar: #eef1f5; /* second neutral layer: sidebar, rails */
+  --sk-surface: #fdfeff; /* content, cards, composer */
+  --sk-fill: #eceff3; /* hover, secondary fills, chips */
+  --sk-fill-2: #e3e7ec; /* pressed, selected neutral */
+  --sk-line: #dadee3; /* hairlines */
+  --sk-line-strong: #c2c8cf; /* input borders, dividers that must read */
 
   --sk-text: #171b21;
   --sk-text-2: #4e535c;
-  --sk-text-3: #676c75;        /* faint text, still AA on every neutral */
+  --sk-text-3: #676c75; /* faint text, still AA on every neutral */
 
   /* Actions are monochrome */
   --sk-primary: #171b21;

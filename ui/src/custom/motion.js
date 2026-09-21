@@ -1,5 +1,5 @@
 /* GENERATED COPY - do not edit here.
- * Source: sharklet/docs/design-system/motion.js @ ecb95b5
+ * Source: sharklet/docs/design-system/motion.js (sha256 45e7f7ab1704)
  * Remake it with: node docs/design-system/sync-to-fork.mjs
  * Editing this file instead of the source is how Adrift drifted. */
 
@@ -62,7 +62,9 @@ export function syncSmil(root = document.documentElement, reduced = isReduced(ro
       if (reduced) {
         svg.pauseAnimations();
         svg.setCurrentTime(0);
-      } else svg.unpauseAnimations();
+      } else {
+        svg.unpauseAnimations();
+      }
     } catch {
       /* a detached or not-yet-laid-out SVG: the next sync catches it */
     }
@@ -84,7 +86,9 @@ export function applyEffort(el, level) {
     // visible jump, so only do it when the cycle actually changed.
     let changed = false;
     for (const a of anims) {
-      if (a.getAttribute("dur") === e.dur) continue;
+      if (a.getAttribute("dur") === e.dur) {
+        continue;
+      }
       a.setAttribute("dur", e.dur);
       changed = true;
     }
@@ -101,7 +105,9 @@ export function applyEffort(el, level) {
 
 // Every [data-effort] in the scope picks up its cycle.
 export function syncEffort(root = document.documentElement) {
-  for (const el of root.querySelectorAll("[data-effort]")) applyEffort(el, el.dataset.effort);
+  for (const el of root.querySelectorAll("[data-effort]")) {
+    applyEffort(el, el.dataset.effort);
+  }
 }
 
 // ---------- Wiring ----------
@@ -110,7 +116,9 @@ export function syncEffort(root = document.documentElement) {
 export function initMotion({ root = document.documentElement, watch = true } = {}) {
   syncEffort(root);
   syncSmil(root);
-  if (!watch) return () => {};
+  if (!watch) {
+    return () => {};
+  }
 
   const mq = typeof matchMedia === "function" ? matchMedia(REDUCED_QUERY) : null;
   const onMedia = () => syncSmil(root);
@@ -123,11 +131,15 @@ export function initMotion({ root = document.documentElement, watch = true } = {
   let pending = null;
   const queue = (fn) => {
     (pending ??= new Set()).add(fn);
-    if (pending.size > 1) return;
+    if (pending.size > 1) {
+      return;
+    }
     setTimeout(() => {
       const run = pending;
       pending = null;
-      for (const f of run) f();
+      for (const f of run) {
+        f();
+      }
     }, 0);
   };
   const observer = new MutationObserver((records) => {
@@ -136,15 +148,24 @@ export function initMotion({ root = document.documentElement, watch = true } = {
       added = false;
     for (const r of records) {
       if (r.type === "attributes") {
-        if (r.attributeName === "data-effort") effortTargets.add(r.target);
-        else motionChanged = true;
-      } else if (r.addedNodes.length) added = true;
+        if (r.attributeName === "data-effort") {
+          effortTargets.add(r.target);
+        } else {
+          motionChanged = true;
+        }
+      } else if (r.addedNodes.length) {
+        added = true;
+      }
     }
     // Only the elements whose level actually changed get retimed.
-    for (const el of effortTargets) queue(() => applyEffort(el, el.dataset.effort));
+    for (const el of effortTargets) {
+      queue(() => applyEffort(el, el.dataset.effort));
+    }
     // Nodes added later still have to obey the current setting, but their
     // clocks are left alone.
-    if (motionChanged || added) queue(() => syncSmil(root));
+    if (motionChanged || added) {
+      queue(() => syncSmil(root));
+    }
   });
   observer.observe(root, {
     subtree: true,

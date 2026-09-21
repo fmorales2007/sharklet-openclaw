@@ -175,11 +175,11 @@ describe("formatDocumentTitle", () => {
   it("names the disconnected gateway without implying internet loss", () => {
     expect(
       formatDocumentTitle({ context: "Usage", gatewayDisconnected: true, queuedCount: 0 }),
-    ).toBe("(Disconnected) Usage — OpenClaw");
+    ).toBe("(Disconnected) Usage — Sharklet");
   });
 
   it("ignores a queued count while online", () => {
-    expect(formatDocumentTitle({ context: "Usage", queuedCount: 3 })).toBe("Usage — OpenClaw");
+    expect(formatDocumentTitle({ context: "Usage", queuedCount: 3 })).toBe("Usage — Sharklet");
   });
 });
 

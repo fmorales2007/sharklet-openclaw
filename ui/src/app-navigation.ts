@@ -455,9 +455,13 @@ export function formatDocumentTitle(options: {
   gatewayDisconnected?: boolean;
   queuedCount?: number;
 }): string {
-  const base = options.context.endsWith("OpenClaw")
+  // Sharklet: the product name in the tab. index.html's <title> says the same
+  // before boot, so the tab does not flip names once the app renders. A label
+  // that already ends in a product name ("Ask OpenClaw", until phase 1 step 2
+  // renames the setup agent to Help) still takes no suffix.
+  const base = /(?:Sharklet|OpenClaw)$/u.test(options.context)
     ? options.context
-    : `${options.context} — OpenClaw`;
+    : `${options.context} — Sharklet`;
   if (options.gatewayDisconnected) {
     const queued =
       options.queuedCount && options.queuedCount > 0

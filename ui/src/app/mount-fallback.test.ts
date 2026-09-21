@@ -93,7 +93,8 @@ describe("Control UI mount fallback", () => {
   });
 
   it.each([
-    ["claw dark", { theme: "claw", themeMode: "dark" }, "dark", "rgb(14, 16, 21)"],
+    // Sharklet: the default pre-paint is --sk-canvas dark (#0c0f16), set in ui/index.html.
+    ["claw dark", { theme: "claw", themeMode: "dark" }, "dark", "rgb(12, 15, 22)"],
     ["OpenKnot dark", { theme: "knot", themeMode: "dark" }, "openknot", "rgb(8, 8, 8)"],
     ["Dash light", { theme: "dash", themeMode: "light" }, "dash-light", "rgb(247, 242, 236)"],
     [

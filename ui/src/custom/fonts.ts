@@ -10,14 +10,14 @@
 // whitelist, so this links the same public asset itself, through the same path
 // helper, with the same id shape, and is idempotent.
 //
-// Geist is already in the fork with its OFL licence (ui/public/fonts/). Geist
-// Mono is NOT: the woff2 files still have to be subset and added, and until
-// they are, --mono falls back to JetBrains Mono, which upstream self-hosts and
-// always loads.
+// Geist came with upstream. Geist Mono is ours: the latin and latin-ext
+// variable subsets, the same ranges geist.css uses, in ui/public/fonts/ with
+// the same OFL text. It is not a selectable typeface upstream and does not need
+// to be — --mono points at it directly — so only this link loads it.
 
 import { inferControlUiPublicAssetPath } from "../app/public-assets.ts";
 
-const SHEETS = ["fonts/geist.css"] as const;
+const SHEETS = ["fonts/geist.css", "fonts/geist-mono.css"] as const;
 
 export function installSharkletFonts(): void {
   if (typeof document === "undefined") {
@@ -28,9 +28,22 @@ export function installSharkletFonts(): void {
     if (document.getElementById(id)) {
       continue;
     }
+    // Preload first, stylesheet once it has arrived. installMissingStylesheetRecovery
+    // (app/stale-chunk-reload.ts) treats ANY failed <link rel="stylesheet"> as
+    // the app's CSS being broken: it schedules a reload and shows "Styles failed
+    // to load". A missing font is not that — the stack falls back and the app is
+    // fine — so a failed preload, which the guard ignores, is the right failure.
     const link = document.createElement("link");
     link.id = id;
-    link.rel = "stylesheet";
+    link.rel = "preload";
+    link.as = "style";
+    link.addEventListener(
+      "load",
+      () => {
+        link.rel = "stylesheet";
+      },
+      { once: true },
+    );
     link.href = inferControlUiPublicAssetPath(asset);
     document.head.append(link);
   }

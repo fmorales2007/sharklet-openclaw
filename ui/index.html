@@ -6,11 +6,11 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
     />
-    <title>OpenClaw Control</title>
+    <title>Sharklet</title>
     <meta name="color-scheme" content="dark light" />
-    <!-- These mirror the claw theme's --bg tokens for first paint; runtime theme application keeps them synchronized. -->
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#faf9f7" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1015" />
+    <!-- Sharklet's --sk-canvas for first paint; syncControlUiSystemChrome() rewrites both from the bridged --bg once the app runs. -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f7f9" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0c0f16" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
@@ -118,13 +118,16 @@
         min-height: 100%;
       }
 
+      /* Sharklet's --sk-canvas in each mode. The per-theme rules below stay
+         upstream's: those themes are kept only as a debugging hatch, and the
+         bridge repaints them as Sharklet once the app stylesheet loads. */
       html {
-        background: #0e1015;
+        background: #0c0f16;
         color-scheme: dark;
       }
 
       html[data-theme-mode="light"] {
-        background: #faf9f7;
+        background: #f5f7f9;
         color-scheme: light;
       }
 
@@ -215,19 +218,24 @@
         color-scheme: inherit;
       }
 
+      /* The screen shown when the app bundle never starts. None of the app CSS
+         has loaded by then, so Sharklet's tokens are written out as literals:
+         dark first (the pre-paint default), light below. Values are the
+         approved ones from docs/design-system/tokens.css. */
       body.openclaw-mount-fallback-active {
         margin: 0;
         min-width: 320px;
-        color: #eef4f8;
-        background: #101418;
+        color: #eef0f4;
+        background: #0c0f16;
         font-family:
-          Inter,
+          "Geist",
           ui-sans-serif,
           system-ui,
           -apple-system,
           BlinkMacSystemFont,
           "Segoe UI",
           sans-serif;
+        -webkit-font-smoothing: antialiased;
       }
 
       body.openclaw-mount-fallback-active openclaw-app {
@@ -253,72 +261,79 @@
 
       .mount-fallback__panel {
         box-sizing: border-box;
-        width: min(100%, 640px);
-        border: 1px solid rgba(148, 163, 184, 0.28);
-        border-radius: 8px;
-        background: #151b21;
-        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.36);
+        width: min(100%, 560px);
+        border: 1px solid #272b35;
+        border-radius: 16px;
+        background: #12161e;
+        box-shadow:
+          0 2px 8px rgb(0 0 0 / 0.45),
+          0 28px 56px -12px rgb(0 0 0 / 0.7);
         padding: 28px;
       }
 
       .mount-fallback__eyebrow {
         margin: 0 0 10px;
-        color: #9fb0bd;
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
+        color: #b3b7c1;
+        font-size: 0.8125rem;
+        font-weight: 500;
       }
 
       .mount-fallback__panel h1 {
         margin: 0;
         color: inherit;
-        font-size: clamp(1.5rem, 3vw, 2rem);
-        line-height: 1.15;
+        font-size: 1.375rem;
+        font-weight: 600;
+        letter-spacing: -0.012em;
+        line-height: 1.25;
       }
 
       .mount-fallback__panel p {
-        margin: 16px 0 0;
-        color: #c8d3da;
-        font-size: 1rem;
-        line-height: 1.6;
+        margin: 12px 0 0;
+        color: #b3b7c1;
+        font-size: 0.875rem;
+        line-height: 1.55;
       }
 
       .mount-fallback__panel ul {
-        margin: 18px 0 0;
+        margin: 14px 0 0;
         padding-left: 1.2rem;
-        color: #c8d3da;
-        line-height: 1.6;
+        color: #b3b7c1;
+        font-size: 0.875rem;
+        line-height: 1.55;
       }
 
       .mount-fallback__panel a {
-        color: #8bd3ff;
-        text-decoration-thickness: 0.08em;
-        text-underline-offset: 0.18em;
+        color: #58bfe6;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
       }
 
       .mount-fallback__actions {
         display: flex;
         flex-wrap: wrap;
-        gap: 10px;
+        gap: 8px;
         margin-top: 24px;
       }
 
+      /* Text buttons are pills in Sharklet; the primary action is monochrome. */
       .mount-fallback__button {
-        min-height: 42px;
-        border: 1px solid rgba(148, 163, 184, 0.36);
-        border-radius: 6px;
-        padding: 0 16px;
-        color: inherit;
-        background: transparent;
+        min-height: 40px;
+        border: 0;
+        border-radius: 999px;
+        padding: 0 17px;
+        color: #eef0f4;
+        background: #12161e;
+        box-shadow: inset 0 0 0 1px #3a404c;
         font: inherit;
-        font-weight: 700;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
       }
 
       .mount-fallback__button--primary {
-        border-color: #66c2ff;
-        color: #061019;
-        background: #8bd3ff;
+        color: #0c0f16;
+        background: #eef0f4;
+        box-shadow: none;
       }
 
       .mount-fallback__panel:focus {
@@ -327,29 +342,48 @@
 
       .mount-fallback__button:focus-visible,
       .mount-fallback__panel a:focus-visible {
-        outline: 3px solid #f9c74f;
-        outline-offset: 3px;
+        outline: 2px solid #58bfe6;
+        outline-offset: 2px;
       }
 
       html[data-theme-mode="light"] body.openclaw-mount-fallback-active {
-        color: #151b21;
-        background: #f5f7fa;
+        color: #171b21;
+        background: #f5f7f9;
       }
 
       html[data-theme-mode="light"] .mount-fallback__panel {
-        border-color: rgba(71, 85, 105, 0.22);
-        background: #ffffff;
-        box-shadow: 0 24px 80px rgba(15, 23, 42, 0.14);
+        border-color: #dadee3;
+        background: #fdfeff;
+        box-shadow:
+          0 2px 6px rgb(23 27 33 / 0.06),
+          0 24px 48px -12px rgb(23 27 33 / 0.22);
       }
 
       html[data-theme-mode="light"] .mount-fallback__eyebrow,
       html[data-theme-mode="light"] .mount-fallback__panel p,
       html[data-theme-mode="light"] .mount-fallback__panel ul {
-        color: #4b5963;
+        color: #4e535c;
       }
 
       html[data-theme-mode="light"] .mount-fallback__panel a {
-        color: #0369a1;
+        color: #006e98;
+      }
+
+      html[data-theme-mode="light"] .mount-fallback__button {
+        color: #171b21;
+        background: #fdfeff;
+        box-shadow: inset 0 0 0 1px #c2c8cf;
+      }
+
+      html[data-theme-mode="light"] .mount-fallback__button--primary {
+        color: #ffffff;
+        background: #171b21;
+        box-shadow: none;
+      }
+
+      html[data-theme-mode="light"] .mount-fallback__button:focus-visible,
+      html[data-theme-mode="light"] .mount-fallback__panel a:focus-visible {
+        outline-color: #006e98;
       }
     </style>
   </head>
@@ -364,14 +398,14 @@
       hidden
     >
       <div class="mount-fallback__panel" tabindex="-1">
-        <p class="mount-fallback__eyebrow">OpenClaw Control UI</p>
+        <p class="mount-fallback__eyebrow">Sharklet</p>
         <h1 id="openclaw-mount-fallback-title">Control UI did not start</h1>
         <p id="openclaw-mount-fallback-summary">
           The browser loaded the static page, but the app bundle did not start. The gateway may be
-          restarting, or this page may reference assets from a different OpenClaw version.
+          restarting, or this page may reference assets from a different Sharklet release.
         </p>
         <ul>
-          <li>OpenClaw will retry the current app bundle automatically.</li>
+          <li>Sharklet will retry the current app bundle automatically.</li>
           <li>If this persists, reload or try a clean browser profile.</li>
           <li>
             See
@@ -452,7 +486,7 @@
             return;
           }
           setSummary(
-            "The gateway is not reachable yet. OpenClaw will keep retrying while it restarts.",
+            "The gateway is not reachable yet. Sharklet will keep retrying while it restarts.",
           );
           scheduleRecovery();
         }
