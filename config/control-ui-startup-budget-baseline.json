@@ -1,5 +1,5 @@
 {
-  "startupJsGzipBytes": 354862,
-  "reason": "Sharklet theme runtime at startup: the <openclaw-mascot> override (must be defined before upstream's), its still mark, the Geist/Geist Mono font loader, and the swap of upstream's claw glyph for the shark (+59 B). Swim art and motion.js load lazily. Measured +2331 B startup gzip over upstream alone on the owner's Windows build (353096 -> 355427 B); recorded as the Linux-equivalent 352531 + 2331. Fixed 358400 B cap retained.",
+  "startupJsGzipBytes": 356110,
+  "reason": "Sharklet runtime at startup. Step 1 (+2331 B): the <openclaw-mascot> override (must be defined before upstream's), its still mark, the Geist/Geist Mono font loader and the claw-glyph swap; swim art and motion.js load lazily. Step 2 (+1248 B): the shell - English as the default language, the 22 brand strings written over the en map (Help instead of Ask OpenClaw, Sharklet on About and approvals), the help button and the density switch. Measured on the owner's Windows build (353096 -> 355427 -> 356675 B) and recorded as the Linux-equivalent 352531 + 2331 + 1248. Fixed 358400 B cap retained.",
   "updatedAt": "2026-09-21"
 }

@@ -457,8 +457,8 @@ export function formatDocumentTitle(options: {
 }): string {
   // Sharklet: the product name in the tab. index.html's <title> says the same
   // before boot, so the tab does not flip names once the app renders. A label
-  // that already ends in a product name ("Ask OpenClaw", until phase 1 step 2
-  // renames the setup agent to Help) still takes no suffix.
+  // that already ends in a product name still takes no suffix: English says
+  // "Help" since custom/shell.ts, but the other locales still ask OpenClaw.
   const base = /(?:Sharklet|OpenClaw)$/u.test(options.context)
     ? options.context
     : `${options.context} — Sharklet`;

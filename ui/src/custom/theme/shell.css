@@ -1,0 +1,68 @@
+/* Sharklet's pieces of the shell (custom/shell.ts).
+ *
+ * The help button: components.css .sk-help-btn, fixed to the page's
+ * bottom-right corner. Shown only where that corner is free — from 1160px the
+ * chat column (upstream's composer, ~770px) leaves room beside it with the
+ * sidebar open; below upstream's drawer breakpoint (layout.mobile.css) the top
+ * bar carries upstream's own Help toggle. Hidden while a dock panel is open (it
+ * would sit on the panel's corner, where the Help panel has its send button),
+ * during onboarding (the same agent is already in front) and when embedded.
+ */
+.sk-help-btn {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 40;
+  display: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sk-glass);
+  color: var(--sk-text-2);
+  cursor: var(--sk-cursor-action);
+  -webkit-backdrop-filter: var(--sk-glass-filter);
+  backdrop-filter: var(--sk-glass-filter);
+  box-shadow:
+    var(--sk-shadow-float),
+    inset 0 0 0 1px var(--sk-line);
+}
+
+.sk-help-btn:hover {
+  color: var(--sk-text);
+}
+
+.sk-help-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+@media (min-width: 1160px) {
+  .sk-help-btn {
+    display: grid;
+  }
+}
+
+body:has(
+    :is(
+        openclaw-assistant-panel,
+        openclaw-browser-panel,
+        openclaw-desktop-panel,
+        openclaw-terminal-panel
+      )
+      > *,
+    .shell--onboarding,
+    .shell--embed
+  )
+  .sk-help-btn {
+  display: none;
+}
+
+/* Upstream's Discord invite card and the lobster pet that lives beside it, at
+   the foot of the sidebar. Neither belongs to Sharklet; the lobster's
+   Appearance settings are left for phase 7's Settings pass. */
+.sidebar-shell__invite {
+  display: none;
+}

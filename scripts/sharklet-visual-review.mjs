@@ -11,7 +11,12 @@
 // 1440) it loads the app the way a person on the default "system" appearance
 // gets each mode — by the OS color scheme, which index.html and bootstrap-theme
 // both follow — screenshots it, and checks what the bridge is supposed to
-// guarantee. Then it checks keyboard focus and reduced motion once per mode.
+// guarantee, plus step 2's shell: English on a Spanish browser, the help
+// button, no Discord card or lobster. Then, once per mode: keyboard focus,
+// reduced motion, and the surfaces Web Awesome only draws on demand (the three
+// sidebar menus, Settings → Appearance with its select open, the Plugins hub),
+// scanned for OpenClaw's coral and Web Awesome's own blue, and the density
+// switch in the profile menu.
 //
 // Exit code 1 if any check fails. Screenshots and report.json go to --out
 // (default .artifacts/sharklet-visual-review/).
@@ -44,6 +49,79 @@ const WIDTHS = [390, 1440];
 mkdirSync(outDir, { recursive: true });
 const report = { url, startedAt: new Date().toISOString(), runs: [], failures: [] };
 
+// Runs in the page. Foreign accents painted anywhere, shadow roots included:
+// OpenClaw's coral, and Web Awesome's own blue — read from its brand scale on
+// :root, so it is whatever the installed theme resolves, not a list typed
+// here. A hit means something the bridge does not reach.
+function scanPainted() {
+  const probe = document.createElement("span");
+  document.body.append(probe);
+  const rgbOf = (value) => {
+    probe.style.color = "";
+    probe.style.color = value;
+    return getComputedStyle(probe).color.match(/\d+/g)?.slice(0, 3).join(",");
+  };
+  const rootStyle = getComputedStyle(document.documentElement);
+  const waBlue = new Set(
+    ["05", "10", "20", "30", "40", "50", "60", "70", "80", "90", "95"]
+      .map((step) => rootStyle.getPropertyValue(`--wa-color-brand-${step}`).trim())
+      .filter(Boolean)
+      .map(rgbOf),
+  );
+  probe.remove();
+  const coral = new Set(["255,92,92", "255,112,112", "209,60,60", "194,46,46"]);
+  // Appearance's swatches preview the options they pick: upstream's accents
+  // (coral among them) and its eleven themes. Painting those colors is their job.
+  // ponytail: drop this once phase 2 hides the accent picker.
+  const optionPreview = ".settings-accent-swatch, .settings-theme-card__chip";
+  const hits = { coral: [], waBlue: [], waBlueSteps: waBlue.size };
+  const visit = (scope) => {
+    for (const el of scope.querySelectorAll("*")) {
+      if (el.matches(optionPreview)) {
+        continue;
+      }
+      const style = getComputedStyle(el);
+      for (const prop of [
+        "color",
+        "backgroundColor",
+        "borderTopColor",
+        "outlineColor",
+        "fill",
+        "stroke",
+      ]) {
+        const rgb = style[prop]?.match(/\d+/g)?.slice(0, 3).join(",");
+        const where = `${el.tagName.toLowerCase()}.${String(el.className?.baseVal ?? el.className ?? "").split(" ")[0]} ${prop}`;
+        if (rgb && coral.has(rgb) && hits.coral.length < 5) {
+          hits.coral.push(where);
+        }
+        if (rgb && waBlue.has(rgb) && hits.waBlue.length < 5) {
+          hits.waBlue.push(where);
+        }
+      }
+      if (el.shadowRoot) {
+        visit(el.shadowRoot);
+      }
+    }
+  };
+  visit(document);
+  return hits;
+}
+
+function checkPainted(run, where, hits) {
+  check(
+    run,
+    `no OpenClaw coral painted${where}`,
+    hits.coral.length === 0,
+    hits.coral.join(", ") || "none",
+  );
+  check(
+    run,
+    `no Web Awesome blue painted${where}`,
+    hits.waBlueSteps > 0 && hits.waBlue.length === 0,
+    hits.waBlueSteps > 0 ? hits.waBlue.join(", ") || "none" : "brand scale not found on :root",
+  );
+}
+
 function check(run, name, ok, detail) {
   run.checks.push({ name, ok, detail });
   if (!ok) {
@@ -60,25 +138,19 @@ async function openApp(browser, { mode, density, width, reducedMotion = false })
     // each mode. Faking the persisted settings instead does not survive boot:
     // the app keeps them under a per-gateway key and re-stamps the mode.
     colorScheme: mode,
-    locale: "en-US",
+    // The owner's browser language. The UI must come up in English anyway
+    // (custom/locale.ts and shell.ts).
+    locale: "es-CL",
   });
-  // Density has no control until step 2; this is the attribute it will set.
-  // An init script, not a one-off evaluate: it has to survive the reloads the
-  // app may do while booting, and <html> does not exist yet when it first runs.
+  // Density the way the profile menu's switch stores it (custom/shell.ts), so
+  // the startup path that reads it back is what gets tested.
   await context.addInitScript((value) => {
-    const apply = () => {
-      if (!document.documentElement) {
-        return false;
+    try {
+      if (value === "compact") {
+        localStorage.setItem("sharklet.density", "compact");
       }
-      document.documentElement.dataset.density = value;
-      return true;
-    };
-    if (!apply()) {
-      new MutationObserver((_records, observer) => {
-        if (apply()) {
-          observer.disconnect();
-        }
-      }).observe(document, { childList: true });
+    } catch {
+      // about:blank has no storage; the app's own origin does.
     }
   }, density);
   const page = await context.newPage();
@@ -144,37 +216,18 @@ try {
                 el.getAttribute("role") === "alert" &&
                 el.offsetParent !== null,
             ),
-            // OpenClaw's accent family, anywhere it is painted, including inside
-            // shadow roots. A hit means something the bridge does not reach.
-            upstreamAccent: (() => {
-              const signature = new Set(["255,92,92", "255,112,112", "209,60,60", "194,46,46"]);
-              const found = [];
-              const visit = (scope) => {
-                for (const el of scope.querySelectorAll("*")) {
-                  const style = getComputedStyle(el);
-                  for (const prop of [
-                    "color",
-                    "backgroundColor",
-                    "borderTopColor",
-                    "outlineColor",
-                  ]) {
-                    const rgb = style[prop].match(/\d+/g)?.slice(0, 3).join(",");
-                    if (rgb && signature.has(rgb) && found.length < 5) {
-                      found.push(
-                        `${el.tagName.toLowerCase()}.${String(el.className?.baseVal ?? el.className ?? "").split(" ")[0]} ${prop}`,
-                      );
-                    }
-                  }
-                  if (el.shadowRoot) {
-                    visit(el.shadowRoot);
-                  }
-                }
-              };
-              visit(document);
-              return found;
+            lang: html.lang,
+            askOpenClaw: document.body.textContent.includes("Ask OpenClaw"),
+            helpButton: (() => {
+              const button = document.querySelector(".sk-help-btn");
+              return button ? getComputedStyle(button).display !== "none" : null;
             })(),
+            inviteShown: [...document.querySelectorAll(".sidebar-shell__invite")].some(
+              (el) => el.offsetParent !== null,
+            ),
           };
         });
+        const painted = await app.page.evaluate(scanPainted);
         check(run, "theme mode stamped", state.themeMode === mode, state.themeMode);
         check(run, "--bg is Sharklet canvas", state.bg === EXPECT[mode].bg, state.bg);
         check(
@@ -211,12 +264,18 @@ try {
           !state.stylesBanner,
           String(state.stylesBanner),
         );
+        checkPainted(run, "", painted);
+        check(run, "English on an es-CL browser", state.lang === "en", state.lang);
+        check(run, "no 'Ask OpenClaw' on screen", !state.askOpenClaw, String(state.askOpenClaw));
+        // theme/shell.css: shown from 1160px, where the composer leaves the
+        // corner free; narrower screens reach Help through upstream's panels.
         check(
           run,
-          "no OpenClaw accent color painted",
-          state.upstreamAccent.length === 0,
-          state.upstreamAccent.join(", ") || "none",
+          `help button ${width >= 1160 ? "shown" : "hidden"}`,
+          state.helpButton === width >= 1160,
+          String(state.helpButton),
         );
+        check(run, "no Discord card or lobster pet", !state.inviteShown, String(state.inviteShown));
         // Our own assets that 404 are warnings, not failures: against a gateway
         // that still runs an older build, anything new is legitimately missing
         // until the next deploy.
@@ -270,6 +329,56 @@ try {
       );
       run.stops = reached;
       await app.page.screenshot({ path: join(outDir, `${mode}-keyboard.png`) });
+      await app.context.close();
+    }
+
+    // Surfaces Web Awesome only draws on demand, once per mode: the three
+    // sidebar menus (wa-dropdown), Appearance with its wa-select open (plus its
+    // wa-switches), and the Plugins hub (wa-tab-group). Plus the density switch,
+    // while the profile menu is open.
+    {
+      const run = { id: `${mode}-surfaces`, checks: [] };
+      report.runs.push(run);
+      const app = await openApp(browser, { mode, density: "comfortable", width: 1440 });
+      const { page } = app;
+      for (const [name, trigger] of [
+        ["profile menu", ".sidebar-identity-card"],
+        ["agent menu", ".sidebar-agent-card__main"],
+        ["pages menu", ".sidebar-nav__head-action"],
+      ]) {
+        await page.click(trigger);
+        await page.waitForTimeout(800);
+        checkPainted(run, `: ${name}`, await page.evaluate(scanPainted));
+        if (name === "profile menu") {
+          await page.click('.sidebar-identity-menu__footer button[aria-label^="Density"]');
+          const after = await page.evaluate(() => ({
+            density: document.documentElement.dataset.density ?? "comfortable",
+            stored: localStorage.getItem("sharklet.density"),
+          }));
+          check(
+            run,
+            "density switch sets compact and stores it",
+            after.density === "compact" && after.stored === "compact",
+            JSON.stringify(after),
+          );
+          await page.screenshot({ path: join(outDir, `${mode}-profile-menu.png`) });
+        }
+        await page.keyboard.press("Escape");
+        await page.waitForTimeout(400);
+      }
+      for (const path of ["settings/appearance", "plugins"]) {
+        await page.goto(new URL(path, url).href, { waitUntil: "domcontentloaded" });
+        await page.waitForTimeout(4_000);
+        await page.evaluate(() => {
+          const select = document.querySelector("wa-select");
+          if (select) {
+            select.open = true;
+          }
+        });
+        await page.waitForTimeout(600);
+        checkPainted(run, `: /${path}`, await page.evaluate(scanPainted));
+      }
+      await page.screenshot({ path: join(outDir, `${mode}-appearance-plugins.png`) });
       await app.context.close();
     }
 

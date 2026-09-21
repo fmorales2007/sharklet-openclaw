@@ -10,12 +10,14 @@
  *  rules removed by the sync script, is synced into this folder but NOT
  *  imported here. Nothing the app renders in phase 1 step 1 uses an sk-*
  *  class, and it is ~8 KiB of gzip that pushed startup CSS over upstream's
- *  50 KiB ceiling in scripts/check-control-ui-performance.mts. The pages that
- *  start using it — step 2's shell pieces, step 3's Mission Control — load it.)
+ *  50 KiB ceiling in scripts/check-control-ui-performance.mts. Step 2 did not
+ *  need it either: its one sk-* piece, the help button, is in shell.css. Step
+ *  3's Mission Control is the first to load it.)
  * board.css      the widget skin, over upstream's board.
  * icons.css      Lucide at 1.5 on upstream's own icon shell.
  * mascot.css     the box and color of <openclaw-mascot>, now our shark.
  * chat.css       the user's own bubble, neutral instead of a hashed hue.
+ * shell.css      the help button; the Discord card and lobster pet hidden.
  *
  * Order matters only within this file; across files the cascade is won by
  * specificity, deliberately, because load order is not reliable here.
@@ -26,3 +28,4 @@
 @import "./icons.css";
 @import "./mascot.css";
 @import "./chat.css";
+@import "./shell.css";
