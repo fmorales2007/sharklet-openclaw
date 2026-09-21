@@ -1,0 +1,21 @@
+/* The Sharklet theme, in load order.
+ *
+ * tokens.css     our 75 --sk-* names. On its own it changes nothing: upstream's
+ *                397 properties do not share one name with ours.
+ * bridge.css     what actually changes the app — upstream's tokens rewritten in
+ *                terms of ours, at a specificity that survives both the palette
+ *                <link> being re-appended on every theme change and the
+ *                thirteen properties written as inline style.
+ * components.css the approved components, with the seven unqualified base rules
+ *                removed by the sync script (bridge.css covers what they did).
+ * board.css      the widget skin, over upstream's board.
+ * icons.css      Lucide at 1.5 on upstream's own icon shell.
+ *
+ * Order matters only within this file; across files the cascade is won by
+ * specificity, deliberately, because load order is not reliable here.
+ */
+@import "./tokens.css";
+@import "./bridge.css";
+@import "./components.css";
+@import "./board.css";
+@import "./icons.css";

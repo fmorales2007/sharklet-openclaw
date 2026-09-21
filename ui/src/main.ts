@@ -1,5 +1,8 @@
 // Control UI module implements main behavior.
 import "./styles.css";
+// Sharklet. The one line the fork adds to this file; the rest lives in custom/.
+// After styles.css and before app-host.ts on purpose: see custom/index.ts.
+import "./custom/index.ts";
 import "./app/app-host.ts";
 import { inferControlUiPublicAssetPath } from "./app/public-assets.ts";
 import {
