@@ -1,6 +1,17 @@
 # Sharklet fork of OpenClaw
 
-This repository is a private copy of [openclaw/openclaw](https://github.com/openclaw/openclaw) (MIT, see `LICENSE`). Sharklet builds both the gateway and the Control UI from it. Plans and decisions live in the Sharklet repository: `docs/plan-ui-fases.md` and ADR-003, "Gateway y Control UI construidos desde el fork".
+This repository is a private copy of [openclaw/openclaw](https://github.com/openclaw/openclaw) (MIT, see `LICENSE`). Sharklet builds both the gateway and the Control UI from it. Plans and decisions live in the Sharklet repository: `docs/plan-ui-fases.md` and ADR-003, "Gateway y Control UI construidos desde el fork", and ADR-007, "Sharklet es una app propia construida desde OpenClaw".
+
+## Project premise (mandatory)
+
+Decision: ADR-007, "Sharklet es una app propia construida desde OpenClaw" (Sharklet repository, `docs/adr/`, 2026-09-26). It replaces the earlier "thin fork" rule (an allowlist of eight upstream files, pages as a feature plugin, logic as a gateway plugin).
+
+- **Sharklet is its own app.** OpenClaw is the starting point, not a limit. Any file in this repository can change: gateway, UI, protocol, configuration, scripts and tests. There is no allowlist.
+- **Nothing in Sharklet is built as an OpenClaw plugin**, neither a feature plugin nor a gateway plugin. Everything is integrated into the source. OpenClaw's plugin system stays as a user-facing feature (Connections), not as a way to build Sharklet.
+- **Pick the best design for Sharklet, not the smallest diff against upstream.** If a change breaks an upstream test, update the test. When the file can be edited, do not route around upstream code with CSS specificity, `!important`, custom elements registered ahead of the original, `Object.assign` on shared objects, or strings overwritten at runtime.
+- **Upstream keeps coming in while it is worth it.** Sharklet wins every conflict. The startup budget (`pnpm ui:check-performance`) stays as Sharklet's own guard; its limit can be adjusted with the reason written down.
+- **Phase 1 workarounds are debt**, paid when each file is next touched, not now: `bridge.css` (specificity and `!important`), `custom/mascot.ts` (registered before the original mascot), `Object.assign` on `icons.claw`, the 22 strings in `custom/shell.ts`, and the wrapped render of the theme toggle.
+- **From ADR-003, unchanged:** the gateway and the UI ship from the same `custom` commit, built in Actions, deployed with `deploy-gateway.sh` and `deploy-ui.sh` (both with rollback). The official package is never installed over this build.
 
 ## Branches
 
@@ -101,3 +112,7 @@ Every default is overridable by environment variable, which is how to point the 
 Actions only runs `sharklet-*.yml` workflows. The upstream workflows (105 in `v2026.9.4`) stay disabled: many run on push, pull request or cron, and some use macOS runners, which bill private repositories at 10x. The only allowed actions are GitHub's own `actions/*`, pinned by commit SHA.
 
 Step 6 restores this by hand, and there is a window of a few seconds between enabling Actions and disabling upstream's workflows in which a `schedule:` trigger could fire. That is accepted: the disable API needs Actions enabled. Step 7 is what catches a policy that did not come back.
+
+## Change history
+
+- 2026-09-26: added the project premise (ADR-007). It replaces the thin-fork rule; the snapshot, rebase, build and deploy procedure is unchanged.
