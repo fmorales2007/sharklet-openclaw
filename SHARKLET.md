@@ -50,12 +50,15 @@ gh api -X PUT repos/fmorales2007/sharklet-openclaw/actions/permissions -F enable
 gh api -X PUT repos/fmorales2007/sharklet-openclaw/actions/permissions/selected-actions -F github_owned_allowed=true -F verified_allowed=false
 bash scripts/disable-upstream-workflows.sh
 
-# 7. Check the policy came back the way it should: two active workflows, the rest disabled.
+# 7. Check the policy came back the way it should: three active workflows, the rest disabled.
 gh api repos/fmorales2007/sharklet-openclaw/actions/workflows --paginate   --jq '.workflows[] | .state' | sort | uniq -c
 
 # 8. Run the tests on the rebased commit: the test workflow only fires on pull
 #    requests, so a push straight to custom is never tested by itself.
 gh workflow run sharklet-ui-tests.yml -R fmorales2007/sharklet-openclaw --ref custom
+
+# 9. Refresh the Graphify mirrors: the push in step 5 landed while Actions was paused.
+gh workflow run sharklet-graphify-mirror.yml -R fmorales2007/sharklet-openclaw --ref custom
 ```
 
 Then build and deploy (below). Never use `openclaw update` or Settings -> Updates on the gateway: they install the official npm package over this build.
@@ -101,3 +104,16 @@ Every default is overridable by environment variable, which is how to point the 
 Actions only runs `sharklet-*.yml` workflows. The upstream workflows (105 in `v2026.9.4`) stay disabled: many run on push, pull request or cron, and some use macOS runners, which bill private repositories at 10x. The only allowed actions are GitHub's own `actions/*`, pinned by commit SHA.
 
 Step 6 restores this by hand, and there is a window of a few seconds between enabling Actions and disabling upstream's workflows in which a `schedule:` trigger could fire. That is accepted: the disable API needs Actions enabled. Step 7 is what catches a policy that did not come back.
+
+## Graphify mirrors
+
+Graphify Cloud's Free plan caps a graph at 25,000 nodes per repository, and this fork is several times that. Graphify indexes slim private mirrors instead, one commit each with no history, rebuilt by `sharklet-graphify-mirror.yml` on every push to `custom` or a `phase-*` branch. The last push wins: a phase branch carries `custom` merged in, and holds the work in progress until it lands. A branch only triggers it once it has the workflow file, that is, once it has merged a `custom` that includes it.
+
+| Mirror                                   | Paths                       |
+| ---------------------------------------- | --------------------------- |
+| `fmorales2007/sharklet-openclaw-ui`      | `ui`                        |
+| `fmorales2007/sharklet-openclaw-gateway` | `src/gateway`, `src/shared` |
+
+A mirror keeps this repository's paths and holds production code only: tests, fixtures, snapshots, `.d.ts` files, images and fonts are left out. `MIRROR_SOURCE` at its root records the commit and branch it came from. Keep each mirror under about 20,000 nodes (`ui` was 17,193 at the first build); a new area goes to a new mirror, not into an existing one.
+
+The workflow needs the `GRAPHIFY_MIRROR_TOKEN` secret: a fine-grained token with Contents read and write on the mirror repositories only. To rebuild a mirror by hand, from the repository root: `bash scripts/sharklet-graphify-mirror.sh ui ui` (`DRY_RUN=1` builds the tree and only prints its size). On Windows, set `TMPDIR` to a short path first: a long one breaks `git add`.

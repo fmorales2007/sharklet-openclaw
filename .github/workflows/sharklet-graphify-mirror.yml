@@ -1,0 +1,50 @@
+# Regenerates the slim mirrors Graphify Cloud indexes (Free plan: 25k nodes per
+# repository, and this fork is several times that). Each mirror keeps this
+# repository's paths, carries production code only, and records its source in
+# MIRROR_SOURCE. See scripts/sharklet-graphify-mirror.sh.
+#
+# Phase branches mirror too: the work in progress lives there until it lands
+# on custom, and a phase branch carries custom merged in. The last push wins.
+#
+# Upstream workflows stay disabled in this repository; see
+# scripts/disable-upstream-workflows.sh. Only sharklet-*.yml files run here.
+name: Sharklet Graphify mirror
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - custom
+      - "phase-*"
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    name: Mirror ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ui
+            paths: ui
+          - name: gateway
+            paths: src/gateway src/shared
+    concurrency:
+      group: sharklet-graphify-mirror-${{ matrix.name }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Push the mirror
+        env:
+          GRAPHIFY_MIRROR_TOKEN: ${{ secrets.GRAPHIFY_MIRROR_TOKEN }}
+        # paths is unquoted on purpose: it is a list of paths.
+        run: bash scripts/sharklet-graphify-mirror.sh ${{ matrix.name }} ${{ matrix.paths }}
