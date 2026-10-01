@@ -79,6 +79,7 @@ The gateway is a single machine with one operator, so each release runs in this 
 - [ ] Tag the build: `git tag sharklet-gateway-<version>-<n> && git push origin sharklet-gateway-<version>-<n>` (this starts the package workflow).
 - [ ] `bash scripts/deploy-gateway.sh` — it backs up gateway state, verifies provenance, installs, restarts, and refuses to report success unless the running gateway reports the expected commit.
 - [ ] `bash scripts/deploy-ui.sh` — **always after the gateway**, so the served Control UI comes from the same commit. The gateway package carries its own UI, but `gateway.controlUi.root` is what gets served.
+- [ ] If the rebase changed `scripts/docker/sandbox/Dockerfile`: copy it into `infra/server/ensure-sandbox-image.sh` (docs repo) and run `FORCE=1 bash ensure-sandbox-image.sh` on the server as `claw`. Otherwise nothing: the `openclaw-sandbox:bookworm-slim` image survives deploys, and without it every non-main session fails with "Sandbox image not found".
 - [ ] `openclaw doctor` on the server, and open the app from the phone and the PC.
 - [ ] If anything looks wrong: `bash scripts/deploy-gateway.sh --rollback` and `bash scripts/deploy-ui.sh --rollback`.
 
