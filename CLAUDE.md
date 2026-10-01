@@ -20,12 +20,19 @@ Sharklet is **its own app built from OpenClaw**, not a lightly modified OpenClaw
 
 ## Graphify (mandatory)
 
-Graphify indexes this repo (`fmorales2007/sharklet-openclaw`). Use it in **every** session and for any question about the code or structure.
+This repo is too big for Graphify's Free plan, so Graphify indexes slim mirrors of it, not the fork ("Graphify mirrors" in `SHARKLET.md`). Use it in **every** session and for any question about the code or structure.
 
+| Repo in Graphify | Fork paths |
+|---|---|
+| `fmorales2007/sharklet-openclaw-ui` | `ui/` |
+| `fmorales2007/sharklet-openclaw-gateway` | `src/gateway/`, `src/shared/` |
+
+- Always pass `repository_id` with the right mirror. Paths it returns are the fork's paths.
+- Mirrors leave out tests, fixtures, `.d.ts`, images and the rest of the fork (`extensions/`, `apps/`, `src/agents`, `src/config`…). For those, `grep` and `Read`.
 - Before `grep`, `Glob` or blind file reads, query Graphify (`mcp__…__graphify_*`, `query_graph`, `impact_and_risk`). If its tools are deferred, load them with ToolSearch.
 - Definition: `graphify_find`. How it works: `query_graph`. Callers/callees: `graphify_callers` / `graphify_callees`. What a change breaks: `graphify_impact` / `impact_and_risk`. Tests: `graphify_tests_for`. File dependencies: `graphify_file_neighbors`.
 - Use `grep`/`Read` only for what the graph does not model: literal strings, comments, unindexed files, or reading an already-located file.
-- The index follows the `custom` branch and excludes uncommitted changes. Compare `commitSha` from `graph_stats` with `git rev-parse HEAD`; if they differ, verify in the real file before asserting anything.
+- Freshness: a mirror reflects the last push to `custom` or a `phase-*` branch, and its `commitSha` is the mirror's, not the fork's. `MIRROR_SOURCE` at the mirror's root names the fork commit and branch (`gh api repos/fmorales2007/sharklet-openclaw-ui/contents/MIRROR_SOURCE --jq .content | base64 -d`). If that is not your `HEAD`, verify in the real file before asserting anything.
 - If Graphify does not respond, tell the user and continue with normal tools; never skip it silently.
 
 ## Not visible in config
@@ -33,4 +40,6 @@ Graphify indexes this repo (`fmorales2007/sharklet-openclaw`). Use it in **every
 - In Git Bash use `corepack pnpm`, not bare `pnpm`.
 - On Windows run UI tests with `test/vitest/vitest.ui.config.ts`; `ui/vitest.config.ts` hangs.
 - The fork's skills are read by path: `.agents/skills/<skill>/SKILL.md`.
+- This root `CLAUDE.md` is a real file on purpose (ADR-007). Do not turn it back into a symlink, whatever `AGENTS.md` says about `CLAUDE.md` symlinks.
+- Nested `CLAUDE.md` files are upstream symlinks to `AGENTS.md`; on Windows they are plain text and load nothing. Before working in a folder that has one, read that folder's `AGENTS.md`.
 - No secrets in files or commits.

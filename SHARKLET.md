@@ -90,10 +90,10 @@ The gateway is a single machine with one operator, so each release runs in this 
 
 Decision: ADR-003, action item 11 (2026-10-01). `openclaw update` is off, so upstream security fixes only arrive through this fork.
 
-- **Source:** upstream's published GitHub Security Advisories (`openclaw/openclaw`), plus its release list. Advisories come in batches, 3 to 11 days after the release that fixes them, and never name the fix commit. The global GitHub Advisory Database lags months behind; do not use it.
+- **Source:** upstream's published GitHub Security Advisories (`openclaw/openclaw`), plus its release list. Advisories come in batches and never name the fix commit. They lag the release that fixes them by a few days to about two months (the 2026-09-11 batch included 20 fixes shipped in v2026.7.1 on 2026-07-13), so releases are the earlier signal, and the monthly rebase is what keeps us from running publicly fixed bugs for long. The global GitHub Advisory Database lags months behind; do not use it.
 - **When:** every Monday, about 10 minutes. The owner also watches `openclaw/openclaw` on GitHub (Watch → Custom → Releases), so an `extended-stable` release announcing a security rollup shows up by email before the advisories do.
 - **Does it affect us:** only if our snapshot version is inside the advisory's vulnerable range **and** the component is in use (a channel Sharklet does not configure does not count). Same method as `.agents/skills/security-triage/SKILL.md`: the shipped tag decides, not `main`.
-- **Deadline, from the day the advisory is published:** critical 48 hours, high 7 days, medium and low wait for the monthly rebase.
+- **Deadline, from the Monday check that finds it** (or the release email, if that comes first): critical 48 hours, high 7 days, medium and low wait for the monthly rebase. A weekly check means a critical advisory can stay open for up to about 9 days; that is accepted (ADR-003, item 11).
 - **Skipping or deferring** one that affects us is the owner's call; Claude triages and proposes. Record it below.
 
 Every command uses the `gh` login you already have; the advisory endpoints are public.
@@ -102,16 +102,16 @@ Every command uses the `gh` login you already have; the advisory endpoints are p
 # Version of the current snapshot (main's last commit message names the tag).
 export V=$(git log -1 --format=%s main | sed -E 's/^OpenClaw v([^ ]+) upstream snapshot$/\1/')
 
-# 1. Advisories published since the last check (date of the previous Monday).
-SINCE=2026-09-28 gh api "repos/openclaw/openclaw/security-advisories?state=published&per_page=100" --paginate \
+# 1. Advisories published in the last 8 days (one day of overlap with the previous check).
+SINCE=$(date -u -d "8 days ago" +%F) gh api "repos/openclaw/openclaw/security-advisories?state=published&per_page=100" --paginate \
   --jq '.[] | select(.published_at > env.SINCE) | [.published_at[:10], .severity, .ghsa_id, (.vulnerabilities[0].vulnerable_version_range // "-"), .summary] | @tsv'
 
-# 2. Advisories whose vulnerable range includes our snapshot version.
+# 2. Advisories whose vulnerable range includes our snapshot version (openclaw and @openclaw/* packages only).
 gh api "repos/openclaw/openclaw/security-advisories?state=published&per_page=100" --paginate --jq '
   def ver: ltrimstr("v") | split("-")[0] | split(".") | map(tonumber? // 0);
   def ok(op; a; b): if op == "<" then a < b elif op == "<=" then a <= b elif op == ">" then a > b elif op == ">=" then a >= b else a == b end;
   def affects(v): split("||") | any(.[]; [scan("([<>]=?|=)? *v?([0-9][0-9A-Za-z.-]*)")] | all(.[]; ok(.[0] // "="; v | ver; .[1] | ver)));
-  .[] | select(any(.vulnerabilities[]; (.vulnerable_version_range // "") | affects(env.V)))
+  .[] | select(any(.vulnerabilities[]; ((.package.name // "") | test("^(@openclaw/|openclaw)"; "i")) and ((.vulnerable_version_range // "") | affects(env.V))))
   | [.published_at[:10], .severity, .ghsa_id, (.vulnerabilities[0].patched_versions // "-"), .summary] | @tsv'
 
 # 3. Recent releases; read the notes of any extended-stable one.
@@ -191,5 +191,6 @@ The workflow needs the `GRAPHIFY_MIRROR_TOKEN` secret: a fine-grained token with
 
 ## Change history
 
+- 2026-10-01 (PRE-X audit): "Upstream security" corrected: advisories can lag the fix by two months, deadlines count from detection, the advisory window is computed, and the range check skips other packages.
 - 2026-10-01: added "Upstream security" (ADR-003, item 11): source, weekly check, deadlines by severity, and how to ship one fix ahead of the rebase.
 - 2026-09-26: added the project premise (ADR-007). It replaces the thin-fork rule; the snapshot, rebase, build and deploy procedure is unchanged.
