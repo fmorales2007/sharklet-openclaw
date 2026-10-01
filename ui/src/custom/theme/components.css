@@ -1,7 +1,9 @@
 /* GENERATED COPY - do not edit here.
- * Source: sharklet/docs/design-system/components.css (sha256 a81838baf3d4)
+ * Source: sharklet/docs/design-system/components.css (sha256 784aecceb5d3)
  * Remake it with: node docs/design-system/sync-to-fork.mjs
  * Editing this file instead of the source is how Adrift drifted. */
+
+/* Sharklet components (approved 2026-09-17). Requires tokens.css. */
 
 .sk-num {
   font-variant-numeric: tabular-nums;
@@ -1181,134 +1183,6 @@ textarea.sk-input {
   font-size: var(--sk-fs-sm);
 }
 
-/* Board widgets (see board.md). The grid, the row height and the collapse are
-   upstream's: 12 columns, 56px rows, 12px gap, one column under 560px of
-   container. Sharklet closes the list of sizes and adds the body head. */
-.sk-grid {
-  container-type: inline-size;
-  display: grid;
-  gap: 12px;
-  grid-auto-rows: 56px;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  min-width: 0;
-}
-.sk-widget[data-size="stat"] {
-  grid-column: span 4;
-  grid-row: span 2;
-}
-.sk-widget[data-size="card"] {
-  grid-column: span 4;
-  grid-row: span 3;
-}
-.sk-widget[data-size="panel"] {
-  grid-column: span 6;
-  grid-row: span 4;
-}
-.sk-widget[data-size="wide"] {
-  grid-column: span 12;
-  grid-row: span 4;
-}
-.sk-widget[data-size="tall"] {
-  grid-column: span 6;
-  grid-row: span 6;
-}
-/* A container query adds no specificity, so this has to match the size rules
-   above (0,2,0) and win on order. Upstream reaches for !important here for the
-   same reason. */
-@container (max-width: 560px) {
-  .sk-widget[data-size] {
-    grid-column: 1 / -1;
-  }
-}
-
-.sk-widget {
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-  display: grid;
-  grid-template-rows: 38px minmax(0, 1fr);
-  border-radius: var(--sk-r-card);
-  background: var(--sk-surface);
-  box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.04),
-    inset 0 0 0 1px var(--sk-line);
-  transition: box-shadow var(--sk-dur-micro) var(--sk-ease-out);
-}
-.sk-widget:hover {
-  box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.04),
-    inset 0 0 0 1px var(--sk-line-strong);
-}
-.sk-widget[data-state="dragging"] {
-  opacity: 0.92;
-  box-shadow:
-    var(--sk-shadow-float),
-    inset 0 0 0 1px var(--sk-accent-line);
-}
-.sk-widget__bar {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-  padding: 0 6px;
-  border-radius: var(--sk-r-card) var(--sk-r-card) 0 0;
-  border-bottom: 1px solid var(--sk-line);
-  background: var(--sk-fill);
-}
-.sk-widget__handle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 25px;
-  height: 27px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--sk-r-xs);
-  background: transparent;
-  color: var(--sk-text-3);
-  cursor: grab;
-}
-.sk-widget__handle:hover {
-  background: var(--sk-fill-2);
-  color: var(--sk-text);
-}
-.sk-widget__title {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--sk-fs-sm);
-  font-weight: 590;
-  color: var(--sk-text);
-}
-.sk-widget__kind {
-  margin-left: auto;
-  padding: 0 6px;
-  border-radius: var(--sk-r-pill);
-  background: var(--sk-fill-2);
-  color: var(--sk-text-2);
-  font-size: var(--sk-fs-xs);
-  line-height: 16px;
-  letter-spacing: 0.04em;
-}
-.sk-widget__body {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-  padding: 12px;
-}
-.sk-widget__body--scroll {
-  overflow-y: auto;
-  scrollbar-color: var(--sk-line-strong) transparent;
-}
-/* The name lives here, not only in the bar: with a mouse the bar is hidden at
-   rest, and upstream drops its title under 376px of card width. When the body
-   carries the name, the bar does not repeat it. Widgets we do not control (MCP
-   apps, plugins) have no head, so they keep upstream's title. */
-.sk-widget:has(.sk-widget__head) .sk-widget__title {
-  display: none;
-}
 .sk-widget__head {
   flex: none;
   display: flex;
@@ -1334,44 +1208,6 @@ textarea.sk-input {
 .sk-widget__sub {
   color: var(--sk-text-2);
   font-size: var(--sk-fs-sm);
-}
-
-/* With a fine pointer the bar leaves the flow and becomes a pill that appears
-   on hover intent. data-chrome="header" pins the touch form for review. */
-@media (hover: hover) and (pointer: fine) {
-  .sk-widget:not([data-chrome="header"]) {
-    grid-template-rows: minmax(0, 1fr);
-  }
-  .sk-widget:not([data-chrome="header"]) .sk-widget__bar {
-    position: absolute;
-    top: 7px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 5;
-    height: 30px;
-    max-width: calc(100% - 176px);
-    padding: 0 5px;
-    border: 0;
-    border-radius: var(--sk-r-pill);
-    background: var(--sk-glass);
-    backdrop-filter: var(--sk-glass-filter);
-    box-shadow: var(--sk-shadow-pop);
-    opacity: 0;
-    visibility: hidden;
-    transition:
-      opacity 100ms var(--sk-ease-out),
-      visibility 0s linear 100ms;
-  }
-  .sk-widget:not([data-chrome="header"]):hover .sk-widget__bar {
-    opacity: 1;
-    visibility: visible;
-    transition-delay: 350ms;
-  }
-  .sk-widget:not([data-chrome="header"]):focus-within .sk-widget__bar {
-    opacity: 1;
-    visibility: visible;
-    transition-delay: 0s;
-  }
 }
 
 /* The three generic states. Every widget and every page uses these three.
@@ -1412,29 +1248,6 @@ textarea.sk-input {
   align-content: start;
   justify-items: stretch;
   text-align: left;
-}
-/* The states shed parts to fit the smaller sizes. The list of sizes is closed,
-   so this is deterministic and needs no height query. */
-.sk-widget[data-size="card"] .sk-state details {
-  display: none;
-}
-.sk-widget[data-size="stat"] .sk-state details,
-.sk-widget[data-size="stat"] .sk-state p {
-  display: none;
-}
-.sk-widget[data-size="stat"] .sk-state--error,
-.sk-widget[data-size="stat"] .sk-state--off {
-  grid-auto-flow: column;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  justify-items: start;
-  text-align: left;
-}
-.sk-widget[data-size="stat"] .sk-state b {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .sk-state--loading .sk-skeleton {
   width: 100%;
