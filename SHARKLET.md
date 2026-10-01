@@ -82,6 +82,65 @@ The gateway is a single machine with one operator, so each release runs in this 
 - [ ] `openclaw doctor` on the server, and open the app from the phone and the PC.
 - [ ] If anything looks wrong: `bash scripts/deploy-gateway.sh --rollback` and `bash scripts/deploy-ui.sh --rollback`.
 
+## Upstream security
+
+Decision: ADR-003, action item 11 (2026-10-01). `openclaw update` is off, so upstream security fixes only arrive through this fork.
+
+- **Source:** upstream's published GitHub Security Advisories (`openclaw/openclaw`), plus its release list. Advisories come in batches, 3 to 11 days after the release that fixes them, and never name the fix commit. The global GitHub Advisory Database lags months behind; do not use it.
+- **When:** every Monday, about 10 minutes. The owner also watches `openclaw/openclaw` on GitHub (Watch → Custom → Releases), so an `extended-stable` release announcing a security rollup shows up by email before the advisories do.
+- **Does it affect us:** only if our snapshot version is inside the advisory's vulnerable range **and** the component is in use (a channel Sharklet does not configure does not count). Same method as `.agents/skills/security-triage/SKILL.md`: the shipped tag decides, not `main`.
+- **Deadline, from the day the advisory is published:** critical 48 hours, high 7 days, medium and low wait for the monthly rebase.
+- **Skipping or deferring** one that affects us is the owner's call; Claude triages and proposes. Record it below.
+
+Every command uses the `gh` login you already have; the advisory endpoints are public.
+
+```bash
+# Version of the current snapshot (main's last commit message names the tag).
+export V=$(git log -1 --format=%s main | sed -E 's/^OpenClaw v([^ ]+) upstream snapshot$/\1/')
+
+# 1. Advisories published since the last check (date of the previous Monday).
+SINCE=2026-09-28 gh api "repos/openclaw/openclaw/security-advisories?state=published&per_page=100" --paginate \
+  --jq '.[] | select(.published_at > env.SINCE) | [.published_at[:10], .severity, .ghsa_id, (.vulnerabilities[0].vulnerable_version_range // "-"), .summary] | @tsv'
+
+# 2. Advisories whose vulnerable range includes our snapshot version.
+gh api "repos/openclaw/openclaw/security-advisories?state=published&per_page=100" --paginate --jq '
+  def ver: ltrimstr("v") | split("-")[0] | split(".") | map(tonumber? // 0);
+  def ok(op; a; b): if op == "<" then a < b elif op == "<=" then a <= b elif op == ">" then a > b elif op == ">=" then a >= b else a == b end;
+  def affects(v): split("||") | any(.[]; [scan("([<>]=?|=)? *v?([0-9][0-9A-Za-z.-]*)")] | all(.[]; ok(.[0] // "="; v | ver; .[1] | ver)));
+  .[] | select(any(.vulnerabilities[]; (.vulnerable_version_range // "") | affects(env.V)))
+  | [.published_at[:10], .severity, .ghsa_id, (.vulnerabilities[0].patched_versions // "-"), .summary] | @tsv'
+
+# 3. Recent releases; read the notes of any extended-stable one.
+gh release list -R openclaw/openclaw -L 10
+```
+
+To ship one fix ahead of the monthly rebase:
+
+```bash
+# Find the pull request that fixed it (the advisory does not say): search by the
+# advisory's wording, or take the number from an extended-stable release note.
+gh search prs --repo openclaw/openclaw --merged -- <two or three keywords from the summary>
+SHA=$(gh pr view <number> -R openclaw/openclaw --json mergeCommit --jq .mergeCommit.oid)
+
+# Fetch only that commit and its parent, and apply it on custom.
+git switch custom && git pull --ff-only
+git fetch --no-tags --depth 2 upstream "$SHA"
+git cherry-pick -x "$SHA"
+
+# Drop the shallow upstream objects, as in step 3 of the update procedure.
+rm -f .git/FETCH_HEAD .git/shallow
+git reflog expire --expire=now --all && git gc --prune=now -q
+git rev-parse --is-shallow-repository   # must print false
+git push origin custom
+gh workflow run sharklet-ui-tests.yml -R fmorales2007/sharklet-openclaw --ref custom
+```
+
+Then the release checklist from "Tag the build" on. If the pull request cannot be found or the cherry-pick does not apply cleanly, abort it (`git cherry-pick --abort`) and run the full update procedure up to the patched release instead.
+
+Skipped or deferred (date, advisory, reason, who decided):
+
+- None yet.
+
 ## Building and deploying
 
 | What                         | How                                                                                                                                                  |
@@ -115,4 +174,5 @@ Step 6 restores this by hand, and there is a window of a few seconds between ena
 
 ## Change history
 
+- 2026-10-01: added "Upstream security" (ADR-003, item 11): source, weekly check, deadlines by severity, and how to ship one fix ahead of the rebase.
 - 2026-09-26: added the project premise (ADR-007). It replaces the thin-fork rule; the snapshot, rebase, build and deploy procedure is unchanged.
