@@ -12,7 +12,7 @@ name=$1; shift
 repo="fmorales2007/sharklet-openclaw-$name"
 src_sha=$(git rev-parse HEAD)
 src_ref=${GITHUB_REF_NAME:-$(git rev-parse --abbrev-ref HEAD)}
-exclude='\.(test|spec)\.|/(test|tests|__tests__|e2e|test-helpers|fixtures)/|\.snap$|\.d\.ts$|\.(png|webp|jpe?g|gif|ico|svg|woff2?|ttf|otf|mp3|wav)$'
+exclude='[/.-](test|spec)[.-]|/(test|tests|__tests__|e2e|test-helpers|fixtures)/|\.snap$|\.d\.ts$|\.(png|webp|jpe?g|gif|ico|svg|woff2?|ttf|otf|mp3|wav)$'
 
 out=$(mktemp -d)
 git ls-files -z -- "$@" | { grep -zvE "$exclude" || true; } | tar --null -T - -cf - | tar -xf - -C "$out"

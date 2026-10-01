@@ -114,6 +114,6 @@ Graphify Cloud's Free plan caps a graph at 25,000 nodes per repository, and this
 | `fmorales2007/sharklet-openclaw-ui`      | `ui`                        |
 | `fmorales2007/sharklet-openclaw-gateway` | `src/gateway`, `src/shared` |
 
-A mirror keeps this repository's paths and holds production code only: tests, fixtures, snapshots, `.d.ts` files, images and fonts are left out. `MIRROR_SOURCE` at its root records the commit and branch it came from. Keep each mirror under about 20,000 nodes (`ui` was 17,193 at the first build); a new area goes to a new mirror, not into an existing one.
+A mirror keeps this repository's paths and holds production code only: tests and their helpers (`*.test-support.ts`, `test-helpers.*.ts`…), fixtures, snapshots, `.d.ts` files, images and fonts are left out. `MIRROR_SOURCE` at its root records the commit and branch it came from. Keep each mirror under about 20,000 nodes (`ui` was 17,193 at the first build); a new area goes to a new mirror, not into an existing one.
 
 The workflow needs the `GRAPHIFY_MIRROR_TOKEN` secret: a fine-grained token with Contents read and write on the mirror repositories only. To rebuild a mirror by hand, from the repository root: `bash scripts/sharklet-graphify-mirror.sh ui ui` (`DRY_RUN=1` builds the tree and only prints its size). On Windows, set `TMPDIR` to a short path first: a long one breaks `git add`.
