@@ -1,16 +1,3 @@
-## Sharklet: project premise (mandatory)
-
-This section is Sharklet's. It overrides any rule below or in a scoped `AGENTS.md` that contradicts it. Decision: ADR-007, "Sharklet es una app propia construida desde OpenClaw" (Sharklet repository, `docs/adr/`, 2026-09-26). It replaces the earlier "thin fork" rule (an allowlist of eight upstream files, pages as a feature plugin, logic as a gateway plugin).
-
-- **Sharklet is its own app.** OpenClaw is the starting point, not a limit. Any file in this repository can change: gateway, UI, protocol, configuration, scripts and tests. There is no allowlist.
-- **Nothing in Sharklet is built as an OpenClaw plugin**, neither a feature plugin nor a gateway plugin. Everything is integrated into the source. OpenClaw's plugin system stays as a user-facing feature (Connections), not as a way to build Sharklet.
-- **Pick the best design for Sharklet, not the smallest diff against upstream.** If a change breaks an upstream test, update the test. When the file can be edited, do not route around upstream code with CSS specificity, `!important`, custom elements registered ahead of the original, `Object.assign` on shared objects, or strings overwritten at runtime.
-- **Upstream keeps coming in while it is worth it.** Sharklet wins every conflict. The startup budget (`pnpm ui:check-performance`) stays as Sharklet's own guard; its limit can be adjusted with the reason written down.
-- **Phase 1 workarounds are debt**, paid when each file is next touched, not now: `bridge.css` (specificity and `!important`), `custom/mascot.ts` (registered before the original mascot), `Object.assign` on `icons.claw`, the 22 strings in `custom/shell.ts`, and the wrapped render of the theme toggle.
-- **From ADR-003, unchanged:** the gateway and the UI ship from the same `custom` commit, built in Actions, deployed with `deploy-gateway.sh` and `deploy-ui.sh` (both with rollback). The official package is never installed over this build.
-
----
-
 # AGENTS.md
 
 The task defines scope and authorization; its chosen workflow owns execution,
