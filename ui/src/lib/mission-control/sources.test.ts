@@ -6,7 +6,7 @@ import { createMissionControlSources } from "./sources.ts";
 describe("createMissionControlSources", () => {
   it("asks the gateway for the four values and maps month usage", async () => {
     const responses = createMissionControlMethodResponses();
-    const request = vi.fn(async (method: string) => responses[method]);
+    const request = vi.fn(async (method: string, _params?: unknown) => responses[method]);
     const sources = createMissionControlSources({ request } as unknown as RpcClient);
 
     await vi.waitFor(() => {
