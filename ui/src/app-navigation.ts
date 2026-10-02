@@ -448,7 +448,7 @@ export function titleForRoute(routeId: NavigationRouteId): string {
 /** Window/tab title, markers leftmost because tabs truncate from the right.
  * A disconnected Gateway replaces the approval count (a stale queue is not
  * actionable) and carries the pending-outbox total; titles already ending in the brand
- * ("Ask OpenClaw") skip the suffix so it never reads "… OpenClaw — OpenClaw". */
+ * ("Ask OpenClaw" in the other locales) skip the suffix so it never reads "… OpenClaw — OpenClaw". */
 export function formatDocumentTitle(options: {
   context: string;
   attentionCount?: number;
@@ -458,7 +458,7 @@ export function formatDocumentTitle(options: {
   // Sharklet: the product name in the tab. index.html's <title> says the same
   // before boot, so the tab does not flip names once the app renders. A label
   // that already ends in a product name still takes no suffix: English says
-  // "Help" since custom/shell.ts, but the other locales still ask OpenClaw.
+  // "Help" (locales/en.ts), but the other locales still ask OpenClaw.
   const base = /(?:Sharklet|OpenClaw)$/u.test(options.context)
     ? options.context
     : `${options.context} — Sharklet`;
