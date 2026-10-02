@@ -1,6 +1,6 @@
 // Mission Control's board while there is no gateway-side board for it: the
 // default layout and the three edits the board view can ask for. Nothing is
-// persisted yet (docs/ideas.md); a reload restores the default.
+// persisted yet (pending in the F1-03 task log); a reload restores the default.
 import type { BoardOp, BoardSnapshot, BoardWidget } from "../../lib/board/types.ts";
 
 export const MISSION_CONTROL_SESSION_KEY = "mission-control";
