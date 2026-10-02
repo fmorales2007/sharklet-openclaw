@@ -40,6 +40,15 @@ export const en: TranslationMap & {
     unavailable: "Slot utilization unavailable",
     execHost: "Codex exec",
   },
+  rpc: {
+    unreachable: "Can't reach the gateway. Check your connection, then try again.",
+    timeout: "The gateway took too long to answer. Try again in a moment.",
+    unauthorized: "You don't have access to this. Check your permissions, then try again.",
+    rejected: "The gateway couldn't complete this. Try again, or open the details.",
+    invalid: "The gateway sent data in an unexpected shape. Reload the page, then try again.",
+    cancelled: "Loading was canceled. Select Try again to load it again.",
+    offUnavailable: "This gateway doesn't offer this yet. It will appear after an update.",
+  },
   common: {
     health: "Health",
     ok: "OK",
