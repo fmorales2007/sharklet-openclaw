@@ -27,9 +27,9 @@ function formatUtcOffset(timezoneOffsetMinutes: number): string {
 
 export function buildSessionUsageDateParams(timeZone: "local" | "utc") {
   return timeZone === "utc"
-    ? { mode: "utc" }
+    ? { mode: "utc" as const }
     : {
-        mode: "specific",
+        mode: "specific" as const,
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         utcOffset: formatUtcOffset(new Date().getTimezoneOffset()),
       };
