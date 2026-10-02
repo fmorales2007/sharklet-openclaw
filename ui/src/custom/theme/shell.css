@@ -1,6 +1,8 @@
 /* Sharklet's pieces of the shell (custom/shell.ts).
  *
- * The help button: components.css .sk-help-btn, fixed to the page's
+ * The help button: components.css .sk-help-btn, marked data-shell so these
+ * rules hold whether or not components.css (lazy, from Mission Control) has
+ * loaded, fixed to the page's
  * bottom-right corner. Shown only where that corner is free — from 1160px the
  * chat column (upstream's composer, ~770px) leaves room beside it with the
  * sidebar open. Narrower screens reach Help through upstream's own panel (the
@@ -8,7 +10,7 @@
  * would sit on the panel's corner, where the Help panel has its send button),
  * during onboarding (the same agent is already in front) and when embedded.
  */
-.sk-help-btn {
+.sk-help-btn[data-shell] {
   position: fixed;
   right: 20px;
   bottom: 20px;
@@ -30,17 +32,17 @@
     inset 0 0 0 1px var(--sk-line);
 }
 
-.sk-help-btn:hover {
+.sk-help-btn[data-shell]:hover {
   color: var(--sk-text);
 }
 
-.sk-help-btn svg {
+.sk-help-btn[data-shell] svg {
   width: 18px;
   height: 18px;
 }
 
 @media (min-width: 1160px) {
-  .sk-help-btn {
+  .sk-help-btn[data-shell] {
     display: grid;
   }
 }
@@ -56,7 +58,7 @@ body:has(
     .shell--onboarding,
     .shell--embed
   )
-  .sk-help-btn {
+  .sk-help-btn[data-shell] {
   display: none;
 }
 

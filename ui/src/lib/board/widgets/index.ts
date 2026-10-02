@@ -31,6 +31,42 @@ export const CORE_BOARD_WIDGET_ELEMENTS: readonly CoreBoardWidgetElement[] = [
     loadModule: () => import("./report.ts"),
     previewSafe: true,
   },
+  {
+    kind: "sharklet:working-now",
+    tagName: "sharklet-working-now-widget",
+    get label() {
+      return t("missionControl.workingNow.title");
+    },
+    loadModule: () => import("./mission-control.ts"),
+    previewSafe: false,
+  },
+  {
+    kind: "sharklet:up-next",
+    tagName: "sharklet-up-next-widget",
+    get label() {
+      return t("missionControl.upNext.title");
+    },
+    loadModule: () => import("./mission-control.ts"),
+    previewSafe: false,
+  },
+  {
+    kind: "sharklet:month-usage",
+    tagName: "sharklet-month-usage-widget",
+    get label() {
+      return t("missionControl.monthUsage.title");
+    },
+    loadModule: () => import("./mission-control.ts"),
+    previewSafe: false,
+  },
+  {
+    kind: "sharklet:agents",
+    tagName: "sharklet-agents-widget",
+    get label() {
+      return t("missionControl.agents.title");
+    },
+    loadModule: () => import("./mission-control.ts"),
+    previewSafe: false,
+  },
 ];
 
 export function pluginIdForWidgetKind(kind: string | undefined): string {
@@ -49,7 +85,9 @@ export function getPluginWidgetKindContribution(
     return null;
   }
   const pluginId = pluginIdForWidgetKind(kind);
-  return activeKinds.some((entry) => entry.kind === kind && entry.pluginId === pluginId)
+  // Sharklet's own kinds are part of the app, not a plugin the gateway advertises.
+  return pluginId === "sharklet" ||
+    activeKinds.some((entry) => entry.kind === kind && entry.pluginId === pluginId)
     ? contribution
     : null;
 }

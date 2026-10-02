@@ -206,3 +206,96 @@
 .board-empty__mark {
   color: var(--sk-accent);
 }
+
+/* Mission Control: the board in the main area, the composer below it. */
+.sk-mc {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.sk-mc__board {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 24px;
+}
+/* The new-session page is a full-height page: give it a definite box and drop its
+   welcome hero, which would push the composer off a board-first screen. */
+.sk-mc__composer {
+  flex: 0 0 clamp(260px, 40%, 400px);
+  min-height: 0;
+  position: relative;
+}
+.sk-mc__composer > openclaw-new-session-page {
+  display: block;
+  height: 100%;
+}
+.sk-mc__composer .new-session-page {
+  height: 100%;
+}
+.sk-mc__composer .agent-chat__welcome-identity {
+  display: none;
+}
+
+/* A Sharklet widget fills its body: head at its own size, state or content after it. */
+.sk-mc-widget {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.sk-mc-rows {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--sk-fs-sm);
+}
+.sk-mc-rows li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.sk-mc-rows li > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sk-mc-rows small {
+  flex: none;
+  color: var(--sk-text-2);
+}
+.sk-mc-usage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* States shed parts by widget size (board.md): Stat shows icon, one line and
+   retry in a row; Card drops the raw detail; Panel and up keep everything. */
+.sk-mc-widget[data-size="stat"] .sk-state--error {
+  grid-auto-flow: column;
+  justify-content: center;
+}
+.sk-mc-widget[data-size="stat"] .sk-state p,
+.sk-mc-widget[data-size="stat"] .sk-state details,
+.sk-mc-widget[data-size="card"] .sk-state details {
+  display: none;
+}
+
+/* Upstream icons carry no size of their own. */
+.sk-mc-widget .sk-state > svg,
+.sk-mc-widget .sk-state .sk-btn svg,
+.sk-mc-widget .sk-stale svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.sk-mc-widget .sk-state .sk-btn svg,
+.sk-mc-widget .sk-stale svg {
+  width: 14px;
+  height: 14px;
+}

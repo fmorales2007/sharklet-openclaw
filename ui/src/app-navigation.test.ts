@@ -93,6 +93,7 @@ describe("navigationIconForRoute", () => {
     expect(
       Object.fromEntries(ALL_ROUTES.map((routeId) => [routeId, navigationIconForRoute(routeId)])),
     ).toEqual({
+      home: "layoutDashboard",
       chat: "messageSquare",
       custodian: "lobster",
       activity: "activity",
@@ -198,6 +199,7 @@ describe("titleForRoute", () => {
     expect(
       Object.fromEntries(ALL_ROUTES.map((routeId) => [routeId, titleForRoute(routeId)])),
     ).toEqual({
+      home: "Home",
       chat: "Chat",
       custodian: "OpenClaw",
       activity: "Activity",
@@ -253,6 +255,7 @@ describe("subtitleForRoute", () => {
     expect(
       Object.fromEntries(ALL_ROUTES.map((routeId) => [routeId, subtitleForRoute(routeId)])),
     ).toEqual({
+      home: "What your agents are doing, what is next, and what it costs.",
       chat: "Gateway chat for quick interventions.",
       custodian: "System setup and care.",
       activity: "Recent sessions across people using this gateway.",
@@ -603,6 +606,7 @@ describe("plugin tabs route", () => {
 describe("SIDEBAR_NAV_ROUTES", () => {
   it("keeps the canonical sidebar route order", () => {
     expect(SIDEBAR_NAV_ROUTES).toEqual([
+      "home",
       "dashboards",
       "usage",
       "cron",

@@ -38,6 +38,10 @@ export const icons = {
   activity: strokeIcon(svg` <path d="M22 12h-4l-3 9L9 3l-3 9H2" />`),
   clock: strokeIcon(svg` <circle cx="12" cy="12" r="10" />
     <polyline points="12 6 12 12 16 14" />`),
+  powerOff: strokeIcon(svg` <path d="M18.36 6.64A9 9 0 0 1 20.77 15" />
+    <path d="M6.16 6.16a9 9 0 1 0 12.68 12.68" />
+    <path d="M12 2v4" />
+    <path d="m2 2 20 20" />`),
   circleX: strokeIcon(svg` <circle cx="12" cy="12" r="10" />
     <path d="m15 9-6 6" />
     <path d="m9 9 6 6" />`),

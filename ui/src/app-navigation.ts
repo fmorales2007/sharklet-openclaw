@@ -20,6 +20,7 @@ type NavigationPresentation = readonly [icon: IconName, titleKey: string, subtit
 // Worktrees is a tab of the Sessions hub, so it is not listed either.
 // Workboard is plugin-owned and enters the zone through its Control UI descriptor.
 export const SIDEBAR_NAV_ROUTES = [
+  "home",
   "dashboards",
   "usage",
   "cron",
@@ -66,7 +67,7 @@ export type SidebarZoneEntry =
 
 // Keep the highest-value operational destinations visible on first use. Users
 // can still replace this route set through the customize menu.
-export const DEFAULT_SIDEBAR_ENTRIES = ["dashboards", "cron", "plugins"].map((route) =>
+export const DEFAULT_SIDEBAR_ENTRIES = ["home", "dashboards", "cron", "plugins"].map((route) =>
   serializeSidebarEntry({ type: "route", route: route as SidebarNavRoute }),
 );
 
@@ -345,6 +346,7 @@ const NAVIGATION_PRESENTATION: Record<NavigationRouteId, NavigationPresentation>
   "device-permissions": ["shieldCheck", "tabs.devicePermissions", "subtitles.devicePermissions"],
   devices: ["monitorSmartphone", "tabs.devices", "subtitles.devices"],
   "cloud-workers": ["server", "tabs.cloudWorkers", "subtitles.cloudWorkers"],
+  home: ["layoutDashboard", "tabs.home", "subtitles.home"],
   chat: ["messageSquare", "tabs.chat", "subtitles.chat"],
   dashboard: ["layoutDashboard", "tabs.chat", "subtitles.chat"],
   dashboards: ["layoutDashboard", "tabs.dashboards", "subtitles.dashboards"],

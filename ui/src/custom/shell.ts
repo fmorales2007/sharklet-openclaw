@@ -88,6 +88,7 @@ function mountHelpButton(): void {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "sk-help-btn";
+  button.dataset.shell = "";
   button.title = t("nav.askOpenClaw");
   button.setAttribute("aria-label", t("nav.askOpenClaw"));
   render(icons.circleQuestionMark, button);
