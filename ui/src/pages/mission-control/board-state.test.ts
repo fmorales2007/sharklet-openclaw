@@ -5,33 +5,20 @@ const names = (snapshot: ReturnType<typeof defaultMissionControlSnapshot>) =>
   snapshot.widgets.toSorted((a, b) => a.position - b.position).map((w) => w.name);
 
 describe("mission control board state", () => {
-  it("starts with the four widgets as 4 x 3 cards", () => {
+  it("starts with the agents widget as a 4 x 3 card; the strip carries the rest", () => {
     const snapshot = defaultMissionControlSnapshot();
-    expect(names(snapshot)).toEqual([
-      "sharklet-month-usage",
-      "sharklet-working-now",
-      "sharklet-up-next",
-      "sharklet-agents",
-    ]);
+    expect(names(snapshot)).toEqual(["sharklet-agents"]);
     expect(snapshot.widgets.every((w) => w.sizeW === 4 && w.sizeH === 3)).toBe(true);
   });
 
-  it("moves, resizes and removes", () => {
+  it("resizes and removes", () => {
     let snapshot = defaultMissionControlSnapshot();
     snapshot = applyLocalOps(snapshot, [
-      { kind: "widget_move", name: "sharklet-agents", position: 0 },
-      { kind: "widget_resize", name: "sharklet-up-next", sizeW: 6, sizeH: 4 },
-      { kind: "widget_remove", name: "sharklet-working-now" },
+      { kind: "widget_resize", name: "sharklet-agents", sizeW: 6, sizeH: 4 },
     ]);
-    expect(names(snapshot)).toEqual([
-      "sharklet-agents",
-      "sharklet-month-usage",
-      "sharklet-up-next",
-    ]);
-    expect(snapshot.widgets.find((w) => w.name === "sharklet-up-next")).toMatchObject({
-      sizeW: 6,
-      sizeH: 4,
-    });
-    expect(snapshot.revision).toBe(2);
+    expect(snapshot.widgets[0]).toMatchObject({ sizeW: 6, sizeH: 4 });
+    snapshot = applyLocalOps(snapshot, [{ kind: "widget_remove", name: "sharklet-agents" }]);
+    expect(names(snapshot)).toEqual([]);
+    expect(snapshot.revision).toBe(3);
   });
 });

@@ -6,7 +6,7 @@ import type { BoardOp, BoardSnapshot, BoardWidget } from "../../lib/board/types.
 export const MISSION_CONTROL_SESSION_KEY = "mission-control";
 const TAB_ID = "home";
 
-const KINDS = ["month-usage", "working-now", "up-next", "agents"] as const;
+const KINDS = ["agents"] as const;
 
 function widget(kind: (typeof KINDS)[number], position: number): BoardWidget {
   return {

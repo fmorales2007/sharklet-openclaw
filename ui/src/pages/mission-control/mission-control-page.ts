@@ -18,6 +18,7 @@ import {
 import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
 import { ensureBoardViewElement } from "../chat/board-session-surface.ts";
 import "../../custom/theme/components.css";
+import "./mission-control-strip.ts";
 import "../new-session/new-session-page-entry.ts";
 import {
   applyLocalOps,
@@ -111,6 +112,7 @@ export class MissionControlPage extends OpenClawLightDomElement {
   override render() {
     return html`
       <div class="sk-mc">
+        ${keyed(this.sources, html`<sharklet-mission-strip></sharklet-mission-strip>`)}
         <section class="sk-mc__board" aria-label=${t("missionControl.boardLabel")}>
           ${
             this.boardReady

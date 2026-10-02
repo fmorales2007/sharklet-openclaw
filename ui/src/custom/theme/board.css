@@ -299,3 +299,76 @@
   width: 14px;
   height: 14px;
 }
+
+/* Instrument strip: Mission Control's fixed band above the board. The base
+   (sk-strip, sk-working, sk-job, sk-usage-btn, sk-upnext) is in components.css. */
+sharklet-mission-strip {
+  display: block;
+  flex: none;
+}
+.sk-strip-cell {
+  min-width: 0;
+}
+.sk-strip-cell--working {
+  flex: 1 1 auto;
+}
+.sk-strip-cell .sk-working {
+  width: 100%;
+}
+.sk-strip-usage {
+  width: min(320px, calc(100vw - 32px));
+  margin: 0;
+  inset: 56px 16px auto auto;
+  padding: 16px;
+  border: 0;
+  color: var(--sk-text);
+}
+.sk-strip-usage p {
+  margin: 4px 0 0;
+}
+.sk-strip-usage .sk-btn {
+  margin-top: 12px;
+}
+/* A state inside the strip is one line, not a card: sections must stay one row tall. */
+.sk-strip .sk-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 8px;
+}
+.sk-strip .sk-state--loading .sk-skeleton {
+  display: none;
+}
+.sk-strip .sk-state--loading .sk-skeleton:first-child {
+  display: block;
+  flex: 1;
+  height: 16px !important;
+}
+.sk-strip .sk-state p,
+.sk-strip .sk-state details {
+  display: none;
+}
+.sk-strip .sk-state > svg,
+.sk-strip .sk-stale svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.sk-strip .sk-state .sk-btn svg {
+  width: 14px;
+  height: 14px;
+}
+.sk-strip .sk-working:disabled {
+  cursor: default;
+}
+.sk-strip .sk-working-chevron svg,
+.sk-strip .sk-upnext > svg {
+  width: 16px;
+  height: 16px;
+}
+/* A long job list scrolls inside the strip instead of pushing the board away. */
+.sk-strip .sk-working-list > div {
+  max-height: min(40vh, 320px);
+  overflow-y: auto;
+}
