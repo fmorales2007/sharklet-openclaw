@@ -89,12 +89,30 @@ export type RpcSnapshot<T> =
 
 export type RpcFailure = RpcError | RpcOff;
 
+/** Retry knobs. Defaults: 3 retries, 500 ms base, 8 s cap. `random` and `sleep` exist for tests. */
+export type RpcRetryOptions = {
+  maxRetries?: number;
+  baseMs?: number;
+  capMs?: number;
+  random?: () => number;
+  sleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
+};
+
+/** Delay before retry number `attempt` (0-based): exponential, capped, equal jitter, floored by `retryAfterMs`. */
+export function backoffDelayMs(
+  _attempt: number,
+  _options: Pick<RpcRetryOptions, "baseMs" | "capMs" | "random">,
+  _retryAfterMs?: number,
+): number {
+  throw new Error("not implemented: backoffDelayMs (F1-06)");
+}
+
 /** One validated call, retried with backoff while the error is transient. */
 export function rpcCall<M extends RpcMethod>(
   _client: RpcClient,
   _method: M,
   _params: RpcParams<M>,
-  _options?: { signal?: AbortSignal },
+  _options?: { signal?: AbortSignal; retry?: RpcRetryOptions },
 ): Promise<Result<RpcResultOf<M>, RpcFailure>> {
   throw new Error("not implemented: rpcCall (F1-06)");
 }
@@ -118,6 +136,7 @@ export function rpcResource<M extends RpcMethod, T>(
   _method: M,
   _params: RpcParams<M>,
   _select: (result: RpcResultOf<M>) => T,
+  _options?: { retry?: RpcRetryOptions; now?: () => number },
 ): RpcResource<T> {
   throw new Error("not implemented: rpcResource (F1-06)");
 }
