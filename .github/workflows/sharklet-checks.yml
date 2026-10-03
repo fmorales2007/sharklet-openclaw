@@ -70,7 +70,13 @@ jobs:
       # runs it striped on 4 vCPUs). This is the UI part: copy and oxlint. Stylelint
       # is out until ui/src/custom/theme/*.css passes it (see ideas.md).
       - name: Lint UI
-        run: pnpm lint:sharklet
+        env:
+          # tsgolint (Go) type-checks the whole program; on a 7 GB runner an
+          # unbounded heap got the job killed at ~5 minutes.
+          GOMEMLIMIT: 4GiB
+        run: |
+          (while sleep 30; do free -m | sed -n 2p; done) &
+          pnpm lint:sharklet
 
       - name: Typecheck UI
         run: pnpm tsgo:ui
