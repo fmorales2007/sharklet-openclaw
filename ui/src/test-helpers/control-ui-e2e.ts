@@ -862,6 +862,10 @@ export function canRunPlaywrightChromium(chromiumExecutablePath: string): boolea
   if (!existsSync(chromiumExecutablePath)) {
     return false;
   }
+  if (process.platform === "win32") {
+    // chrome.exe ignores --version on Windows: it opens a browser and blocks.
+    return true;
+  }
   return spawnSync(chromiumExecutablePath, ["--version"], { stdio: "ignore" }).status === 0;
 }
 
