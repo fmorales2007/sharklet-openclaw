@@ -1,6 +1,7 @@
 // Mission Control's board while there is no gateway-side board for it: the
 // default layout and the three edits the board view can ask for. Nothing is
 // persisted yet (pending in the F1-03 task log); a reload restores the default.
+import { t } from "../../i18n/index.ts";
 import type { BoardOp, BoardSnapshot, BoardWidget } from "../../lib/board/types.ts";
 
 export const MISSION_CONTROL_SESSION_KEY = "mission-control";
@@ -28,7 +29,7 @@ export function defaultMissionControlSnapshot(): BoardSnapshot {
   return {
     sessionKey: MISSION_CONTROL_SESSION_KEY,
     revision: 1,
-    tabs: [{ tabId: TAB_ID, title: "Home", position: 0, chatDock: "hidden" }],
+    tabs: [{ tabId: TAB_ID, title: t("missionControl.homeTab"), position: 0, chatDock: "hidden" }],
     widgets: KINDS.map(widget).map((entry, position) => ({ ...entry, position })),
   };
 }

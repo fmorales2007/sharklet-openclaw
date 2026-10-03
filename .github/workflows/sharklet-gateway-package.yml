@@ -39,6 +39,9 @@ jobs:
         with:
           node-version: "24"
 
+      - name: Scan dependencies and code (fails on high or critical)
+        run: scripts/sharklet-scan.sh
+
       - name: Enable pnpm (version pinned by package.json)
         run: corepack enable
 

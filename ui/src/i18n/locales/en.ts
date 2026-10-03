@@ -3938,6 +3938,7 @@ export const en: TranslationMap & {
   },
   missionControl: {
     pageTitle: "Mission Control",
+    homeTab: "Home",
     boardLabel: "Mission Control board",
     composerLabel: "Start a chat",
     stripLabel: "Agent activity and usage",

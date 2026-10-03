@@ -176,6 +176,16 @@ Actions only runs `sharklet-*.yml` workflows. The upstream workflows (105 in `v2
 
 Step 6 restores this by hand, and there is a window of a few seconds between enabling Actions and disabling upstream's workflows in which a `schedule:` trigger could fire. That is accepted: the disable API needs Actions enabled. Step 7 is what catches a policy that did not come back.
 
+Checks that run:
+
+- `sharklet-ui-tests.yml`: the Control UI suite, in 3 shards, on every pull request to `custom`.
+- `sharklet-checks.yml`: `scripts/sharklet-scan.sh` first, then `pnpm lint`, `pnpm tsgo:ui` and `pnpm tsgo:core`, on every pull request to `custom` (or by hand with `gh workflow run`).
+- `sharklet-gateway-package.yml`: the same scan, before the build.
+
+The scan has three parts: production dependency advisories (`scripts/pre-commit/pnpm-audit-prod.mjs`, high and critical), committed private keys, and the OpenGrep rules in `security/opengrep/` (severity ERROR, `ui/` included). Limits: it does not cover dev dependencies, and the rules mostly describe gateway-side weaknesses, so they say little about client code. The opengrep binary is downloaded at a fixed version and checked against its SHA256, not installed through an action. Agent-facing rules live in `SHARKLET-SECURITY.md`.
+
+Budget: 2,000 Actions minutes a month. Every push to an open pull request runs the UI tests and the checks, so measured minutes per run are recorded in the F1-08 task evidence.
+
 ## Graphify mirrors
 
 Graphify Cloud's Free plan caps a graph at 25,000 nodes per repository, and this fork is several times that. Graphify indexes slim private mirrors instead, one commit each with no history, rebuilt by `sharklet-graphify-mirror.yml` on every push to `custom` or a `phase-*` branch. The last push wins: a phase branch carries `custom` merged in, and holds the work in progress until it lands. A branch only triggers it once it has the workflow file, that is, once it has merged a `custom` that includes it.
@@ -191,6 +201,7 @@ The workflow needs the `GRAPHIFY_MIRROR_TOKEN` secret: a fine-grained token with
 
 ## Change history
 
+- 2026-10-03 (F1-08): `sharklet-checks.yml` (lint, typecheck, scan), the scan before the gateway package build, and `SHARKLET-SECURITY.md`.
 - 2026-10-01 (PRE-X audit): "Upstream security" corrected: advisories can lag the fix by two months, deadlines count from detection, the advisory window is computed, and the range check skips other packages.
 - 2026-10-01: added "Upstream security" (ADR-003, item 11): source, weekly check, deadlines by severity, and how to ship one fix ahead of the rebase.
 - 2026-09-26: added the project premise (ADR-007). It replaces the thin-fork rule; the snapshot, rebase, build and deploy procedure is unchanged.

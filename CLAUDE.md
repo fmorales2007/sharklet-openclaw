@@ -12,6 +12,7 @@ Sharklet is **its own app built from OpenClaw**, not a lightly modified OpenClaw
 - Snapshot, rebase, build and deploy procedure: `SHARKLET.md`.
 
 @AGENTS.md
+@SHARKLET-SECURITY.md
 
 ## Pace and method
 

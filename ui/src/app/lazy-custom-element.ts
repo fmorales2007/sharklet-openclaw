@@ -247,9 +247,11 @@ export const KEYBOARD_SHORTCUTS_ELEMENT = {
   loadModule: () => import("../components/keyboard-shortcuts-dialog.ts"),
 } satisfies OptionalCustomElement;
 
+const MISSION_CONTROL_BAR_TAG = "sharklet-mission-bar";
+
 export const MISSION_CONTROL_BAR_ELEMENT = {
-  tagName: "sharklet-mission-bar",
-  label: "Mission Control bar",
+  tagName: MISSION_CONTROL_BAR_TAG,
+  label: MISSION_CONTROL_BAR_TAG,
   loadModule: () => import("../pages/mission-control/mission-control-bar.ts"),
 } satisfies OptionalCustomElement;
 

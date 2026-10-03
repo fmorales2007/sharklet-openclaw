@@ -1,0 +1,75 @@
+# Lint, typecheck and the vulnerability scan on every pull request to custom.
+# One job, so dependencies install once; the scan runs first because it needs
+# no install and a red scan should not cost the install minutes.
+# Upstream workflows stay disabled; see scripts/disable-upstream-workflows.sh.
+name: Sharklet checks
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - custom
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sharklet-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint, types and scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: "1"
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The PR scan diffs against the base branch.
+          fetch-depth: ${{ github.event_name == 'pull_request' && 0 || 1 }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+
+      - name: Scan dependencies and code (pull request diff)
+        if: github.event_name == 'pull_request'
+        env:
+          OPENCLAW_OPENGREP_BASE_REF: origin/${{ github.base_ref }}...HEAD
+        run: scripts/sharklet-scan.sh --changed
+
+      - name: Scan dependencies and code (whole tree)
+        if: github.event_name != 'pull_request'
+        run: scripts/sharklet-scan.sh
+
+      - name: Enable pnpm (version pinned by package.json)
+        run: corepack enable
+
+      - name: Locate the pnpm store
+        id: pnpm-store
+        run: echo "dir=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.dir }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck UI
+        run: pnpm tsgo:ui
+
+      - name: Typecheck core
+        run: pnpm tsgo:core
