@@ -66,3 +66,11 @@ body:has(
 .sidebar-shell__invite {
   display: none;
 }
+
+/* Command palette (sk-palette): upstream icons carry no size of their own. */
+.sk-palette-input svg,
+.sk-palette-list .sk-menu-item > svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}

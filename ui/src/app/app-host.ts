@@ -22,6 +22,7 @@ import type { BoardFace } from "../lib/board/settings.ts";
 import { invalidateChatMetadataStore } from "../lib/chat/chat-metadata-store.ts";
 import { createIdleImport } from "../lib/idle-import.ts";
 import { invalidateModelAuthStatusRequests } from "../lib/model-auth-request-state.ts";
+import type { PagesOffStore } from "../lib/pages-off.ts";
 import { resolveSessionDisplayName } from "../lib/session-display.ts";
 import {
   isUiGlobalSessionKey,
@@ -120,6 +121,8 @@ class OpenClawShell
   @state() routeState: ShellRouteState = {};
   @state() nativeHistoryState: NativeHistoryState = readNativeHistoryState();
   readonly commandPaletteElement = COMMAND_PALETTE_ELEMENT;
+  // Loaded on first connect: the switch, its RPC layer and the off panel stay out of the boot chunk.
+  pagesOff: PagesOffStore | undefined;
   readonly terminalPanelElement = TERMINAL_PANEL_ELEMENT;
   readonly browserPanelElement = BROWSER_PANEL_ELEMENT;
   readonly desktopPanelElement = DESKTOP_PANEL_ELEMENT;
@@ -310,6 +313,23 @@ class OpenClawShell
             if (this.context !== context) {
               this.resetForContextEpoch();
             }
+          };
+        },
+      )
+      .watch(
+        () => this.context?.gateway,
+        (gateway, notify) => {
+          let stop: (() => void) | undefined;
+          let disposed = false;
+          void import("../lib/pages-off.ts").then(({ PagesOffStore }) => {
+            if (!disposed) {
+              this.pagesOff ??= new PagesOffStore();
+              stop = this.pagesOff.connect(gateway, notify);
+            }
+          });
+          return () => {
+            disposed = true;
+            stop?.();
           };
         },
       )

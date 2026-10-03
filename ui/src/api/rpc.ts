@@ -25,12 +25,16 @@ export type UsageCostParams = {
   timeZone?: string;
 };
 
+/** `pages.state` result: the page kill switch (`ui.pages.off` in the gateway config). */
+export type PagesStateResult = { off: { id: string; reason?: string }[] };
+
 /** Gateway methods the typed layer knows. Later phases add rows here. */
 export type RpcMethodMap = {
   "sessions.list": { params: SessionsListParams; result: SessionsListResult };
   "cron.list": { params: CronListParams; result: CronJobsListResult };
   "usage.cost": { params: UsageCostParams; result: CostUsageSummary };
   "agents.list": { params: AgentsListParams; result: AgentsListResult };
+  "pages.state": { params: Record<string, never>; result: PagesStateResult };
 };
 
 export type RpcMethod = keyof RpcMethodMap;

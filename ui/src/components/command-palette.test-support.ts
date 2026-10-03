@@ -123,7 +123,7 @@ export async function mountPalette(context: ApplicationContext<RouteId>) {
 export async function enterQuery(palette: CommandPalette, query: string) {
   palette.openPalette();
   await palette.updateComplete;
-  const input = palette.querySelector<HTMLInputElement>(".cmd-palette__input");
+  const input = palette.querySelector<HTMLInputElement>(".sk-palette-input input");
   if (!input) {
     throw new Error("Expected command palette input");
   }

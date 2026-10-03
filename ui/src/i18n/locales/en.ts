@@ -44,6 +44,11 @@ export const en: TranslationMap & {
     density: "Density: {density}",
     comfortable: "Comfortable",
     compact: "Compact",
+    pageOff: {
+      title: "{page} is off",
+      detail: "It was turned off on this gateway. It comes back when someone turns it on.",
+      goHome: "Go to Chat",
+    },
   },
   rpc: {
     unreachable: "Can't reach the gateway. Check your connection and try again.",
@@ -4175,7 +4180,8 @@ export const en: TranslationMap & {
     },
   },
   palette: {
-    placeholder: "Search chats and commands…",
+    placeholder: "Search chats, agents, pages and actions",
+    off: "Off",
     noResults: "No results",
     searchFailed: "Chat search failed — check the gateway logs and retry",
     modelSearchFailed: "Model search unavailable. Change your search to retry.",
@@ -4183,7 +4189,7 @@ export const en: TranslationMap & {
     searchIncomplete: "Transcript matches may be incomplete — indexing or search limits apply",
     categories: {
       search: "Search",
-      navigation: "Navigation",
+      navigation: "Pages",
       skills: "Skills",
     },
     items: {

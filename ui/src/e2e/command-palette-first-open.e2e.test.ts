@@ -47,7 +47,7 @@ suite.define(() => {
         await page.locator(".shell").waitFor({ state: "visible" });
         await page.keyboard.press("Control+K");
 
-        const shell = page.locator(".cmd-palette");
+        const shell = page.locator(".sk-palette");
         await shell.waitFor({ state: "visible" });
         await paletteModule.request;
         expect(await shell.getAttribute("aria-label")).toBe("Loading…");
@@ -61,7 +61,7 @@ suite.define(() => {
 
         chatModule.release();
         paletteModule.release();
-        await page.locator(".cmd-palette__input:not([disabled])").waitFor({ state: "visible" });
+        await page.locator(".sk-palette-input input:not([disabled])").waitFor({ state: "visible" });
         const loadedBackdrop = await readPaletteBackdrop(page);
         expect(loadedBackdrop.filter).toBe("none");
         expect(loadedBackdrop.alpha).toBeLessThanOrEqual(0.2);

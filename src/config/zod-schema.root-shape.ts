@@ -248,6 +248,18 @@ export const OpenClawSchemaShape = {
           sidebarEntries: z.array(z.string()).optional(),
         })
         .optional(),
+      // Page kill switch: route ids the Control UI shows as "off". Read through
+      // `pages.state`; flipping it needs no UI deploy.
+      pages: z
+        .strictObject({
+          off: z
+            .record(
+              z.string().regex(/^[a-z0-9-]{1,40}$/),
+              z.strictObject({ reason: z.string().max(200).optional() }),
+            )
+            .optional(),
+        })
+        .optional(),
     })
     .optional(),
   secrets: SecretsConfigSchema,

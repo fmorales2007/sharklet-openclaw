@@ -186,6 +186,17 @@
   font-size: var(--sk-fs-sm);
 }
 
+.page-off {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  padding: var(--sk-space-4, 16px);
+}
+
+.page-off .board-widget__disabled-plugin {
+  border-radius: var(--sk-r-card);
+}
+
 .board-widget__disabled-plugin strong {
   color: var(--sk-text);
   font-size: var(--sk-fs-ui);

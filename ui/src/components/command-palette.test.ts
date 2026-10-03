@@ -107,7 +107,7 @@ describe("CommandPalette lifecycle", () => {
     expect(palette.querySelector("dialog")).toBeNull();
     palette.openPalette();
     await palette.updateComplete;
-    expect(palette.querySelector<HTMLInputElement>(".cmd-palette__input")?.value).toBe("");
+    expect(palette.querySelector<HTMLInputElement>(".sk-palette-input input")?.value).toBe("");
     expect(palette.textContent).not.toContain("Old chat");
   });
 
@@ -213,12 +213,14 @@ describe("CommandPalette lifecycle", () => {
         query: "needle",
         limit: 25,
       });
-      const chatItems = [...palette.querySelectorAll<HTMLElement>(".cmd-palette__item")];
+      const chatItems = [
+        ...palette.querySelectorAll<HTMLElement>(".sk-palette-list [role=option]"),
+      ];
       expect(chatItems).toHaveLength(2);
       expect(chatItems[0]?.textContent).toContain("needle");
       expect(chatItems[1]?.textContent).toContain("Unrelated title");
       expect(chatItems[1]?.textContent).toContain("needle appears only in the conversation body");
-      expect(palette.querySelectorAll(".cmd-palette__input")).toHaveLength(1);
+      expect(palette.querySelectorAll(".sk-palette-input input")).toHaveLength(1);
     },
   );
 
