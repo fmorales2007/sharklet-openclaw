@@ -56,13 +56,6 @@ export const SHARKLET_COPY: Readonly<Record<string, string>> = {
     "Sharklet couldn’t verify this tab’s address. Refresh to try again.",
 };
 
-/** Sharklet's own strings, in a namespace upstream does not use. */
-const SHARKLET_STRINGS: TranslationMap = {
-  density: "Density: {density}",
-  comfortable: "Comfortable",
-  compact: "Compact",
-};
-
 export function applySharkletCopy(map: TranslationMap = en): void {
   for (const [path, value] of Object.entries(SHARKLET_COPY)) {
     const keys = path.split(".");
@@ -75,7 +68,6 @@ export function applySharkletCopy(map: TranslationMap = en): void {
       (scope as TranslationMap)[leaf] = value;
     }
   }
-  map.sharklet = SHARKLET_STRINGS;
 }
 
 // The help button. It toggles the setup-and-repair agent's panel, the same

@@ -100,7 +100,7 @@ export function createMissionControlMethodResponses(): Record<string, unknown> {
       ],
       defaultId: "main",
       mainKey: "main",
-      scope: "agent",
+      scope: "per-sender",
     } satisfies AgentsListResult,
   };
 }

@@ -40,6 +40,25 @@ export const en: TranslationMap & {
     unavailable: "Slot utilization unavailable",
     execHost: "Codex exec",
   },
+  sharklet: {
+    density: "Density: {density}",
+    comfortable: "Comfortable",
+    compact: "Compact",
+    pageOff: {
+      title: "{page} is off",
+      detail: "It was turned off on this gateway. It comes back when someone turns it on.",
+      goHome: "Go to Chat",
+    },
+  },
+  rpc: {
+    unreachable: "Can't reach the gateway. Check your connection and try again.",
+    timeout: "The gateway took too long. Try again.",
+    unauthorized: "You don't have access to this.",
+    rejected: "The gateway couldn't do this. Try again, or open the details.",
+    invalid: "The gateway sent unexpected data. Reload the page and try again.",
+    cancelled: "Loading was canceled. Try again to reload it.",
+    offUnavailable: "This gateway doesn't offer this yet.",
+  },
   common: {
     health: "Health",
     ok: "OK",
@@ -4161,7 +4180,8 @@ export const en: TranslationMap & {
     },
   },
   palette: {
-    placeholder: "Search chats and commands…",
+    placeholder: "Search chats, agents, pages and actions",
+    off: "Off",
     noResults: "No results",
     searchFailed: "Chat search failed — check the gateway logs and retry",
     modelSearchFailed: "Model search unavailable. Change your search to retry.",
@@ -4169,7 +4189,7 @@ export const en: TranslationMap & {
     searchIncomplete: "Transcript matches may be incomplete — indexing or search limits apply",
     categories: {
       search: "Search",
-      navigation: "Navigation",
+      navigation: "Pages",
       skills: "Skills",
     },
     items: {

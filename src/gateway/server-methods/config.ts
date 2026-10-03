@@ -855,6 +855,19 @@ export const configHandlers: GatewayRequestHandlers = {
       undefined,
     );
   },
+  // Page kill switch for the Control UI: only the `ui.pages.off` slice, so a
+  // page never needs the whole (redacted) config to learn it is off.
+  "pages.state": async ({ params, respond }) => {
+    if (!assertValidParams(params, validateConfigGetParams, "pages.state", respond)) {
+      return;
+    }
+    const { config } = await readConfigFileSnapshot();
+    const off = Object.entries(config.ui?.pages?.off ?? {}).map(([id, entry]) => ({
+      id,
+      ...(entry.reason ? { reason: entry.reason } : {}),
+    }));
+    respond(true, { off }, undefined);
+  },
   "config.schema": ({ params, respond }) => {
     if (!assertValidParams(params, validateConfigSchemaParams, "config.schema", respond)) {
       return;

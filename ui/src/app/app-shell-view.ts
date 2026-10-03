@@ -17,6 +17,7 @@ import {
   formatKeyboardShortcutCombo,
   KEYBOARD_SHORTCUT_COMBOS,
 } from "../lib/keyboard-shortcut-contract.ts";
+import type { PagesOffStore } from "../lib/pages-off.ts";
 import { readSessionMethodAccess } from "../lib/session-method-access.ts";
 import { normalizeAgentId, resolveUiSelectedSessionAgentId } from "../lib/sessions/session-key.ts";
 import { isTerminalAvailable } from "../lib/terminal-availability.ts";
@@ -76,6 +77,7 @@ export interface ShellViewHost extends DevicePairSetupHost {
   readonly runtime: ApplicationRuntime | undefined;
   readonly activeSessionKey: string;
   readonly commandPaletteElement: OptionalCustomElement;
+  readonly pagesOff: PagesOffStore | undefined;
   readonly custodianMinimizeRequestId: number;
   readonly desktopNavigationExpanded: boolean;
   readonly execApprovalElement: OptionalCustomElement;
@@ -149,6 +151,7 @@ export function renderApplicationShell(host: ShellViewHost) {
     canCallGatewayMethod(gatewaySnapshot, "openclaw.chat", "operator.admin");
   const lazyElementState = host.lazyCustomElements.visibleState;
   const activeRoute = host.routeState.routeId ?? "chat";
+  const pageOff = host.pagesOff?.render(activeRoute, () => host.navigate("chat"));
   const sessionRoute = isSessionRouteId(activeRoute);
   // Session routes have an offline outbox, New Session keeps a local draft, and
   // Appearance persists local preference intent for replay. Their server actions
@@ -389,6 +392,7 @@ export function renderApplicationShell(host: ShellViewHost) {
         ? html`<openclaw-command-palette
             .desktopAvailable=${desktopPanelAvailable}
             .custodianAvailable=${custodianPanelAvailable}
+            .offPageIds=${host.pagesOff?.ids() ?? new Set<string>()}
             .onNavigate=${(routeId: RouteId, options?: ApplicationNavigationOptions) =>
               host.navigate(routeId, options)}
             .onSelectSession=${(sessionKey: string) => host.selectChatSession(sessionKey)}
@@ -592,15 +596,18 @@ export function renderApplicationShell(host: ShellViewHost) {
           onOpenApprovals: () => host.openApprovals(),
         })}
         ${nativeEmbed ? navigationContent : nothing}
-        <openclaw-router-outlet
-          ?inert=${pageActionsBlocked || reloadRequired}
-          aria-disabled=${pageActionsBlocked || reloadRequired ? "true" : nothing}
-          .router=${runtime.router}
-          .retryContext=${context}
-          .retentionScope=${gatewayPresentationScope(context.gateway)}
-          .onNotFound=${() => host.recoverNotFoundRoute()}
-          .notFoundRecoveryReady=${gatewayConnected}
-        ></openclaw-router-outlet>
+        ${
+          pageOff ??
+          html`<openclaw-router-outlet
+            ?inert=${pageActionsBlocked || reloadRequired}
+            aria-disabled=${pageActionsBlocked || reloadRequired ? "true" : nothing}
+            .router=${runtime.router}
+            .retryContext=${context}
+            .retentionScope=${gatewayPresentationScope(context.gateway)}
+            .onNotFound=${() => host.recoverNotFoundRoute()}
+            .notFoundRecoveryReady=${gatewayConnected}
+          ></openclaw-router-outlet>`
+        }
       </main>
       <openclaw-terminal-panel
         ?inert=${navDrawerOpen}

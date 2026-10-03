@@ -2,9 +2,12 @@ import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/st
 import type { GatewayBrowserClient } from "../api/gateway.ts";
 import type { AgentsListResult, CronJobsListResult, SkillStatusReport } from "../api/types.ts";
 import {
+  navigationIconForRoute,
   SETTINGS_SEARCHABLE_SUBPAGE_ROUTES,
+  SIDEBAR_NAV_ROUTES,
   settingsNavigationLabelForRoute,
   subtitleForRoute,
+  titleForRoute,
   visibleSettingsNavigationGroups,
 } from "../app-navigation.ts";
 import type { RouteId } from "../app-route-paths.ts";
@@ -71,75 +74,28 @@ export function commandPaletteCategoryLabel(category: string): string {
 
 const CATALOG_SEARCH_LIMIT = 10;
 
+// Sharklet's pages: the sidebar's own routes plus the ones it links from
+// elsewhere, so the palette and the sidebar never disagree on names or icons.
+const PALETTE_PAGE_ROUTES = [
+  "new-session",
+  ...SIDEBAR_NAV_ROUTES,
+  "agents",
+  "skills",
+  "config",
+] as const satisfies readonly RouteId[];
+
 function getCommandPaletteBaseItems(
   desktopAvailable: boolean,
   custodianAvailable: boolean,
 ): CommandPaletteItem[] {
   return [
-    {
-      id: "nav-new-session",
-      label: t("newSession.title"),
-      icon: "plus",
-      category: "navigation",
-      action: "nav:new-session",
-    },
-    {
-      id: "nav-sessions",
-      label: t("palette.items.sessions"),
-      icon: "fileText",
-      category: "navigation",
-      action: "nav:sessions",
-    },
-    {
-      id: "nav-meetings",
-      label: t("tabs.meetings"),
-      description: t("subtitles.meetings"),
-      icon: "book",
-      category: "navigation",
-      action: "nav:meetings",
-    },
-    {
-      id: "nav-cron",
-      label: t("palette.items.scheduled"),
-      icon: "scrollText",
-      category: "navigation",
-      action: "nav:cron",
-    },
-    {
-      id: "nav-skills",
-      label: t("palette.items.skills"),
-      icon: "zap",
-      category: "navigation",
-      action: "nav:skills",
-    },
-    {
-      id: "nav-plugins",
-      label: t("palette.items.plugins"),
-      icon: "plug",
-      category: "navigation",
-      action: "nav:plugins",
-    },
-    {
-      id: "nav-apps",
-      label: t("palette.items.apps"),
-      icon: "layoutGrid",
-      category: "navigation",
-      action: "nav:apps",
-    },
-    {
-      id: "nav-config",
-      label: t("palette.items.settings"),
-      icon: "settings",
-      category: "navigation",
-      action: "nav:config",
-    },
-    {
-      id: "nav-agents",
-      label: t("palette.items.agents"),
-      icon: "folder",
-      category: "navigation",
-      action: "nav:agents",
-    },
+    ...PALETTE_PAGE_ROUTES.map((routeId) => ({
+      id: `nav-${routeId}`,
+      label: titleForRoute(routeId),
+      icon: navigationIconForRoute(routeId),
+      category: "navigation" as const,
+      action: `nav:${routeId}`,
+    })),
     {
       id: "slash:verbose",
       label: "/verbose",

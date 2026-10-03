@@ -395,7 +395,7 @@ suite.define(() => {
       const cronRequestsBeforePalette = (await gateway.getRequests("cron.list")).length;
       const transcriptRequestsBeforePalette = (await gateway.getRequests("sessions.search")).length;
       await page.getByRole("button", { name: "Open command palette" }).click();
-      const paletteInput = page.locator(".cmd-palette__input");
+      const paletteInput = page.locator(".sk-palette-input input");
       await paletteInput.waitFor({ state: "visible", timeout: 10_000 });
       await paletteInput.fill("reconciles customer billing");
       await page.clock.runFor(50);
@@ -411,7 +411,7 @@ suite.define(() => {
       await paletteInput.fill("view-only handshake");
       await page.clock.runFor(50);
       const paletteOption = page
-        .locator(".cmd-palette__item")
+        .locator(".sk-palette-list [role=option]")
         .filter({ hasText: "Release planning" });
       await paletteOption.waitFor({ state: "visible", timeout: 10_000 });
       await expect.poll(() => paletteOption.textContent()).toContain("view-only handshake");

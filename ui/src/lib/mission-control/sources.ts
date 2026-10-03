@@ -1,7 +1,8 @@
 // The four live values Mission Control reads, each over an existing gateway
 // method. Contract fixed in F1-02; F1-06 implements it on `rpcResource`.
-import type { RpcClient, RpcResource } from "../../api/rpc.ts";
+import { rpcResource, type RpcClient, type RpcResource } from "../../api/rpc.ts";
 import type { CronJob, GatewayAgentRow, GatewaySessionRow } from "../../api/types.ts";
+import { buildSessionUsageDateParams } from "../sessions/usage.ts";
 
 export type MonthUsage = {
   /** `usage.cost` → `totals.totalCost`, in US dollars. */
@@ -32,6 +33,33 @@ export type MissionControlSources = {
   agents: RpcResource<readonly GatewayAgentRow[]>;
 };
 
-export function createMissionControlSources(_client: RpcClient): MissionControlSources {
-  throw new Error("not implemented: createMissionControlSources (F1-06)");
+const localDay = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+export function createMissionControlSources(client: RpcClient): MissionControlSources {
+  const today = new Date();
+  const startDate = localDay(new Date(today.getFullYear(), today.getMonth(), 1));
+  const endDate = localDay(today);
+  return {
+    workingNow: rpcResource(client, "sessions.list", { activeOnly: true }, (r) => r.sessions),
+    upNext: rpcResource(
+      client,
+      "cron.list",
+      { enabled: "enabled", sortBy: "nextRunAtMs", sortDir: "asc", includeDeliveryPreviews: false },
+      (r) => r.jobs,
+    ),
+    monthUsage: rpcResource(
+      client,
+      "usage.cost",
+      { startDate, endDate, agentScope: "all", ...buildSessionUsageDateParams("local") },
+      (r) => ({
+        spentUsd: r.totals.totalCost,
+        startDate,
+        endDate,
+        updatedAt: r.updatedAt,
+        budgetUsd: null,
+      }),
+    ),
+    agents: rpcResource(client, "agents.list", {}, (r) => r.agents),
+  };
 }

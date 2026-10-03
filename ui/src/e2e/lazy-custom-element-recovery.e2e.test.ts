@@ -379,7 +379,7 @@ suite.define(() => {
       if (captureUiProof) {
         await writeFile(
           path.join(artifactDir, "recovered.png"),
-          await takeControlUiViewportScreenshot(page, page.locator(".cmd-palette"), [
+          await takeControlUiViewportScreenshot(page, page.locator(".sk-palette"), [
             page.getByRole("combobox", { name: "Search chats and commands…" }),
           ]),
         );

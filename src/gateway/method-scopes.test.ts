@@ -91,6 +91,7 @@ describe("method scope resolution", () => {
     ["users.setAvatar", ["operator.write"]],
     ["tasks.get", ["operator.read"]],
     ["tasks.history", ["operator.read"]],
+    ["pages.state", ["operator.read"]],
     ["taskSuggestions.list", ["operator.read"]],
     ["taskSuggestions.create", ["operator.write"]],
     ["taskSuggestions.accept", ["operator.admin"]],
