@@ -217,3 +217,202 @@
 .board-empty__mark {
   color: var(--sk-accent);
 }
+
+/* Mission Control: the board in the main area, the composer below it. */
+.sk-mc {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.sk-mc__board {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 24px;
+}
+/* The new-session page is a full-height page: give it a definite box and drop its
+   welcome hero, which would push the composer off a board-first screen. */
+.sk-mc__composer {
+  flex: 0 0 clamp(260px, 40%, 400px);
+  min-height: 0;
+  position: relative;
+}
+.sk-mc__composer > openclaw-new-session-page {
+  display: block;
+  height: 100%;
+}
+.sk-mc__composer .new-session-page {
+  height: 100%;
+}
+.sk-mc__composer .agent-chat__welcome-identity,
+.sk-mc__composer .agent-chat__welcome-secondary {
+  display: none;
+}
+
+/* A Sharklet widget fills its body: head at its own size, state or content after it. */
+.sk-mc-widget {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  font: inherit;
+  color: var(--sk-text);
+}
+.sk-mc-widget .sk-widget__head {
+  margin-bottom: 8px;
+  font-size: var(--sk-fs-sm);
+  font-weight: 500;
+}
+.sk-mc-rows {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--sk-fs-sm);
+}
+.sk-mc-rows li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.sk-mc-rows li > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sk-mc-rows small {
+  flex: none;
+  color: var(--sk-text-2);
+}
+.sk-mc-usage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* States shed parts by widget size (board.md): Stat shows icon, one line and
+   retry in a row; Card drops the raw detail; Panel and up keep everything. */
+.sk-mc-widget[data-size="stat"] .sk-state--error {
+  grid-auto-flow: column;
+  justify-content: center;
+}
+.sk-mc-widget[data-size="stat"] .sk-state p,
+.sk-mc-widget[data-size="stat"] .sk-state details,
+.sk-mc-widget[data-size="card"] .sk-state details {
+  display: none;
+}
+
+/* Upstream icons carry no size of their own. */
+.sk-mc-widget .sk-state > svg,
+.sk-mc-widget .sk-state .sk-btn svg,
+.sk-mc-widget .sk-stale svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.sk-mc-widget .sk-state .sk-btn svg,
+.sk-mc-widget .sk-stale svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Instrument strip: Mission Control's fixed band above the board. The base
+   (sk-strip, sk-working, sk-job, sk-usage-btn, sk-upnext) is in components.css. */
+sharklet-mission-strip {
+  display: block;
+  flex: none;
+}
+.sk-strip-cell {
+  min-width: 0;
+}
+.sk-strip-cell--working {
+  flex: 1 1 auto;
+}
+.sk-strip-cell .sk-working {
+  width: 100%;
+}
+.sk-strip-usage {
+  width: min(320px, calc(100vw - 32px));
+  margin: 0;
+  inset: 56px 16px auto auto;
+  padding: 16px;
+  border: 0;
+  color: var(--sk-text);
+}
+.sk-strip-usage p {
+  margin: 4px 0 0;
+}
+.sk-strip-usage .sk-btn {
+  margin-top: 12px;
+}
+/* A state inside the strip is one line, not a card: sections must stay one row tall. */
+.sk-strip .sk-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 8px;
+}
+.sk-strip .sk-state--loading .sk-skeleton {
+  display: none;
+}
+.sk-strip .sk-state--loading .sk-skeleton:first-child {
+  display: block;
+  flex: 1;
+  height: 16px !important;
+}
+.sk-strip .sk-state p,
+.sk-strip .sk-state details {
+  display: none;
+}
+.sk-strip .sk-state > svg,
+.sk-strip .sk-stale svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.sk-strip .sk-state .sk-btn svg {
+  width: 14px;
+  height: 14px;
+}
+.sk-strip .sk-working:disabled {
+  cursor: default;
+}
+.sk-strip .sk-working-chevron svg,
+.sk-strip .sk-upnext > svg {
+  width: 16px;
+  height: 16px;
+}
+/* A long job list scrolls inside the strip instead of pushing the board away. */
+.sk-strip .sk-working-list > div {
+  max-height: min(40vh, 320px);
+  overflow-y: auto;
+}
+
+/* Compact strip: one row in the header of every other page. Working now shows
+   its count (it opens Home); the item list and chevron stay on Home. */
+sharklet-mission-bar {
+  display: block;
+  margin-bottom: 12px;
+}
+sharklet-mission-strip[compact] .sk-working-items,
+sharklet-mission-strip[compact] .sk-working-chevron {
+  display: none;
+}
+sharklet-mission-strip[compact] .sk-strip-cell--working {
+  flex: 0 0 auto;
+}
+sharklet-mission-strip[compact] .sk-strip-cell--upnext {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+@container (max-width: 560px) {
+  sharklet-mission-strip[compact] .sk-strip-cell--upnext {
+    display: none;
+  }
+}

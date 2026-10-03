@@ -31,6 +31,15 @@ export const CORE_BOARD_WIDGET_ELEMENTS: readonly CoreBoardWidgetElement[] = [
     loadModule: () => import("./report.ts"),
     previewSafe: true,
   },
+  {
+    kind: "sharklet:agents",
+    tagName: "sharklet-agents-widget",
+    get label() {
+      return t("missionControl.agents.title");
+    },
+    loadModule: () => import("./mission-control.ts"),
+    previewSafe: false,
+  },
 ];
 
 export function pluginIdForWidgetKind(kind: string | undefined): string {
@@ -49,7 +58,9 @@ export function getPluginWidgetKindContribution(
     return null;
   }
   const pluginId = pluginIdForWidgetKind(kind);
-  return activeKinds.some((entry) => entry.kind === kind && entry.pluginId === pluginId)
+  // Sharklet's own kinds are part of the app, not a plugin the gateway advertises.
+  return pluginId === "sharklet" ||
+    activeKinds.some((entry) => entry.kind === kind && entry.pluginId === pluginId)
     ? contribution
     : null;
 }

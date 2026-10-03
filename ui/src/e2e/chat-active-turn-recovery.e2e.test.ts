@@ -303,7 +303,7 @@ suite.define(() => {
         .locator('wa-dropdown.sidebar-identity-menu wa-dropdown-item[value="command:usage"]')
         .click();
       await waitForControlUiRoute(page, { pathname: "/usage", routeId: "usage" });
-      await sidebar.getByRole("link", { name: "Home" }).click();
+      await sidebar.getByRole("link", { name: "Main chat" }).click();
       await waitForControlUiRoute(page, { pathname: "/chat/main", routeId: "chat" });
       await assertActiveTurnVisible(page, streamText);
       await expect.poll(() => readWorkingStartedAts(page)).toContain(startedAt);

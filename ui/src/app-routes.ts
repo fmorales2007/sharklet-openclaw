@@ -58,6 +58,7 @@ import { page as lobsterdexPage } from "./pages/lobsterdex/route.ts";
 import { page as logsPage } from "./pages/logs/route.ts";
 import { page as meetingsPage } from "./pages/meetings/route.ts";
 import { page as memoryImportPage } from "./pages/memory-import/route.ts";
+import { page as missionControlPage } from "./pages/mission-control/route.ts";
 import { page as modelProvidersPage } from "./pages/model-providers/route.ts";
 import { page as modelSetupPage } from "./pages/model-setup/route.ts";
 import { page as newSessionPage } from "./pages/new-session/route.ts";
@@ -93,6 +94,7 @@ export type ApplicationRouter = Router<
 type AppRoute = PageDefinition<RouteId, ApplicationContext<RouteId>, AppRouteModule>;
 
 const APP_ROUTE_TREE = [
+  missionControlPage,
   ...chatPages,
   custodianPage,
   newSessionPage,
@@ -284,7 +286,7 @@ export async function startApplicationRouter(
   ) {
     history.replace({
       ...location,
-      pathname: router.pathForRoute("chat", basePath),
+      pathname: router.pathForRoute("home", basePath),
     });
     location = history.location();
   }
