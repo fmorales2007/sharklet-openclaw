@@ -30,7 +30,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # The PR scan diffs against the base branch.
-          fetch-depth: ${{ github.event_name == 'pull_request' && 0 || 1 }}
+          # A quoted '0' is truthy; a bare 0 would make the && || pick fall through to 1.
+          fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }}
           persist-credentials: false
 
       - name: Set up Node
