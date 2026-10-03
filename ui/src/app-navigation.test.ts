@@ -201,7 +201,7 @@ describe("titleForRoute", () => {
     ).toEqual({
       home: "Home",
       chat: "Chat",
-      custodian: "OpenClaw",
+      custodian: "Help",
       activity: "Activity",
       meetings: "Meetings",
       apps: "Apps",

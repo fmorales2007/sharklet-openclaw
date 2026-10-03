@@ -61,6 +61,7 @@ describe("sidebar preference persistence", () => {
     localStorage.setItem(scopedKey, JSON.stringify(persisted));
 
     expect(loadSettings().sidebarEntries).toEqual([
+      "route:home",
       "route:dashboards",
       "route:cron",
       "route:plugins",
