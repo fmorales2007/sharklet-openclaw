@@ -261,10 +261,7 @@ export function renderApplicationShell(host: ShellViewHost) {
   // Mission Control's compact bar heads every ordinary page; chat, settings and
   // onboarding keep their own chrome, and Home carries the full strip.
   const missionBar =
-    !nativeEmbed &&
-    !onboarding &&
-    !settingsTakeover &&
-    !chatLikeRoute &&
+    !(nativeEmbed || onboarding || settingsTakeover || chatLikeRoute) &&
     activeRoute !== "home" &&
     activeRoute !== "custodian";
   if (!settingsTakeover && !nativeEmbed) {
@@ -606,6 +603,7 @@ export function renderApplicationShell(host: ShellViewHost) {
         ${nativeEmbed ? navigationContent : nothing}
         ${renderShellPageSlot(host, runtime, {
           activeRoute,
+          context,
           missionBar,
           blocked: pageActionsBlocked || reloadRequired,
           gatewayConnected,
