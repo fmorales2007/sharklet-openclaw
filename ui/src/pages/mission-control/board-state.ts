@@ -30,7 +30,7 @@ export function defaultMissionControlSnapshot(): BoardSnapshot {
     sessionKey: MISSION_CONTROL_SESSION_KEY,
     revision: 1,
     tabs: [{ tabId: TAB_ID, title: t("missionControl.homeTab"), position: 0, chatDock: "hidden" }],
-    widgets: KINDS.map(widget).map((entry, position) => ({ ...entry, position })),
+    widgets: KINDS.map(widget),
   };
 }
 

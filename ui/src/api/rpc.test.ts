@@ -369,7 +369,9 @@ describe("rpcResource stale-while-refreshing", () => {
     resource.cancel();
     expect(resource.snapshot).toMatchObject({ state: "error", kind: "cancelled" });
     call.resolve(agentsOf("late"));
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => {
+      setTimeout(r, 0);
+    });
     expect(resource.snapshot).toMatchObject({ state: "error", kind: "cancelled" });
   });
 
@@ -381,7 +383,9 @@ describe("rpcResource stale-while-refreshing", () => {
     resource.subscribe(listener);
     resource.dispose();
     call.resolve(agentsOf("a"));
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => {
+      setTimeout(r, 0);
+    });
     expect(listener).not.toHaveBeenCalled();
   });
 });

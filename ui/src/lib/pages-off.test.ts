@@ -50,7 +50,9 @@ describe("PagesOffStore", () => {
     await vi.waitFor(() => expect(store.get("usage")).toBeDefined());
     fail = true;
     emit("config.changed");
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 20);
+    });
     expect(store.get("usage")).toBeDefined();
   });
 });

@@ -1,8 +1,13 @@
 // One subscription to a Mission Control RpcResource and the board.md states
 // around its data. Shared by the board widget and the instrument strip, so
 // both draw loading, error (with a per-resource Try again) and stale alike.
-import { html, nothing, type ReactiveController, type ReactiveControllerHost } from "lit";
-import type { TemplateResult } from "lit";
+import {
+  html,
+  nothing,
+  type ReactiveController,
+  type ReactiveControllerHost,
+  type TemplateResult,
+} from "lit";
 import type { RpcResource, RpcSnapshot } from "../../../api/rpc.ts";
 import { icons } from "../../../components/icons.ts";
 import { t } from "../../../i18n/index.ts";
@@ -103,5 +108,6 @@ export class ResourceController<T> implements ReactiveController {
             : nothing
         }`;
     }
+    return nothing;
   }
 }

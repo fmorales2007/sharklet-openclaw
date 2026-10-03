@@ -179,7 +179,7 @@ Step 6 restores this by hand, and there is a window of a few seconds between ena
 Checks that run:
 
 - `sharklet-ui-tests.yml`: the Control UI suite, in 3 shards, on every pull request to `custom`.
-- `sharklet-checks.yml`: `scripts/sharklet-scan.sh` first, then `pnpm lint`, `pnpm tsgo:ui` and `pnpm tsgo:core`, on every pull request to `custom` (or by hand with `gh workflow run`).
+- `sharklet-checks.yml`: `scripts/sharklet-scan.sh` first, then `pnpm lint:sharklet` (UI copy baseline and oxlint on `ui/`; whole-repo `pnpm lint` takes over 30 minutes on a hosted 2-vCPU runner, and stylelint waits on `ui/src/custom/theme/*.css`), `pnpm tsgo:ui` and `pnpm tsgo:core`, on every pull request to `custom` (or by hand with `gh workflow run`).
 - `sharklet-gateway-package.yml`: the same scan, before the build.
 
 The scan has three parts: production dependency advisories (`scripts/pre-commit/pnpm-audit-prod.mjs`, high and critical), committed private keys, and the OpenGrep rules in `security/opengrep/` (severity ERROR, `ui/` included). Limits: it does not cover dev dependencies, and the rules mostly describe gateway-side weaknesses, so they say little about client code. The opengrep binary is downloaded at a fixed version and checked against its SHA256, not installed through an action. Agent-facing rules live in `SHARKLET-SECURITY.md`.

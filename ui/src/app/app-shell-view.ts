@@ -36,14 +36,12 @@ import type { ApplicationRuntime } from "./bootstrap.ts";
 import { canGoBackInNativeEmbed } from "./browser.ts";
 import type { ApplicationContext, ApplicationNavigationOptions } from "./context.ts";
 import { resolveControlUiAuthToken } from "./control-ui-auth.ts";
-import { gatewayPresentationScope } from "./gateway-presentation-scope.ts";
 import {
   DEBUG_OVERLAY_ELEMENT,
   isOptionalElementDefined,
   KEYBOARD_SHORTCUTS_ELEMENT,
   type LazyCustomElementRequestController,
   MACOS_TITLEBAR_ELEMENT,
-  MISSION_CONTROL_BAR_ELEMENT,
   type OptionalCustomElement,
   SIDEBAR_ATTENTION_ELEMENT,
 } from "./lazy-custom-element.ts";
@@ -69,6 +67,7 @@ import {
   normalizeChatSendShortcut,
 } from "./settings.ts";
 import { renderCollapsedAssistantToggles } from "./shell-assistant-toggles.ts";
+import { renderShellPageSlot } from "./shell-page-slot.ts";
 import { createUpdateProgressWatcher } from "./update-confirmation.ts";
 
 const EMPTY_SESSION_HAS_DRAFT = () => false;
@@ -152,7 +151,6 @@ export function renderApplicationShell(host: ShellViewHost) {
     canCallGatewayMethod(gatewaySnapshot, "openclaw.chat", "operator.admin");
   const lazyElementState = host.lazyCustomElements.visibleState;
   const activeRoute = host.routeState.routeId ?? "chat";
-  const pageOff = host.pagesOff?.render(activeRoute, () => host.navigate("chat"));
   const sessionRoute = isSessionRouteId(activeRoute);
   // Session routes have an offline outbox, New Session keeps a local draft, and
   // Appearance persists local preference intent for replay. Their server actions
@@ -269,9 +267,6 @@ export function renderApplicationShell(host: ShellViewHost) {
     !chatLikeRoute &&
     activeRoute !== "home" &&
     activeRoute !== "custodian";
-  if (missionBar) {
-    host.lazyCustomElements.preload(MISSION_CONTROL_BAR_ELEMENT, { reportError: true });
-  }
   if (!settingsTakeover && !nativeEmbed) {
     Object.assign(host.navigationSidebar, {
       basePath: context.basePath,
@@ -609,23 +604,12 @@ export function renderApplicationShell(host: ShellViewHost) {
           onOpenApprovals: () => host.openApprovals(),
         })}
         ${nativeEmbed ? navigationContent : nothing}
-        ${
-          !pageOff && missionBar && isOptionalElementDefined(MISSION_CONTROL_BAR_ELEMENT)
-            ? html`<sharklet-mission-bar></sharklet-mission-bar>`
-            : nothing
-        }
-        ${
-          pageOff ??
-          html`<openclaw-router-outlet
-            ?inert=${pageActionsBlocked || reloadRequired}
-            aria-disabled=${pageActionsBlocked || reloadRequired ? "true" : nothing}
-            .router=${runtime.router}
-            .retryContext=${context}
-            .retentionScope=${gatewayPresentationScope(context.gateway)}
-            .onNotFound=${() => host.recoverNotFoundRoute()}
-            .notFoundRecoveryReady=${gatewayConnected}
-          ></openclaw-router-outlet>`
-        }
+        ${renderShellPageSlot(host, runtime, {
+          activeRoute,
+          missionBar,
+          blocked: pageActionsBlocked || reloadRequired,
+          gatewayConnected,
+        })}
       </main>
       <openclaw-terminal-panel
         ?inert=${navDrawerOpen}

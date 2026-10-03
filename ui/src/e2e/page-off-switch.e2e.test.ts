@@ -16,13 +16,13 @@ suite.define(() => {
       });
       await page.goto(`${suite.server.baseUrl}usage`, { timeout: 60_000 });
       await page.evaluate(() => {
-        (window as unknown as { __noReload: boolean }).__noReload = true;
+        (window as unknown as { skNoReload: boolean }).skNoReload = true;
       });
 
       const off = page.locator('[data-test-id="page-off"]');
       await off.waitFor({ state: "visible" });
-      expect(await off.innerText()).toContain("Usage is off");
-      expect(await off.innerText()).toContain("Usage is down for repairs.");
+      expect(await off.textContent()).toContain("Usage is off");
+      expect(await off.textContent()).toContain("Usage is down for repairs.");
       expect(await page.locator("openclaw-router-outlet").count()).toBe(0);
 
       await gateway.setMethodResponse("pages.state", { off: [] });
@@ -33,10 +33,10 @@ suite.define(() => {
       await gateway.setMethodResponse("pages.state", { off: [{ id: "usage" }] });
       await gateway.emitGatewayEvent("config.changed", {});
       await off.waitFor({ state: "visible" });
-      expect(await off.innerText()).toContain("It was turned off on this gateway");
+      expect(await off.textContent()).toContain("It was turned off on this gateway");
 
       expect(
-        await page.evaluate(() => (window as unknown as { __noReload?: boolean }).__noReload),
+        await page.evaluate(() => (window as unknown as { skNoReload?: boolean }).skNoReload),
       ).toBe(true);
     });
   });

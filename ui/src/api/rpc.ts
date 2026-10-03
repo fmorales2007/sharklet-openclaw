@@ -270,7 +270,7 @@ export function rpcResource<M extends RpcMethod, T>(
 
   const publish = (next: RpcSnapshot<T>) => {
     snapshot = next;
-    for (const listener of [...listeners]) {
+    for (const listener of Array.from(listeners)) {
       listener(next);
     }
   };

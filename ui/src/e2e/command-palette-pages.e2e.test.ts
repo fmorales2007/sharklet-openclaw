@@ -18,12 +18,14 @@ suite.define(() => {
       const input = page.locator(".sk-palette-input input:not([disabled])");
       await input.waitFor({ state: "visible" });
       const palette = page.locator(".sk-palette");
-      expect(await palette.locator(".sk-menu-head").first().innerText()).toBe("Pages");
+      expect((await palette.locator(".sk-menu-head").first().textContent())?.trim()).toBe("Pages");
 
       await input.fill("usage");
       const row = palette.getByRole("option", { name: /^Usage/u });
       await row.waitFor({ state: "visible" });
-      await expect.poll(() => row.locator(".sk-badge").innerText()).toBe("Off");
+      await expect
+        .poll(async () => (await row.locator(".sk-badge").textContent())?.trim())
+        .toBe("Off");
 
       await page.keyboard.press("Enter");
       await page.waitForURL(/\/usage$/u);
