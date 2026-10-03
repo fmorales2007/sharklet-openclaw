@@ -4189,7 +4189,8 @@ export const en: TranslationMap & {
     searchIncomplete: "Transcript matches may be incomplete — indexing or search limits apply",
     categories: {
       search: "Search",
-      navigation: "Pages",
+      navigation: "Navigation",
+      pages: "Pages",
       skills: "Skills",
     },
     items: {

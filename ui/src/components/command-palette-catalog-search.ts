@@ -50,7 +50,7 @@ export function commandPaletteCategoryLabel(category: string): string {
     case "search":
       return t("palette.categories.search");
     case "navigation":
-      return t("palette.categories.navigation");
+      return t("palette.categories.pages");
     case "skills":
       return t("palette.categories.skills");
     case "agents":
