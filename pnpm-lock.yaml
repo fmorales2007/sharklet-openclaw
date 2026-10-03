@@ -283,6 +283,9 @@ importers:
       linkedom:
         specifier: 0.18.13
         version: 0.18.13
+      lodash:
+        specifier: 4.17.20
+        version: 4.17.20
       minimatch:
         specifier: 10.2.6
         version: 10.2.6
@@ -7766,6 +7769,9 @@ packages:
   lodash.truncate@4.4.2:
     resolution: {integrity: sha512-jttmRe7bRse52OsWIMDLaXxWqRAmtIUccAQ3garviCqJjafXOfNMO0yMfNpdD6zbGaTU0P5Nz7e7gAT6cKmJRw==}
 
+  lodash@4.17.20:
+    resolution: {integrity: sha512-PlhdFcillOINfeV7Ni6oF1TAEayyZBoZ8bcshTHqOYJYlrqzRK5hagpagky5o4HfCzzd1TRkXPMFq6cKk9rGmA==}
+
   loglevel@1.9.2:
     resolution: {integrity: sha512-HgMmCqIJSAKqo68l0rS2AanEWfkxaZ5wNiEFb5ggm08lDs9Xl2KxBlX3PTcaD2chBM1gXAYf491/M2Rv8Jwayg==}
     engines: {node: '>= 0.6.0'}
@@ -15166,6 +15172,8 @@ snapshots:
   lodash.transform@4.6.0: {}
 
   lodash.truncate@4.4.2: {}
+
+  lodash@4.17.20: {}
 
   loglevel@1.9.2: {}
 
