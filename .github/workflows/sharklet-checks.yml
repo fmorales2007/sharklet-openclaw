@@ -69,11 +69,19 @@ jobs:
       # Whole-repo `pnpm lint` takes over 30 minutes on a 2-vCPU runner (upstream
       # runs it striped on 4 vCPUs). This is the UI part: copy and oxlint. Stylelint
       # is out until ui/src/custom/theme/*.css passes it (see ideas.md).
+      # tsgolint (Go) type-checks the whole program and wants more than the 7 GB
+      # a hosted runner has: without swap the kernel killed the lint at ~5 minutes.
+      - name: Add swap
+        run: |
+          sudo fallocate -l 10G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          free -m
+
       - name: Lint UI
         env:
-          # tsgolint (Go) type-checks the whole program; on a 7 GB runner an
-          # unbounded heap got the job killed at ~5 minutes.
-          GOMEMLIMIT: 4GiB
+          GOMEMLIMIT: 5GiB
         run: |
           (while sleep 30; do free -m | sed -n 2p; done) &
           pnpm lint:sharklet
