@@ -87,7 +87,7 @@ describe("OpenClaw shell document title", () => {
 
     shell.routeState = { routeId: "custodian" };
     shell.syncDocumentTitle();
-    expect(document.title).toBe("Ask OpenClaw · edge");
+    expect(document.title).toBe("Help — Sharklet · edge");
   });
 
   it("uses the active session's derived title for a non-main chat", () => {
@@ -187,6 +187,6 @@ describe("OpenClaw shell document title", () => {
 
     shell.syncDocumentTitle();
 
-    expect(document.title).toBe("Ask OpenClaw");
+    expect(document.title).toBe("Help — Sharklet");
   });
 });

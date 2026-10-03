@@ -91,7 +91,7 @@ suite.define(() => {
       const xLink = hero.getByRole("link", { name: "X (Twitter)", exact: true });
       await expect.poll(() => xLink.getAttribute("href")).toBe("https://x.com/openclaw");
 
-      const clawd = page.getByRole("button", { name: "Wave hello to Clawd" });
+      const clawd = page.getByRole("button", { name: "Wave hello" });
       // CLAWD_WAVE_MS clears the class after 1400ms, so click and read it in one browser step.
       const clawdWaving = await clawd.evaluate(async (element) => {
         const button = element as HTMLButtonElement;

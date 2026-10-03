@@ -391,7 +391,7 @@ suite.define(() => {
           )
           .toBe("Writer");
 
-        await sidebar.getByRole("link", { name: "Home" }).click();
+        await sidebar.getByRole("link", { name: "Main chat" }).click();
         await expect.poll(() => new URL(page.url()).pathname).toBe("/chat/writer");
         await sidebar.locator(".sidebar-identity-card").click();
         await sidebar

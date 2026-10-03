@@ -3,7 +3,7 @@
 // loading, error and stale states, so one failing call never blanks the strip.
 import { consume } from "@lit/context";
 import { html, nothing, type TemplateResult } from "lit";
-import { state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 import type { CronJob, GatewayAgentRow, GatewaySessionRow } from "../../api/types.ts";
 import { applicationContext, type ApplicationContext } from "../../app/context.ts";
 import { icons } from "../../components/icons.ts";
@@ -31,6 +31,9 @@ function tileColor(agentId: string): string {
 export class MissionControlStrip extends OpenClawLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context?: ApplicationContext;
+
+  /** The one-row version in the header of the other pages: no list, Working now opens Home. */
+  @property({ type: Boolean, reflect: true }) compact = false;
 
   @state() private open = false;
 
@@ -77,10 +80,10 @@ export class MissionControlStrip extends OpenClawLightDomElement {
     return html`<button
       type="button"
       class="sk-working"
-      aria-expanded=${this.open && rows.length > 0 ? "true" : "false"}
-      aria-controls="sk-strip-jobs"
-      ?disabled=${rows.length === 0}
-      @click=${() => (this.open = !this.open)}
+      aria-expanded=${this.compact ? nothing : this.open && rows.length > 0 ? "true" : "false"}
+      aria-controls=${this.compact ? nothing : "sk-strip-jobs"}
+      ?disabled=${!this.compact && rows.length === 0}
+      @click=${() => (this.compact ? this.context?.navigate("home") : (this.open = !this.open))}
     >
       <span class="sk-working-count">
         <span class="sk-live" aria-hidden="true"></span>
@@ -228,7 +231,26 @@ export class MissionControlStrip extends OpenClawLightDomElement {
     </div>`;
   }
 
+  private renderCompact(): TemplateResult {
+    return html`<div class="sk-strip-row">
+      <div class="sk-strip-cell sk-strip-cell--working">
+        ${this.working.render(t("missionControl.workingNow.title"), (rows) =>
+          this.renderWorking(rows),
+        )}
+      </div>
+      <div class="sk-strip-cell">
+        ${this.usage.render(t("missionControl.monthUsage.title"), (data) => this.renderUsage(data))}
+      </div>
+      <div class="sk-strip-cell sk-strip-cell--upnext">
+        ${this.upNext.render(t("missionControl.upNext.title"), (jobs) => this.renderUpNext(jobs))}
+      </div>
+    </div>`;
+  }
+
   override render() {
+    if (this.compact) {
+      return this.renderCompact();
+    }
     return html`<div class="sk-strip-row">
         <div class="sk-strip-cell sk-strip-cell--working">
           ${this.working.render(t("missionControl.workingNow.title"), (rows) =>

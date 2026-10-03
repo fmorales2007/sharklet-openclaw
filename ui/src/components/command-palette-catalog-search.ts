@@ -77,6 +77,13 @@ function getCommandPaletteBaseItems(
 ): CommandPaletteItem[] {
   return [
     {
+      id: "nav-home",
+      label: t("tabs.home"),
+      icon: "layoutDashboard",
+      category: "navigation",
+      action: "nav:home",
+    },
+    {
       id: "nav-new-session",
       label: t("newSession.title"),
       icon: "plus",

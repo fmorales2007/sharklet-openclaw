@@ -42,6 +42,7 @@ import {
   KEYBOARD_SHORTCUTS_ELEMENT,
   type LazyCustomElementRequestController,
   MACOS_TITLEBAR_ELEMENT,
+  MISSION_CONTROL_BAR_ELEMENT,
   type OptionalCustomElement,
   SIDEBAR_ATTENTION_ELEMENT,
 } from "./lazy-custom-element.ts";
@@ -256,6 +257,18 @@ export function renderApplicationShell(host: ShellViewHost) {
   // The new-session draft shares the chat layout: full-height pane that owns
   // its scrolling and pins the composer dock to the bottom.
   const chatLikeRoute = sessionRoute || activeRoute === "new-session";
+  // Mission Control's compact bar heads every ordinary page; chat, settings and
+  // onboarding keep their own chrome, and Home carries the full strip.
+  const missionBar =
+    !nativeEmbed &&
+    !onboarding &&
+    !settingsTakeover &&
+    !chatLikeRoute &&
+    activeRoute !== "home" &&
+    activeRoute !== "custodian";
+  if (missionBar) {
+    host.lazyCustomElements.preload(MISSION_CONTROL_BAR_ELEMENT, { reportError: true });
+  }
   if (!settingsTakeover && !nativeEmbed) {
     Object.assign(host.navigationSidebar, {
       basePath: context.basePath,
@@ -592,6 +605,11 @@ export function renderApplicationShell(host: ShellViewHost) {
           onOpenApprovals: () => host.openApprovals(),
         })}
         ${nativeEmbed ? navigationContent : nothing}
+        ${
+          missionBar && isOptionalElementDefined(MISSION_CONTROL_BAR_ELEMENT)
+            ? html`<sharklet-mission-bar></sharklet-mission-bar>`
+            : nothing
+        }
         <openclaw-router-outlet
           ?inert=${pageActionsBlocked || reloadRequired}
           aria-disabled=${pageActionsBlocked || reloadRequired ? "true" : nothing}

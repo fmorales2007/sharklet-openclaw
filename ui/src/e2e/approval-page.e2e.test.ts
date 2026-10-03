@@ -654,7 +654,7 @@ suite.define(() => {
     expect(await surface.page.getByRole("button", { name: "Allow once" }).isDisabled()).toBe(true);
     await surface.page
       .getByText(
-        "OpenClaw cannot confirm or record a decision while disconnected. Reconnect to check the current status.",
+        "Sharklet cannot confirm or record a decision while disconnected. Reconnect to check the current status.",
         { exact: true },
       )
       .waitFor();

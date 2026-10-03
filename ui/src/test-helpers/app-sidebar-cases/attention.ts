@@ -107,7 +107,7 @@ describe("AppSidebar session attention", () => {
     await sidebar.updateComplete;
     expect(home?.querySelector('[data-session-attention="error"]')).not.toBeNull();
     expect(home?.getAttribute("aria-label")).toBe(
-      "Home · Run failed:   Message failed:  delivery unavailable",
+      "Main chat · Run failed:   Message failed:  delivery unavailable",
     );
     expect(home?.getAttribute("aria-label")).not.toMatch(/[⚠✉]/u);
 

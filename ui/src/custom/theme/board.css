@@ -234,7 +234,8 @@
 .sk-mc__composer .new-session-page {
   height: 100%;
 }
-.sk-mc__composer .agent-chat__welcome-identity {
+.sk-mc__composer .agent-chat__welcome-identity,
+.sk-mc__composer .agent-chat__welcome-secondary {
   display: none;
 }
 
@@ -244,6 +245,15 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  font: inherit;
+  color: var(--sk-text);
+}
+.sk-mc-widget .sk-widget__head {
+  margin-bottom: 8px;
+  font-size: var(--sk-fs-sm);
+  font-weight: 500;
 }
 .sk-mc-rows {
   display: grid;
@@ -371,4 +381,27 @@ sharklet-mission-strip {
 .sk-strip .sk-working-list > div {
   max-height: min(40vh, 320px);
   overflow-y: auto;
+}
+
+/* Compact strip: one row in the header of every other page. Working now shows
+   its count (it opens Home); the item list and chevron stay on Home. */
+sharklet-mission-bar {
+  display: block;
+  margin-bottom: 12px;
+}
+sharklet-mission-strip[compact] .sk-working-items,
+sharklet-mission-strip[compact] .sk-working-chevron {
+  display: none;
+}
+sharklet-mission-strip[compact] .sk-strip-cell--working {
+  flex: 0 0 auto;
+}
+sharklet-mission-strip[compact] .sk-strip-cell--upnext {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+@container (max-width: 560px) {
+  sharklet-mission-strip[compact] .sk-strip-cell--upnext {
+    display: none;
+  }
 }

@@ -494,7 +494,7 @@ describe("AppSidebar agent chip", () => {
     await sidebar.updateComplete;
 
     const home = sidebar.querySelector<HTMLAnchorElement>(".nav-item--home");
-    expect(home?.textContent).toContain("Home");
+    expect(home?.textContent).toContain("Main chat");
     expect(home?.getAttribute("aria-current")).toBe("page");
 
     home?.click();
