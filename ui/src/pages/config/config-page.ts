@@ -29,7 +29,6 @@ import {
 } from "../../app/settings.ts";
 import { startThemeTransition } from "../../app/theme-transition.ts";
 import { resolveTheme, type ThemeMode, type ThemeName } from "../../app/theme.ts";
-import type { TypefaceId } from "../../app/typography.ts";
 import {
   confirmAndStartUpdate,
   createUpdateProgressWatcher,
@@ -847,15 +846,6 @@ export class ConfigPage extends OpenClawLightDomElement {
     );
   }
 
-  private setFont(key: "fontUi" | "fontChat", font: TypefaceId | undefined) {
-    const preference = this.currentSyncedPref(key);
-    if (preference.overridden && font === preference.resetValue) {
-      this.resetSyncedAppearancePref(key);
-    } else {
-      this.applySettings({ [key]: font });
-    }
-  }
-
   private serverUiPrefsCanSync(
     key?: "theme" | "themeMode" | "accent" | "fontUi" | "fontChat",
   ): boolean | null {
@@ -1089,7 +1079,6 @@ export class ConfigPage extends OpenClawLightDomElement {
     const agentsDefaults = asConfigRecord(asConfigRecord(configObject.agents)?.defaults);
     const themePref = this.currentSyncedPref("theme");
     const themeModePref = this.currentSyncedPref("themeMode");
-    const accentPref = this.currentSyncedPref("accent");
     const localePref = this.currentSyncedPref("locale");
     const chatSendShortcutPref = this.currentSyncedPref("chatSendShortcut");
     const chatFollowUpModePref = this.currentSyncedPref("chatFollowUpMode");
@@ -1156,15 +1145,6 @@ export class ConfigPage extends OpenClawLightDomElement {
       themeModeOverridden: themeModePref.overridden,
       themeModeProvenance: themeModePref.provenance,
       themeModeResetValue: themeModePref.resetValue ?? UI_APPEARANCE_DEFAULTS.themeMode,
-      accent: this.settings.accent,
-      accentProvenance: accentPref.provenance,
-      accentResetValue: accentPref.resetValue,
-      fontUi: this.settings.fontUi,
-      fontChat: this.settings.fontChat,
-      fontUiProvenance: this.currentSyncedPref("fontUi").provenance,
-      fontChatProvenance: this.currentSyncedPref("fontChat").provenance,
-      setFontUi: (font) => this.setFont("fontUi", font),
-      setFontChat: (font) => this.setFont("fontChat", font),
       systemLocale: i18n.getSystemLocale(),
       localeOverride: isSupportedLocale(localePref.value) ? localePref.value : undefined,
       localeOverridden: localePref.overridden,
@@ -1175,10 +1155,6 @@ export class ConfigPage extends OpenClawLightDomElement {
       onLocaleChange: (locale) => this.setLocale(locale),
       setTheme: (theme, transitionContext) => this.setTheme(theme, transitionContext),
       setThemeMode: (mode, transitionContext) => this.setThemeMode(mode, transitionContext),
-      setAccent: (accent) =>
-        accent === undefined
-          ? this.resetSyncedAppearancePref("accent")
-          : this.applySettings({ accent }),
       hasCustomTheme: Boolean(this.settings.customTheme),
       customThemeLabel: this.settings.customTheme?.label ?? null,
       customThemeSourceUrl: this.settings.customTheme?.sourceUrl ?? null,

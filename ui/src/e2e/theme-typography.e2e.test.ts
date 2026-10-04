@@ -12,9 +12,7 @@ import {
   installMockGateway,
   type ControlUiMockGatewayScenario,
   waitForControlUiRoute,
-  waitForControlUiSettingsTakeover,
 } from "../test-helpers/control-ui-e2e.ts";
-import { openPicker, selectPickerValue } from "../test-helpers/select-picker-e2e.ts";
 import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts";
 
 /*
@@ -115,85 +113,6 @@ async function captureTypography(
 }
 
 suite.define(() => {
-  it("previews fonts on demand, applies independent overrides, and restores theme typography", async () => {
-    const { page, themeRequests, gateway } = await openThemedChat("dash", "dark");
-    await page.goto(`${suite.server.baseUrl}settings/appearance`);
-    await waitForControlUiSettingsTakeover(page);
-    const ui = page.locator("openclaw-select-picker:has(#settings-font-ui)");
-    const chat = page.locator("openclaw-select-picker:has(#settings-font-chat)");
-    const preview = page.locator(".settings-typography-preview");
-    const fontRequests = () =>
-      themeRequests.filter(
-        (request) => request.includes(".css") && !request.startsWith("dash.css"),
-      );
-    await preview.waitFor();
-    expect(await ui.locator("..").locator("..").textContent()).toContain(
-      "Stored in this browser only",
-    );
-    await page.evaluate(() => document.fonts.ready);
-    expect(new Set(fontRequests())).toEqual(
-      new Set(["dm-sans.css 200", "fraunces.css 200", "jetbrains-mono.css 200"]),
-    );
-    const families = () =>
-      preview.evaluate((panel) => ({
-        ui: getComputedStyle(panel.querySelector(".settings-typography-preview__caption")!)
-          .fontFamily,
-        chat: getComputedStyle(panel.querySelector(".settings-typography-preview__prose")!)
-          .fontFamily,
-        code: getComputedStyle(panel.querySelector("code")!).fontFamily,
-      }));
-    const chatSmoothing = () =>
-      page.evaluate(() => document.documentElement.style.getPropertyValue("--chat-font-smoothing"));
-    const initial = await families();
-    expect(initial.ui).toContain("DM Sans");
-    expect(initial.chat).toContain("Fraunces");
-    expect(await chatSmoothing()).toBe("auto");
-    if (captureUiProof) {
-      await preview.scrollIntoViewIfNeeded();
-    }
-    await captureTypography(page, "picker-default");
-    await openPicker(ui);
-    await ui.locator('[role="option"][data-value="geist"]').waitFor({ state: "visible" });
-    await expect.poll(() => fontRequests().length).toBe(9);
-    await captureTypography(page, "picker-specimens");
-    await selectPickerValue(ui, "geist");
-    await expect.poll(async () => (await families()).ui).toContain("Geist");
-    expect((await families()).chat).toContain("Fraunces");
-    await selectPickerValue(chat, "geist");
-    await expect.poll(async () => (await families()).chat).toContain("Geist");
-    // A sans chat override on a serif theme drops the serif smoothing opt-in.
-    await expect.poll(chatSmoothing).toBe("");
-    await selectPickerValue(chat, "lora");
-    await expect.poll(async () => (await families()).chat).toContain("Lora");
-    await expect.poll(chatSmoothing).toBe("auto");
-    await expect
-      .poll(() =>
-        page.evaluate(() =>
-          [...document.fonts].filter((face) => face.status === "loaded").map((face) => face.family),
-        ),
-      )
-      .toEqual(expect.arrayContaining(["Geist", "Lora"]));
-    expect((await families()).code).toBe(initial.code);
-    expect(await gateway.getRequests("config.patch")).toEqual([]);
-    await captureTypography(page, "picker-overrides");
-    await page.reload();
-    await waitForControlUiSettingsTakeover(page);
-    await expect.poll(async () => (await families()).ui).toContain("Geist");
-    await expect.poll(async () => (await families()).chat).toContain("Lora");
-    await selectPickerValue(ui, "system");
-    await expect.poll(async () => (await families()).ui).toContain("-apple-system");
-    await selectPickerValue(ui, "theme");
-    await selectPickerValue(chat, "theme");
-    await expect.poll(families).toEqual(initial);
-    expect(
-      await page.evaluate(() =>
-        ["--font-body", "--font-chat"].map((key) =>
-          document.documentElement.style.getPropertyValue(key),
-        ),
-      ),
-    ).toEqual(["", ""]);
-  });
-
   it.each([
     ["claw", "Instrument Sans", "Instrument Sans", ["instrument-sans"], "antialiased"],
     ["knot", "Geist", "Geist", ["geist"], "antialiased"],

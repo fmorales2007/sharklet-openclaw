@@ -12,7 +12,7 @@ const suite = createControlUiE2eSuite({
 });
 
 suite.define(() => {
-  it("keeps accent and theme controls accessible across responsive layouts", async () => {
+  it("keeps theme controls laid out, with no accent or typography pickers across responsive layouts", async () => {
     await suite.withPage(
       { colorScheme: "dark", locale: "en-US", viewport: { height: 1000, width: 1440 } },
       async ({ page }) => {
@@ -44,39 +44,10 @@ suite.define(() => {
           )
           .allTextContents();
         const themeIndex = appearanceHeadings.findIndex((heading) => heading.trim() === "Theme");
-        expect(
-          appearanceHeadings.slice(themeIndex, themeIndex + 3).map((heading) => heading.trim()),
-        ).toEqual(["Theme", "Accent color", "Typography"]);
-
-        const accent = page.locator("#settings-appearance-accent");
-        const customPicker = accent.locator("[data-accent-custom]");
-        const customSwatch = accent.locator(".settings-accent-swatch--custom");
-        await expect
-          .poll(() => customPicker.getAttribute("aria-describedby"))
-          .toBe("settings-accent-status");
-        await expect
-          .poll(() => accent.locator("#settings-accent-status").textContent())
-          .toContain("Using Custom color");
-        await accent.locator('[data-accent-preset="slate"]').focus();
-        await page.keyboard.press("Tab");
-        await expect
-          .poll(() => customPicker.evaluate((element) => element.matches(":focus-visible")))
-          .toBe(true);
-        await expect
-          .poll(() =>
-            customSwatch.evaluate((element) => {
-              const style = getComputedStyle(element);
-              return {
-                boxShadow: style.boxShadow,
-                outlineOffset: style.outlineOffset,
-                outlineWidth: style.outlineWidth,
-              };
-            }),
-          )
-          .toMatchObject({ outlineOffset: "4px", outlineWidth: "2px" });
-        expect(
-          await customSwatch.evaluate((element) => getComputedStyle(element).boxShadow),
-        ).not.toBe("none");
+        expect(themeIndex).toBeGreaterThanOrEqual(0);
+        const headings = appearanceHeadings.map((heading) => heading.trim());
+        expect(headings).not.toContain("Accent color");
+        expect(headings).not.toContain("Typography");
 
         const theme = page.locator("#settings-appearance-theme");
         const grid = theme.locator(".settings-theme-grid");

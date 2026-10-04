@@ -4,9 +4,7 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { ThemeMode, ThemeName } from "../../app/theme.ts";
 import { renderConfigForm } from "../../components/config-form.ts";
 import "../../styles.css";
-import type { SelectPicker } from "../../components/select-picker.ts";
 import { warmJson5 } from "../../lib/json5-runtime.ts";
-import { updatePickers, choosePickerValue } from "../../test-helpers/select-picker.ts";
 import { renderBrowserLinkPreferencesRow } from "./browser-link-preferences.ts";
 import { createConfigViewState, renderConfig, type ConfigProps } from "./view.ts";
 
@@ -58,15 +56,6 @@ describe("config view", () => {
     themeModeOverridden: false,
     themeModeProvenance: "default" as const,
     themeModeResetValue: "system" as ThemeMode,
-    fontUi: undefined,
-    fontChat: undefined,
-    fontUiProvenance: "default" as const,
-    fontChatProvenance: "default" as const,
-    setFontUi: vi.fn(),
-    setFontChat: vi.fn(),
-    accent: undefined,
-    accentProvenance: "default" as const,
-    accentResetValue: undefined,
     systemLocale: "en" as const,
     localeOverride: undefined,
     localeOverridden: false,
@@ -75,7 +64,6 @@ describe("config view", () => {
     onLocaleChange: vi.fn(),
     setTheme: vi.fn(),
     setThemeMode: vi.fn(),
-    setAccent: vi.fn(),
     hasCustomTheme: false,
     customThemeLabel: null,
     customThemeSourceUrl: null,
@@ -303,67 +291,15 @@ describe("config view", () => {
     return container.textContent?.replace(/\s+/g, " ").trim() ?? "";
   }
 
-  it("names the theme's chat face and maps typography sentinels back to unset overrides", async () => {
-    const { container, props } = renderConfigView({
-      theme: "dash",
-      fontUi: "geist",
-      fontChat: "system",
-      fontUiProvenance: "profile",
+  it("renders no accent or typography controls in Appearance", () => {
+    const { container } = renderConfigView({
       activeSection: "__appearance__",
       includeSections: ["__appearance__"],
     });
-    await updatePickers(container);
-    const ui = queryRequired(container, "#settings-font-ui", HTMLElement).closest<SelectPicker>(
-      "openclaw-select-picker",
-    )!;
-    const chat = queryRequired(container, "#settings-font-chat", HTMLElement).closest<SelectPicker>(
-      "openclaw-select-picker",
-    )!;
-    expect(ui.querySelector('[role="option"][data-value="theme"]')?.textContent).toContain(
-      "Dash · DM Sans",
-    );
-    expect(chat.querySelector('[role="option"][data-value="theme"]')?.textContent).toContain(
-      "Dash · Fraunces",
-    );
-    expect(ui.closest(".settings-row")?.textContent).toContain("Saved to your profile");
-    expect(ui.querySelectorAll('[role="option"]')).toHaveLength(11);
-    expect(chat.querySelectorAll('[role="option"]')).toHaveLength(11);
-    await choosePickerValue(ui, "lora");
-    expect(props.setFontUi).toHaveBeenLastCalledWith("lora");
-    await choosePickerValue(ui, "theme");
-    expect(props.setFontUi).toHaveBeenLastCalledWith(undefined);
-    await choosePickerValue(chat, "theme");
-    expect(props.setFontChat).toHaveBeenLastCalledWith(undefined);
-  });
-
-  it("describes the custom accent source and selected state through the native input", () => {
-    const inherited = renderConfigView({
-      accent: undefined,
-      accentProvenance: "default",
-      activeSection: "__appearance__",
-      includeSections: ["__appearance__"],
-    });
-    const inheritedInput =
-      inherited.container.querySelector<HTMLInputElement>("[data-accent-custom]");
-    expect(inherited.container.querySelector("#settings-accent-status")?.textContent).toContain(
-      "Using inherited accent",
-    );
-    expect(inheritedInput?.getAttribute("aria-describedby")).toBe("settings-accent-status");
-
-    const custom = renderConfigView({
-      accent: "#c3cfdb",
-      accentProvenance: "device-local",
-      activeSection: "__appearance__",
-      includeSections: ["__appearance__"],
-    });
-    expect(custom.container.querySelector("#settings-accent-status")?.textContent).toContain(
-      "Using Custom color",
-    );
-    expect(
-      custom.container
-        .querySelector<HTMLElement>(".settings-accent-swatch--custom")
-        ?.style.getPropertyValue("--settings-accent-swatch-ink"),
-    ).toBe("#000000");
+    expect(container.querySelector("#settings-appearance-accent")).toBeNull();
+    expect(container.querySelector("[data-accent-preset]")).toBeNull();
+    expect(container.querySelector("#settings-font-ui")).toBeNull();
+    expect(container.querySelector("#settings-font-chat")).toBeNull();
   });
 
   it("places a Control UI Browser preference in the same settings group before schema rows", () => {
@@ -1987,7 +1923,6 @@ describe("config view", () => {
   it("keeps direct Appearance default selections independent", () => {
     const setTheme = vi.fn();
     const setThemeMode = vi.fn();
-    const setAccent = vi.fn();
     const setTextScale = vi.fn();
     const { container } = renderConfigView({
       activeSection: "__appearance__",
@@ -1998,8 +1933,6 @@ describe("config view", () => {
       themeMode: "dark",
       themeModeOverridden: true,
       setThemeMode,
-      accent: "#52c99a",
-      setAccent,
       textScale: 110,
       textScaleOverridden: true,
       setTextScale,
@@ -2019,14 +1952,12 @@ describe("config view", () => {
       colorModeGroup.value = "system";
       colorModeGroup.dispatchEvent(new Event("change", { bubbles: true }));
     }
-    container.querySelector<HTMLButtonElement>('[data-accent-preset="default"]')?.click();
     Array.from(container.querySelectorAll<HTMLButtonElement>(".settings-text-scale__btn"))
       .find((button) => button.textContent?.includes("100%"))
       ?.click();
 
     expect(setTheme).toHaveBeenCalledWith("claw", expect.any(Object));
     expect(setThemeMode).toHaveBeenCalledWith("system", expect.any(Object));
-    expect(setAccent).toHaveBeenCalledWith(undefined);
     expect(setTextScale).toHaveBeenCalledWith(100);
   });
 

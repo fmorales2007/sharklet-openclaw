@@ -169,49 +169,6 @@ describe("ConfigPage synced preference provenance", () => {
     expect(changedServerUiPrefs(beforeReset, page.settings)).toEqual({ theme: null });
   });
 
-  it.each(["fontUi", "fontChat"] as const)(
-    "resets the %s profile override when its picker sentinel is selected",
-    async (key) => {
-      const gatewayUrl = "ws://font-profile.test";
-      const configObject = {};
-      const client = {
-        request: vi.fn(async () => ({ status: "ok", entries: { [`ui.${key}`]: "lora" } })),
-      } as unknown as GatewayBrowserClient;
-      await refreshProfileAppearancePrefs({
-        client,
-        profileId: "font-owner",
-        configObject,
-        scope: gatewayUrl,
-        onApplied: vi.fn(),
-      });
-      const page = new ConfigPage() as unknown as {
-        context: ApplicationContext;
-        settings: ReturnType<typeof loadSettings>;
-        setFont: (key: "fontUi" | "fontChat", font: undefined) => void;
-      };
-      page.context = {
-        gateway: {
-          connection: { gatewayUrl },
-          snapshot: {
-            selfUser: { id: "font-owner" },
-            hello: { auth: { role: "operator", scopes: ["operator.write"] } },
-          },
-        },
-        runtimeConfig: {
-          state: { connected: true, configSnapshot: { config: configObject } },
-          canPatch: false,
-        },
-        theme: { refresh: vi.fn() },
-      } as unknown as ApplicationContext;
-      const previous = loadSettings();
-      page.settings = previous;
-      page.setFont(key, undefined);
-      expect(page.settings[key]).toBeUndefined();
-      expect(changedServerUiPrefs(previous, page.settings)).toEqual({ [key]: null });
-      expect(page.context.theme.refresh).toHaveBeenCalledOnce();
-    },
-  );
-
   it("uses the committed snapshot for both display and reset while the form draft differs", () => {
     const page = new ConfigPage();
     const committedConfig = { ui: { prefs: { theme: "claw" } } };

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import type { ApplicationOverlays } from "../../app/overlays-types.ts";
+import { CUSTODIAN_PANEL_TOGGLE_EVENT } from "../../components/panel-toggle-contract.ts";
 import {
   dismissSidebarAttention,
   resolveUpdateAttentionDismissal,
@@ -9,6 +10,27 @@ import { createGatewayHarness, createSessions, mountSidebar } from "../app-sideb
 import "../../components/app-sidebar.ts";
 
 describe("AppSidebar footer identity menu", () => {
+  it("opens the Help panel with one tap on the Help row", async () => {
+    const { sidebar } = await mountSidebar(
+      createGatewayHarness({ instanceId: "self-instance" } as GatewayBrowserClient).gateway,
+      createSessions("main", ["agent:main:main"]),
+    );
+    sidebar.querySelector<HTMLButtonElement>(".sidebar-identity-card")?.click();
+    await sidebar.updateComplete;
+    const menu = sidebar.querySelector<HTMLElement>(".sidebar-identity-menu");
+    const openHelp = menu?.querySelector<HTMLElement>(
+      'wa-dropdown-item[value="command:open-help"]',
+    );
+    expect(openHelp?.textContent?.trim()).toBe("Help");
+    const panelToggle = vi.fn();
+    window.addEventListener(CUSTODIAN_PANEL_TOGGLE_EVENT, panelToggle);
+    menu?.dispatchEvent(
+      new CustomEvent("wa-select", { detail: { item: openHelp }, bubbles: true }),
+    );
+    window.removeEventListener(CUSTODIAN_PANEL_TOGGLE_EVENT, panelToggle);
+    expect(panelToggle).toHaveBeenCalledOnce();
+  });
+
   it("opens Profile from the Owner header without a self user", async () => {
     const { sidebar } = await mountSidebar(
       createGatewayHarness({ instanceId: "self-instance" } as GatewayBrowserClient).gateway,
@@ -148,6 +170,7 @@ describe("AppSidebar footer identity menu", () => {
       "command:profile",
       "command:settings",
       "command:usage",
+      "command:open-help",
       "command:pair-mobile",
       "command:apps",
       "command:debug-overlay",
@@ -205,6 +228,8 @@ describe("AppSidebar footer identity menu", () => {
       "https://discord.gg/clawd",
       "https://docs.openclaw.ai/releases",
     ]);
+
+    expect(helpRow?.textContent).toContain("Docs & community");
 
     menu?.querySelector<HTMLElement>('wa-dropdown-item[value="command:profile"]')?.focus();
     menu?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));

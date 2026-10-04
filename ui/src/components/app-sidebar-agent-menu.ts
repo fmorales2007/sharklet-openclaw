@@ -24,6 +24,7 @@ import {
 } from "../pages/debug/debug-overlay-contract.ts";
 import { renderAgentSelectAvatar, renderAgentSelectCopy } from "./agent-select.ts";
 import { icons, type IconName } from "./icons.ts";
+import { CUSTODIAN_PANEL_TOGGLE_EVENT } from "./panel-toggle-contract.ts";
 import "./sidebar-build-chip.ts";
 import "./viewer-facepile.ts";
 import {
@@ -474,6 +475,9 @@ export function renderSidebarIdentityMenu(params: SidebarIdentityMenuParams) {
           case `${COMMAND_VALUE_PREFIX}usage`:
             params.onNavigate("usage");
             break;
+          case `${COMMAND_VALUE_PREFIX}open-help`:
+            window.dispatchEvent(new CustomEvent(CUSTODIAN_PANEL_TOGGLE_EVENT));
+            break;
           case `${COMMAND_VALUE_PREFIX}pair-mobile`:
             params.onPairMobile();
             break;
@@ -533,6 +537,12 @@ export function renderSidebarIdentityMenu(params: SidebarIdentityMenuParams) {
         <span slot="icon" class="nav-item__icon" aria-hidden="true">${icons.coins}</span>
         <span class="sidebar-customize-menu__text">${titleForRoute("usage")}</span>
       </wa-dropdown-item>
+      <wa-dropdown-item class="sidebar-customize-menu__item" value="command:open-help">
+        <span slot="icon" class="nav-item__icon" aria-hidden="true"
+          >${icons.circleQuestionMark}</span
+        >
+        <span class="sidebar-customize-menu__text">${t("agentChip.help")}</span>
+      </wa-dropdown-item>
       <div class="sidebar-customize-menu__separator" role="separator"></div>
       <wa-dropdown-item
         class="sidebar-customize-menu__item sidebar-pair-mobile"
@@ -562,7 +572,7 @@ export function renderSidebarIdentityMenu(params: SidebarIdentityMenuParams) {
         <span slot="icon" class="nav-item__icon" aria-hidden="true"
           >${icons.circleQuestionMark}</span
         >
-        <span class="sidebar-customize-menu__text">${t("agentChip.help")}</span>
+        <span class="sidebar-customize-menu__text">${t("agentChip.docsAndCommunity")}</span>
         ${renderIdentityMenuHelpSubmenu()}
       </wa-dropdown-item>
       ${
