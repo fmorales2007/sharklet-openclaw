@@ -381,14 +381,15 @@ suite.define(() => {
       });
       expect(await readPendingPrefStorage(pageA)).toEqual([]);
 
-      await themeModeOption(pageA, "system").click();
+      // A disjoint edit must carry only itself: the superseded offline "light"
+      // stays gone and B's browser-local "dark" stays local.
+      await pageA.locator("[data-settings-follow-up-mode]").selectOption("queue");
       const patch = await gatewayA.waitForRequest("config.patch");
-      // A fresh edit carries only itself: the superseded offline "light" stays gone.
-      expect(patchPrefs(patch)).toEqual({ themeMode: "system" });
+      expect(patchPrefs(patch)).toEqual({ chatFollowUpMode: "queue" });
       expect(await gatewayA.getRequests("config.patch")).toHaveLength(1);
       expect(await gatewayB.getRequests("config.patch")).toHaveLength(0);
-      await expectThemeModeActive(pageA, "system");
-      await expectThemeModeActive(pageB, "system");
+      await expectThemeModeActive(pageA, "dark");
+      await expectThemeModeActive(pageB, "dark");
     } finally {
       await context.close();
     }
