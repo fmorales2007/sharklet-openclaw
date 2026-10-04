@@ -1873,7 +1873,6 @@ export const en: TranslationMap & {
     channelSettings: "Channel settings",
     categories: {},
     sections: {},
-    themes: {},
     textSizes: {},
     profileSyncedHint: "Saved to your profile — follows you on every device.",
     syncedHint: "Synced across your devices through the gateway.",

@@ -58,7 +58,7 @@ describe("findSettingsSearchBlocks", () => {
     ];
     const sharedCopy = sharedKeys.map((key) => runtime.t(key));
     const lazyKeys = [
-      "configPage.themeImported",
+      "configPage.deviceTalk.triggerWordsError",
       "configView.chatPrefs.title",
       "configView.notifications.title",
       "updates.page.intro",
@@ -87,7 +87,9 @@ describe("findSettingsSearchBlocks", () => {
       for (const key of lazyKeys) {
         expect(runtime.t(key), key).not.toBe(key);
       }
-      expect(runtime.t("configPage.themeImported", { name: "Example" })).toBe("Imported Example.");
+      expect(runtime.t("configPage.deviceTalk.triggerWordsError", { error: "Example" })).toBe(
+        "Could not save trigger words: Example",
+      );
       expect(runtime.t("updates.page.intro")).toBe(
         "Manage the connected Gateway's release channel and update policy.",
       );

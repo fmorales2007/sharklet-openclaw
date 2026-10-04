@@ -16,13 +16,7 @@ import { normalizeTypefaceOverride, type TypefaceId } from "./typography.ts";
 
 // Derived from the wire contract so a theme the profile store rejects can never
 // be offered here; new Set<ThemeName> makes an unknown protocol name a type error.
-// "custom" is config-syncable (honored only by browsers with an imported
-// palette) but intentionally not profile-storable, so it is appended here
-// rather than added to the wire contract.
-const THEMES: ReadonlySet<ThemeName> = new Set<ThemeName>([
-  ...UI_APPEARANCE_THEME_VALUES,
-  "custom",
-]);
+const THEMES: ReadonlySet<ThemeName> = new Set<ThemeName>(UI_APPEARANCE_THEME_VALUES);
 
 export function isAppearancePref(
   key: string,
@@ -70,9 +64,6 @@ export const SYNCED_PREFS = {
     write: (value) => ({ theme: value ?? UI_APPEARANCE_DEFAULTS.theme }),
     clearable: true,
     reset: () => ({ theme: UI_APPEARANCE_DEFAULTS.theme }),
-    // A server "custom" theme is only honorable once this browser imported one;
-    // the imported palette itself is too large to live in config.
-    canApply: (value, settings) => value !== "custom" || Boolean(settings.customTheme),
   }),
   themeMode: prefSpec<ThemeMode>({
     extract: (value) => (THEME_MODES.has(value as ThemeMode) ? (value as ThemeMode) : undefined),

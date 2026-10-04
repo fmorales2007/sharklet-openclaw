@@ -31,14 +31,6 @@ const SURFACE_TOKENS = ["--bg", "--bg-elevated", "--bg-muted", "--card", "--pane
 const AA_NORMAL_TEXT_MIN = 4.5;
 
 /*
- * Beacon is the accessibility theme: it advertises WCAG AAA rather than AA, and
- * that promise is the reason to pick it. Holding it to the shared 4.5:1 floor
- * would let a palette edit quietly demote it to an ordinary dark theme, so its
- * own floor is asserted separately.
- */
-const AAA_NORMAL_TEXT_MIN = 7;
-
-/*
  * The chat confirmation button defaults to --danger under --media-foreground,
  * which is a theme-invariant white, and every dark palette opts out of that
  * pairing through a selector list in chat/grouped.css. A theme with a light
@@ -48,7 +40,6 @@ const AAA_NORMAL_TEXT_MIN = 7;
  * palettes cannot drift apart again.
  */
 const CONFIRM_BUTTON_RULE = ".chat-confirm-popover__yes";
-const AAA_THEMES = new Set(["beacon", "beacon-light"]);
 
 /*
  * Separation guardrail for the markdown code chip.
@@ -102,19 +93,9 @@ type TokenMap = Map<string, string>;
 type RGB = readonly [red: number, green: number, blue: number];
 type Color = { rgb: RGB; alpha: number };
 
-/*
- * Built-in palettes other than the default live in public/themes so they stay
- * out of the startup stylesheet. Contrast guarantees still cover every theme,
- * so the palette sources are read back together here.
- */
+/* Sharklet ships one family; base.css is its only palette source. */
 function readPaletteSources(stylesRoot: string): string {
-  const themesDir = path.join(stylesRoot, "..", "..", "public", "themes");
-  const palettes = fs
-    .readdirSync(themesDir)
-    .filter((entry) => entry.endsWith(".css"))
-    .toSorted()
-    .map((entry) => fs.readFileSync(path.join(themesDir, entry), "utf8"));
-  return [fs.readFileSync(path.join(stylesRoot, "base.css"), "utf8"), ...palettes].join("\n");
+  return fs.readFileSync(path.join(stylesRoot, "base.css"), "utf8");
 }
 
 function parseThemeBlocks(baseCss: string): Map<string, TokenMap> {
@@ -157,26 +138,6 @@ function resolveThemes(blocks: Map<string, TokenMap>): Map<string, TokenMap> {
   return new Map([
     ["dark", layer(blocks.get(':root[data-theme="dark"]'))],
     ["light", layer(light)],
-    ["openknot", layer(blocks.get(':root[data-theme="openknot"]'))],
-    ["openknot-light", layer(light, blocks.get(':root[data-theme="openknot-light"]'))],
-    ["dash", layer(blocks.get(':root[data-theme="dash"]'))],
-    ["dash-light", layer(light, blocks.get(':root[data-theme="dash-light"]'))],
-    ["absolutely", layer(blocks.get(':root[data-theme="absolutely"]'))],
-    ["absolutely-light", layer(light, blocks.get(':root[data-theme="absolutely-light"]'))],
-    ["tide", layer(blocks.get(':root[data-theme="tide"]'))],
-    ["tide-light", layer(light, blocks.get(':root[data-theme="tide-light"]'))],
-    ["beacon", layer(blocks.get(':root[data-theme="beacon"]'))],
-    ["beacon-light", layer(light, blocks.get(':root[data-theme="beacon-light"]'))],
-    ["phosphor", layer(blocks.get(':root[data-theme="phosphor"]'))],
-    ["phosphor-light", layer(light, blocks.get(':root[data-theme="phosphor-light"]'))],
-    ["crt", layer(blocks.get(':root[data-theme="crt"]'))],
-    ["crt-light", layer(light, blocks.get(':root[data-theme="crt-light"]'))],
-    ["manuscript", layer(blocks.get(':root[data-theme="manuscript"]'))],
-    ["manuscript-light", layer(light, blocks.get(':root[data-theme="manuscript-light"]'))],
-    ["rose", layer(blocks.get(':root[data-theme="rose"]'))],
-    ["rose-light", layer(light, blocks.get(':root[data-theme="rose-light"]'))],
-    ["miami", layer(blocks.get(':root[data-theme="miami"]'))],
-    ["miami-light", layer(light, blocks.get(':root[data-theme="miami-light"]'))],
   ]);
 }
 
@@ -432,7 +393,7 @@ describe("Control UI theme contrast", () => {
   const baseCss = readPaletteSources(stylesDir);
   const themes = resolveThemes(parseThemeBlocks(baseCss));
 
-  it("keeps every text token at WCAG AA on every theme surface, AAA on themes that promise it", () => {
+  it("keeps every text token at WCAG AA on every theme surface", () => {
     const failures: string[] = [];
     for (const [themeName, tokens] of themes) {
       for (const textToken of TEXT_TOKENS) {
@@ -440,7 +401,7 @@ describe("Control UI theme contrast", () => {
         for (const surfaceToken of SURFACE_TOKENS) {
           const background = resolveOpaqueColor(`var(${surfaceToken})`, tokens);
           const ratio = contrastRatio(foreground, background);
-          const floor = AAA_THEMES.has(themeName) ? AAA_NORMAL_TEXT_MIN : AA_NORMAL_TEXT_MIN;
+          const floor = AA_NORMAL_TEXT_MIN;
           if (ratio < floor) {
             failures.push(
               `${themeName}: ${textToken} rgb(${foreground.join(", ")}) on ${surfaceToken} rgb(${background.join(", ")}) = ${ratio.toFixed(2)}:1 (< ${floor}:1)`,
@@ -495,7 +456,7 @@ describe("Control UI theme contrast", () => {
         continue;
       }
       const ratio = contrastRatio(parseHex(color), parseHex(background));
-      const floor = AAA_THEMES.has(themeName) ? AAA_NORMAL_TEXT_MIN : AA_NORMAL_TEXT_MIN;
+      const floor = AA_NORMAL_TEXT_MIN;
       if (ratio < floor) {
         failures.push(
           `${themeName}: ${paint.color} ${color} on ${paint.background} ${background} = ${ratio.toFixed(2)}:1 (< ${floor}:1)`,
@@ -525,7 +486,7 @@ describe("Control UI theme contrast", () => {
           const host = resolveOpaqueColor(`var(${surfaceToken})`, tokens);
           const background = composite(resolvedTint, host);
           const ratio = contrastRatio(foreground, background);
-          const floor = AAA_THEMES.has(themeName) ? AAA_NORMAL_TEXT_MIN : AA_NORMAL_TEXT_MIN;
+          const floor = AA_NORMAL_TEXT_MIN;
           if (ratio < floor) {
             failures.push(
               `${themeName}: ${foregroundToken} on ${tint} over ${surfaceToken} = ${ratio.toFixed(2)}:1 (< ${floor}:1)`,

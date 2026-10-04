@@ -5,30 +5,19 @@
  * order buys nothing. This file is what changes the app: it rewrites upstream's
  * tokens in terms of ours.
  *
- * WINNING THE CASCADE. Two things here are not style choices:
- *
- * 1. The selector is html:root[data-theme-mode="..."], specificity (0,2,1).
- *    A theme palette is :root[data-theme="tide"], (0,2,0); base.css's light
- *    block is :root:where([data-theme-mode="light"]), which :where() zeroes to
- *    (0,1,0). We outrank both. Order alone would not do it: app/theme.ts:128
- *    appends the palette <link> to the end of <head> on EVERY theme change,
- *    after the app CSS. Without the specificity win the app looks like Sharklet
- *    until someone opens Settings -> Appearance, and like a recolored OpenClaw
- *    after.
- *
- * 2. Thirteen palette properties are written as INLINE STYLE on <html> by
- *    app/control-ui-presentation.ts:62-77 when the user picks an accent or the
- *    gateway sends an operatorSeamColor. No stylesheet beats an inline style,
- *    so those thirteen carry !important. They are listed together at the bottom
- *    rather than scattered, so the cost stays visible. Today the defaults are
- *    empty, so this is latent, not active.
+ * WINNING THE CASCADE. Sharklet has one theme family (F1-10): upstream's ten
+ * palette sheets, the tweakcn <style>, and the inline accent and typeface
+ * writers on <html> are gone, so nothing re-enters the cascade after this file
+ * and no declaration needs !important. One thing here is still not a style
+ * choice: the selector is :root[data-theme-mode="..."], specificity (0,2,0).
+ * That ties base.css's :root[data-theme="dark"] (the claw family's
+ * --destructive) and wins by order, since styles.css imports custom/theme
+ * last; base.css's other blocks are (0,1,0). A bare :root would lose that tie.
  *
  * The theme axis is data-theme-mode ("light" | "dark"), which index.html stamps
- * before the first paint. data-theme carries the theme NAME (tide-light, crt)
- * and must never be used to pick a mode.
- *
- * Upstream's eleven themes stay installed as a debugging hatch: switching to
- * one shows what is bridged and what is not.
+ * before the first paint. data-theme carries upstream's resolved theme name,
+ * which for the one family left is also "dark" or "light"; upstream component
+ * CSS keys on it, the bridge does not.
  */
 
 /* ---------------------------------------------------------------------------
@@ -36,8 +25,8 @@
  * its own, so one block covers both. Only the handful that cannot be expressed
  * that way is repeated in the per-mode blocks below.
  * ------------------------------------------------------------------------- */
-html:root[data-theme-mode="light"],
-html:root[data-theme-mode="dark"] {
+:root[data-theme-mode="light"],
+:root[data-theme-mode="dark"] {
   /* Surfaces */
   --bg: var(--sk-canvas);
   --bg-accent: var(--sk-sidebar);
@@ -229,20 +218,20 @@ html:root[data-theme-mode="dark"] {
 /* Compact density, restated.
  *
  * tokens.css declares [data-density="compact"] at (0,1,0). The block above is
- * (0,2,1), so it would have silently outranked it and compact density would
+ * (0,2,0), so it would have silently outranked it and compact density would
  * have stopped changing type size — the same specificity trap as the focus
- * ring, the theme axis and the board collapse. Restating it at (0,3,1) is what
+ * ring, the theme axis and the board collapse. Restating it at (0,3,0) is what
  * keeps the density control honest. The sizes are the approved ones, now
  * carried through --control-ui-text-scale like everything else. */
-html:root[data-theme-mode="light"][data-density="compact"],
-html:root[data-theme-mode="dark"][data-density="compact"] {
+:root[data-theme-mode="light"][data-density="compact"],
+:root[data-theme-mode="dark"][data-density="compact"] {
   --sk-fs-ui: calc(13px * var(--control-ui-text-scale, 1));
   --sk-fs-chat: calc(14px * var(--control-ui-text-scale, 1));
 }
 
 /* Space: eight of upstream's map one to one onto ours. */
-html:root[data-theme-mode="light"],
-html:root[data-theme-mode="dark"] {
+:root[data-theme-mode="light"],
+:root[data-theme-mode="dark"] {
   --space-1: var(--sk-s1);
   --space-2: var(--sk-s2);
   --space-3: var(--sk-s3);
@@ -276,8 +265,8 @@ html:root[data-theme-mode="dark"] {
  * definitions point the semantics at numbered ramps, so replacing the
  * semantics leaves the ramps unused rather than fighting them.
  * ------------------------------------------------------------------------- */
-html:root[data-theme-mode="light"],
-html:root[data-theme-mode="dark"] {
+:root[data-theme-mode="light"],
+:root[data-theme-mode="dark"] {
   --wa-color-surface-default: var(--sk-canvas);
   --wa-color-surface-raised: var(--sk-surface);
   --wa-color-surface-lowered: var(--sk-fill);
@@ -342,37 +331,4 @@ html:root[data-theme-mode="dark"] {
   --wa-form-control-activated-color: var(--sk-accent);
   --wa-form-control-height: var(--sk-h-md);
   --wa-transition-fast: var(--sk-dur-micro);
-}
-
-/* ---------------------------------------------------------------------------
- * The thirteen inline-style properties.
- *
- * app/control-ui-presentation.ts writes these straight onto <html>.style when
- * the user picks an accent in Settings -> Appearance, or when the gateway sends
- * an operatorSeamColor. Nothing but !important reaches them from a stylesheet,
- * and reaching them from JS would mean editing a file outside the whitelist.
- *
- * ACCEPTED COST: the accent picker and the typeface picker have no visible
- * effect. That is a lie in the interface, and phase 2 repairs it by hiding both
- * controls, when there is already a reason to open config-page.ts once.
- * ------------------------------------------------------------------------- */
-html:root[data-theme-mode="light"],
-html:root[data-theme-mode="dark"] {
-  --ring: var(--sk-accent) !important;
-  --accent: var(--sk-accent) !important;
-  --accent-muted: var(--sk-accent) !important;
-  --accent-hover: color-mix(in oklab, var(--sk-accent) 86%, var(--sk-text)) !important;
-  --accent-subtle: var(--sk-accent-soft) !important;
-  --accent-glow: color-mix(in oklab, var(--sk-accent) 20%, transparent) !important;
-  --accent-foreground: var(--sk-on-primary) !important;
-  --primary: var(--sk-primary) !important;
-  --primary-hover: var(--sk-primary-hover) !important;
-  --primary-foreground: var(--sk-on-primary) !important;
-  --focus: color-mix(in oklab, var(--sk-accent) 22%, transparent) !important;
-  --focus-ring: 0 0 0 2px var(--sk-surface), 0 0 0 4px var(--sk-accent) !important;
-  --focus-glow: 0 0 0 2px var(--sk-surface), 0 0 0 4px var(--sk-accent) !important;
-
-  /* typography.ts:105-116 writes these two the same way. */
-  --font-body: var(--sk-font) !important;
-  --font-chat: var(--sk-font) !important;
 }

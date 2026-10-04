@@ -16,7 +16,8 @@
 // reduced motion, and the surfaces Web Awesome only draws on demand (the three
 // sidebar menus, Settings → Appearance with its select open, the Plugins hub),
 // scanned for OpenClaw's coral and Web Awesome's own blue, and the density
-// switch in the profile menu.
+// switch in the profile menu. And once per mode, a live color-mode switch in
+// Settings → Appearance, re-checked after each change.
 //
 // Exit code 1 if any check fails. Screenshots and report.json go to --out
 // (default .artifacts/sharklet-visual-review/).
@@ -70,16 +71,9 @@ function scanPainted() {
   );
   probe.remove();
   const coral = new Set(["255,92,92", "255,112,112", "209,60,60", "194,46,46"]);
-  // Appearance's swatches preview the options they pick: upstream's accents
-  // (coral among them) and its eleven themes. Painting those colors is their job.
-  // ponytail: drop this once phase 2 hides the accent picker.
-  const optionPreview = ".settings-accent-swatch, .settings-theme-card__chip";
   const hits = { coral: [], waBlue: [], waBlueSteps: waBlue.size };
   const visit = (scope) => {
     for (const el of scope.querySelectorAll("*")) {
-      if (el.matches(optionPreview)) {
-        continue;
-      }
       const style = getComputedStyle(el);
       for (const prop of [
         "color",
@@ -379,6 +373,83 @@ try {
         checkPainted(run, `: /${path}`, await page.evaluate(scanPainted));
       }
       await page.screenshot({ path: join(outDir, `${mode}-appearance-plugins.png`) });
+      await app.context.close();
+    }
+
+    // Theme switch, once per mode: flip the color mode live in Settings →
+    // Appearance (no reload), then back to System. Each state must still be
+    // Sharklet's palette, with nothing upstream re-entering the cascade: no
+    // palette sheet, no tweakcn <style>, no inline accent or typeface.
+    {
+      const run = { id: `${mode}-theme-switch`, checks: [] };
+      report.runs.push(run);
+      const app = await openApp(browser, { mode, density: "comfortable", width: 1440 });
+      const { page } = app;
+      await page.goto(new URL("settings/appearance", url).href, { waitUntil: "domcontentloaded" });
+      await page.waitForTimeout(4_000);
+      const other = mode === "light" ? "dark" : "light";
+      const colorMode = page.locator("#settings-appearance-theme");
+      for (const [label, expected] of [
+        [other === "light" ? "Light" : "Dark", other],
+        ["System", mode],
+      ]) {
+        await colorMode.getByText(label, { exact: true }).click();
+        await page.waitForTimeout(800);
+        const after = await page.evaluate(() => {
+          const html = document.documentElement;
+          const css = getComputedStyle(html);
+          return {
+            themeMode: html.dataset.themeMode,
+            bg: css.getPropertyValue("--bg").trim(),
+            accent: css.getPropertyValue("--accent").trim(),
+            text: css.getPropertyValue("--text").trim(),
+            inline: ["--accent", "--primary", "--ring", "--font-body", "--font-chat"].filter(
+              (name) => html.style.getPropertyValue(name),
+            ),
+            competitors: [
+              ...document.querySelectorAll(
+                'link[id^="openclaw-theme-palette-"], #openclaw-custom-theme',
+              ),
+            ].map((el) => el.id),
+          };
+        });
+        const where = ` after ${label}`;
+        check(
+          run,
+          `theme mode is ${expected}${where}`,
+          after.themeMode === expected,
+          after.themeMode,
+        );
+        check(run, `--bg is Sharklet canvas${where}`, after.bg === EXPECT[expected].bg, after.bg);
+        check(
+          run,
+          `--accent is Sharklet ocean${where}`,
+          after.accent === EXPECT[expected].accent,
+          after.accent,
+        );
+        check(
+          run,
+          `--text is Sharklet ink${where}`,
+          after.text === EXPECT[expected].text,
+          after.text,
+        );
+        check(
+          run,
+          `no inline palette or typeface on <html>${where}`,
+          after.inline.length === 0,
+          after.inline.join(", ") || "none",
+        );
+        check(
+          run,
+          `no upstream palette sheet or tweakcn style${where}`,
+          after.competitors.length === 0,
+          after.competitors.join(", ") || "none",
+        );
+        checkPainted(run, where, await page.evaluate(scanPainted));
+        await page.screenshot({
+          path: join(outDir, `${mode}-theme-switch-${label.toLowerCase()}.png`),
+        });
+      }
       await app.context.close();
     }
 

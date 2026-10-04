@@ -1,5 +1,7 @@
 // Control UI module implements theme behavior.
-import { inferControlUiPublicAssetPath } from "./public-assets.ts";
+// Sharklet has one theme family, bridged in custom/theme/bridge.css; only the
+// mode varies. ThemeName survives as the stored/synced preference the gateway
+// wire contract still carries, and nothing reads it for presentation.
 export type ThemeName =
   | "claw"
   | "knot"
@@ -11,34 +13,9 @@ export type ThemeName =
   | "crt"
   | "manuscript"
   | "rose"
-  | "miami"
-  | "custom";
+  | "miami";
 export type ThemeMode = "system" | "light" | "dark";
-export type ResolvedTheme =
-  | "dark"
-  | "light"
-  | "openknot"
-  | "openknot-light"
-  | "dash"
-  | "dash-light"
-  | "absolutely"
-  | "absolutely-light"
-  | "tide"
-  | "tide-light"
-  | "beacon"
-  | "beacon-light"
-  | "phosphor"
-  | "phosphor-light"
-  | "crt"
-  | "crt-light"
-  | "manuscript"
-  | "manuscript-light"
-  | "rose"
-  | "rose-light"
-  | "miami"
-  | "miami-light"
-  | "custom"
-  | "custom-light";
+export type ResolvedTheme = "dark" | "light";
 
 const VALID_THEME_NAMES = new Set<ThemeName>([
   "claw",
@@ -52,7 +29,6 @@ const VALID_THEME_NAMES = new Set<ThemeName>([
   "manuscript",
   "rose",
   "miami",
-  "custom",
 ]);
 
 const VALID_THEME_MODES = new Set<ThemeMode>(["system", "light", "dark"]);
@@ -77,54 +53,9 @@ export function parseThemeSelection(
   return { theme: normalizedTheme, mode: normalizedMode };
 }
 
-function resolveMode(mode: ThemeMode): "light" | "dark" {
+export function resolveTheme(mode: ThemeMode): ResolvedTheme {
   if (mode === "system") {
     return prefersLightScheme() ? "light" : "dark";
   }
   return mode;
-}
-
-export function resolveTheme(theme: ThemeName, mode: ThemeMode): ResolvedTheme {
-  const resolvedMode = resolveMode(mode);
-  if (theme === "claw") {
-    return resolvedMode === "light" ? "light" : "dark";
-  }
-  const family = theme === "knot" ? "openknot" : theme;
-  return resolvedMode === "light" ? `${family}-light` : family;
-}
-
-/** Publish theme colors only after their stylesheet is available. */
-export function syncThemePaletteStylesheet(theme: ThemeName, ready: () => void): void {
-  if (typeof document === "undefined" || theme === "claw" || theme === "custom") {
-    ready();
-    return;
-  }
-  // Retain the six built-in families once visited. Their exclusive selectors
-  // leave the previous theme intact during loading and make repeat switches synchronous.
-  const id = `openclaw-theme-palette-${theme}`;
-  const existing = document.getElementById(id);
-  if (existing instanceof HTMLLinkElement && existing.sheet) {
-    ready();
-    return;
-  }
-  const link = existing instanceof HTMLLinkElement ? existing : document.createElement("link");
-  const finish = (event: Event) => {
-    link.removeEventListener("load", finish);
-    link.removeEventListener("error", finish);
-    if (event.type === "error") {
-      // Failed assets must not strand startup; normal CSS defaults stay readable.
-      // Remove the failed link so a later selection can retry rather than wait forever.
-      console.error(`Theme palette failed to load; reload to retry: ${link.href}`);
-      link.remove();
-    }
-    ready();
-  };
-  link.addEventListener("load", finish);
-  link.addEventListener("error", finish);
-  if (!existing) {
-    link.id = id;
-    link.rel = "stylesheet";
-    link.href = inferControlUiPublicAssetPath(`themes/${theme}.css`);
-    document.head.append(link);
-  }
 }

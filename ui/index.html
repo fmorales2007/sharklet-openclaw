@@ -21,27 +21,15 @@
       globalThis.__zod_globalConfig.jitless = true;
 
       (function () {
-        var THEMES = {
-          claw: 1,
-          knot: 1,
-          dash: 1,
-          absolutely: 1,
-          tide: 1,
-          beacon: 1,
-          phosphor: 1,
-          crt: 1,
-          manuscript: 1,
-          rose: 1,
-          miami: 1,
-        };
+        // Sharklet has one theme family; only the mode is stored and resolved.
+        // Kept in lockstep with resolveTheme() in app/theme.ts.
         var MODES = { system: 1, light: 1, dark: 1 };
         var LEGACY = {
-          dark: "claw:dark",
-          light: "claw:light",
-          openknot: "knot:dark",
-          fieldmanual: "dash:dark",
-          clawdash: "dash:light",
-          system: "claw:system",
+          dark: "dark",
+          light: "light",
+          openknot: "dark",
+          fieldmanual: "dark",
+          clawdash: "light",
         };
         try {
           var keys = Object.keys(localStorage);
@@ -53,60 +41,16 @@
             }
           }
           var s = raw ? JSON.parse(raw) : null;
-          var t = s && s.theme;
           var m = s && s.themeMode;
-          if (typeof t !== "string") t = "";
-          if (typeof m !== "string") m = "";
-          var legacy = LEGACY[t];
-          var theme = THEMES[t] ? t : legacy ? legacy.split(":")[0] : "claw";
-          var mode = MODES[m] ? m : legacy ? legacy.split(":")[1] : "system";
+          var t = s && s.theme;
+          var mode = MODES[m] ? m : LEGACY[t] || "system";
           if (mode === "system") {
             mode = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
           }
-          // family -> [dark, light] resolved names. Kept in lockstep with
-          // resolveTheme() in app/theme.ts and the files in public/themes.
-          var FAMILIES = {
-            knot: ["openknot", "openknot-light"],
-            dash: ["dash", "dash-light"],
-            absolutely: ["absolutely", "absolutely-light"],
-            tide: ["tide", "tide-light"],
-            beacon: ["beacon", "beacon-light"],
-            phosphor: ["phosphor", "phosphor-light"],
-            crt: ["crt", "crt-light"],
-            manuscript: ["manuscript", "manuscript-light"],
-            rose: ["rose", "rose-light"],
-            miami: ["miami", "miami-light"],
-          };
-          var pair = FAMILIES[theme];
-          var resolved = pair
-            ? pair[mode === "light" ? 1 : 0]
-            : mode === "light"
-              ? "light"
-              : "dark";
-          if (pair) {
-            // Script-created links need explicit render blocking before first paint.
-            // The gateway stamps the mount prefix and asset version before this runs.
-            var base =
-              document.documentElement.getAttribute("data-openclaw-control-ui-base-path") || "";
-            var buildId = document.documentElement.getAttribute(
-              "data-openclaw-control-ui-build-id",
-            );
-            var version = buildId ? "?v=" + encodeURIComponent(buildId) : "";
-            var palette = document.createElement("link");
-            palette.rel = "stylesheet";
-            palette.setAttribute("blocking", "render");
-            palette.id = "openclaw-theme-palette-" + theme;
-            palette.onerror = function () {
-              palette.remove();
-            };
-            palette.href = base + "/themes/" + theme + ".css" + version;
-            document.head.appendChild(palette);
-          }
-          document.documentElement.setAttribute("data-theme", resolved);
-          var resolvedMode = resolved.includes("light") ? "light" : "dark";
-          document.documentElement.setAttribute("data-theme-mode", resolvedMode);
+          document.documentElement.setAttribute("data-theme", mode);
+          document.documentElement.setAttribute("data-theme-mode", mode);
           // Plugin semantic styles select on [data-theme-resolved]; keep in lockstep.
-          document.documentElement.setAttribute("data-theme-resolved", resolvedMode);
+          document.documentElement.setAttribute("data-theme-resolved", mode);
         } catch (e) {}
       })();
     </script>
@@ -131,86 +75,6 @@
       html[data-theme-mode="light"] {
         background: #faf9f7;
         color-scheme: light;
-      }
-
-      html[data-theme="openknot"] {
-        background: #080808;
-      }
-
-      html[data-theme="openknot-light"] {
-        background: #f9f9fb;
-      }
-
-      html[data-theme="dash"] {
-        background: #1a1210;
-      }
-
-      html[data-theme="dash-light"] {
-        background: #f7f2ec;
-      }
-
-      html[data-theme="absolutely"] {
-        background: #1c1c1a;
-      }
-
-      html[data-theme="absolutely-light"] {
-        background: #faf9f5;
-      }
-
-      html[data-theme="tide"] {
-        background: #10151b;
-      }
-
-      html[data-theme="tide-light"] {
-        background: #f7f9fb;
-      }
-
-      html[data-theme="beacon"] {
-        background: #000000;
-      }
-
-      html[data-theme="beacon-light"] {
-        background: #ffffff;
-      }
-
-      html[data-theme="phosphor"] {
-        background: #0a0f0a;
-      }
-
-      html[data-theme="phosphor-light"] {
-        background: #f4f7f4;
-      }
-
-      html[data-theme="crt"] {
-        background: #090a09;
-      }
-
-      html[data-theme="crt-light"] {
-        background: #f5f5f4;
-      }
-
-      html[data-theme="manuscript"] {
-        background: #211e18;
-      }
-
-      html[data-theme="manuscript-light"] {
-        background: #f6f1e4;
-      }
-
-      html[data-theme="rose"] {
-        background: #191724;
-      }
-
-      html[data-theme="rose-light"] {
-        background: #faf4ed;
-      }
-
-      html[data-theme="miami"] {
-        background: #140f1e;
-      }
-
-      html[data-theme="miami-light"] {
-        background: #f7f3f6;
       }
 
       body {

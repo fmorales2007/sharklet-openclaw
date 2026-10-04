@@ -1,10 +1,5 @@
-import type {
-  ApplicationGateway,
-  ApplicationTheme,
-  ApplicationThemeServerSelection,
-} from "./context.ts";
-import { applyControlUiAccent, syncControlUiSystemChrome } from "./control-ui-presentation.ts";
-import { syncCustomThemeStyleTag } from "./custom-theme.ts";
+import type { ApplicationGateway, ApplicationTheme } from "./context.ts";
+import { syncControlUiSystemChrome } from "./control-ui-presentation.ts";
 import {
   bindUiPreferences,
   loadUiPreferences,
@@ -14,22 +9,18 @@ import {
   type UiSettings,
 } from "./settings.ts";
 import { startThemeTransition } from "./theme-transition.ts";
-import { resolveTheme, syncThemePaletteStylesheet, type ThemeMode } from "./theme.ts";
-import {
-  applyChatFontSmoothing,
-  applyTypefaceOverrides,
-  resolveTypefaces,
-  syncTypefaceStylesheets,
-} from "./typography.ts";
+import { resolveTheme, type ThemeMode } from "./theme.ts";
 
 function applyThemePresentation(settings: UiPreferences): void {
   if (typeof document === "undefined") {
     return;
   }
   const root = document.documentElement;
-  const resolvedTheme = resolveTheme(settings.theme, settings.themeMode);
+  // One family: data-theme carries upstream's default names ("dark", "light"),
+  // which its component CSS still keys on; the bridge keys on data-theme-mode.
+  const resolvedTheme = resolveTheme(settings.themeMode);
   root.dataset.theme = resolvedTheme;
-  root.dataset.themeMode = resolvedTheme.endsWith("light") ? "light" : "dark";
+  root.dataset.themeMode = resolvedTheme;
   // Plugin semantic styles select on [data-theme-resolved]; keep it in lockstep
   // with data-theme-mode before their lazy stylesheet loads.
   root.dataset.themeResolved = root.dataset.themeMode;
@@ -37,12 +28,6 @@ function applyThemePresentation(settings: UiPreferences): void {
   root.classList.toggle("wa-dark", root.dataset.themeMode === "dark");
   root.style.colorScheme = root.dataset.themeMode;
   root.style.setProperty("--control-ui-text-scale", `${(settings.textScale ?? 100) / 100}`);
-  const typefaces = resolveTypefaces(settings.theme, settings.fontUi, settings.fontChat);
-  syncTypefaceStylesheets(typefaces);
-  applyTypefaceOverrides(settings.fontUi, settings.fontChat);
-  applyChatFontSmoothing(typefaces.chat);
-  syncCustomThemeStyleTag(settings.customTheme);
-  applyControlUiAccent(settings.accent);
   syncControlUiSystemChrome();
 }
 
@@ -52,23 +37,12 @@ export function createApplicationTheme(
 ): ApplicationTheme & { dispose: () => void } {
   const { token: _token, ...initialPreferences } = initialSettings;
   let settings: UiPreferences = initialPreferences;
-  let serverSelection: ApplicationThemeServerSelection | null = null;
   let systemThemeCleanup: (() => void) | undefined;
   let chromeBreakpointCleanup: (() => void) | undefined;
   const listeners = new Set<() => void>();
 
-  let presentationGeneration = 0;
   const publish = () => {
-    const generation = ++presentationGeneration;
-    syncThemePaletteStylesheet(settings.theme, () => {
-      // A slower palette cannot overwrite a newer selection or a disposed app.
-      if (generation !== presentationGeneration) {
-        return;
-      }
-      applyThemePresentation(settings);
-    });
-    // Live preferences cannot wait for a palette download. Presentation keeps
-    // its own generation fence; subscribers consume the new snapshot now.
+    applyThemePresentation(settings);
     for (const listener of listeners) {
       listener();
     }
@@ -148,23 +122,12 @@ export function createApplicationTheme(
       return settings.themeMode;
     },
     get resolvedMode() {
-      return resolveTheme(settings.theme, settings.themeMode).endsWith("light") ? "light" : "dark";
-    },
-    get serverSelection() {
-      return serverSelection;
-    },
-    recordServerSelection(theme, scope) {
-      serverSelection = { revision: (serverSelection?.revision ?? 0) + 1, scope, theme };
-      publish();
+      return resolveTheme(settings.themeMode);
     },
     setMode(mode: ThemeMode, element) {
-      const currentSettings = settings;
-      const nextSettings = { ...currentSettings, themeMode: mode };
-      const currentTheme = resolveTheme(currentSettings.theme, currentSettings.themeMode);
-      const nextTheme = resolveTheme(nextSettings.theme, nextSettings.themeMode);
       startThemeTransition({
-        nextTheme,
-        currentTheme,
+        nextTheme: resolveTheme(mode),
+        currentTheme: resolveTheme(settings.themeMode),
         context: { element },
         applyTheme: () => {
           patchSettings({ themeMode: mode });
@@ -180,7 +143,6 @@ export function createApplicationTheme(
       stopPreferences();
       globalThis.removeEventListener?.("storage", onStorage);
       stopGateway();
-      presentationGeneration += 1;
       detachSystemThemeListener();
       chromeBreakpointCleanup?.();
       listeners.clear();

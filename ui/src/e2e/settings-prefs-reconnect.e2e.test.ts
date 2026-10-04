@@ -122,18 +122,21 @@ async function readPendingPrefStorage(page: Page): Promise<Record<string, unknow
   );
 }
 
-function themeCard(page: Page, theme: "claw" | "knot" | "dash") {
-  return page.locator(`.settings-theme-card--${theme}`);
-}
-
-async function expectThemeActive(page: Page, theme: "claw" | "knot" | "dash"): Promise<void> {
-  await expect
-    .poll(() => themeCard(page, theme).getAttribute("class"), { timeout: 10_000 })
-    .toContain("settings-theme-card--active");
-}
-
 function themeModeOption(page: Page, mode: "system" | "light" | "dark") {
   return page.locator(`wa-radio.settings-segmented__btn[value="${mode}"]`);
+}
+
+// Sharklet has one theme family (F1-10), so these sync proofs edit the color
+// mode where upstream edited the theme family.
+async function expectThemeModeActive(page: Page, mode: "system" | "light" | "dark"): Promise<void> {
+  await expect
+    .poll(
+      () => themeModeOption(page, mode).evaluate((radio) => (radio as HTMLInputElement).checked),
+      {
+        timeout: 10_000,
+      },
+    )
+    .toBe(true);
 }
 
 suite.define(() => {
@@ -261,11 +264,11 @@ suite.define(() => {
     }
   });
 
-  it("replays an offline theme edit after a same-client reconnect", async () => {
+  it("replays an offline color-mode edit after a same-client reconnect", async () => {
     const context = await createContext();
     const page = await context.newPage();
-    const initial = configResponse({ theme: "claw", themeMode: "system" }, "prefs-a-1");
-    const committed = configResponse({ theme: "knot", themeMode: "system" }, "prefs-a-2");
+    const initial = configResponse({ themeMode: "system" }, "prefs-a-1");
+    const committed = configResponse({ themeMode: "light" }, "prefs-a-2");
     const gateway = await installMockGateway(page, {
       methodResponses: { "config.get": initial },
     });
@@ -273,25 +276,25 @@ suite.define(() => {
     try {
       const response = await page.goto(`${suite.server.baseUrl}settings/appearance`);
       expect(response?.status()).toBe(200);
-      await themeCard(page, "claw").waitFor();
+      await themeModeOption(page, "system").waitFor();
       await gateway.waitForRequest("config.get");
       const configGetsBeforeEdit = (await gateway.getRequests("config.get")).length;
       await gateway.deferNext("config.patch");
 
       await proxyReconnect(page, gateway, async () => {
-        await themeCard(page, "knot").click();
-        await expectThemeActive(page, "knot");
+        await themeModeOption(page, "light").click();
+        await expectThemeModeActive(page, "light");
       });
 
       const patch = await gateway.waitForRequest("config.patch");
-      expect(patchPrefs(patch)).toEqual({ theme: "knot" });
+      expect(patchPrefs(patch)).toEqual({ themeMode: "light" });
       // Reconnect owns one authoritative read even while the pending LWW preference shadows it.
       await waitForRequestCount(gateway, "config.get", configGetsBeforeEdit + 1);
 
       await gateway.setMethodResponse("config.get", committed);
       await gateway.resolveDeferred("config.patch", committed);
       await waitForRequestCount(gateway, "config.get", configGetsBeforeEdit + 2);
-      await expectThemeActive(page, "knot");
+      await expectThemeModeActive(page, "light");
     } finally {
       await context.close();
     }
@@ -300,8 +303,8 @@ suite.define(() => {
   it("keeps offline intent through read-only reconnect and dispatches once after authorization", async () => {
     const context = await createContext();
     const page = await context.newPage();
-    const initial = configResponse({ theme: "claw", themeMode: "system" }, "prefs-scope-1");
-    const committed = configResponse({ theme: "knot", themeMode: "system" }, "prefs-scope-2");
+    const initial = configResponse({ themeMode: "system" }, "prefs-scope-1");
+    const committed = configResponse({ themeMode: "light" }, "prefs-scope-2");
     const gateway = await installMockGateway(page, {
       methodResponses: { "config.get": initial },
     });
@@ -309,16 +312,16 @@ suite.define(() => {
     try {
       const response = await page.goto(`${suite.server.baseUrl}settings/appearance`);
       expect(response?.status()).toBe(200);
-      await themeCard(page, "claw").waitFor();
+      await themeModeOption(page, "system").waitFor();
       await gateway.waitForRequest("config.get");
 
       await proxyReconnect(page, gateway, async () => {
-        await themeCard(page, "knot").click();
-        await expectThemeActive(page, "knot");
+        await themeModeOption(page, "light").click();
+        await expectThemeModeActive(page, "light");
         await gateway.setOperatorScopes(["operator.read"]);
       });
 
-      await expectThemeActive(page, "knot");
+      await expectThemeModeActive(page, "light");
       expect(await gateway.getRequests("config.patch")).toHaveLength(0);
 
       await gateway.deferNext("config.patch");
@@ -328,9 +331,9 @@ suite.define(() => {
       });
 
       const patch = await gateway.waitForRequest("config.patch");
-      expect(patchPrefs(patch)).toEqual({ theme: "knot" });
+      expect(patchPrefs(patch)).toEqual({ themeMode: "light" });
       await gateway.resolveDeferred("config.patch", committed);
-      await expectThemeActive(page, "knot");
+      await expectThemeModeActive(page, "light");
       await expect
         .poll(async () => (await gateway.getRequests("config.patch")).length, { timeout: 10_000 })
         .toBe(1);
@@ -343,7 +346,7 @@ suite.define(() => {
     const context = await createContext();
     const pageA = await context.newPage();
     const pageB = await context.newPage();
-    const initial = configResponse({ theme: "claw", themeMode: "system" }, "prefs-tabs-1");
+    const initial = configResponse({ themeMode: "system" }, "prefs-tabs-1");
     const gatewayA = await installMockGateway(pageA, {
       methodResponses: { "config.get": initial },
     });
@@ -355,7 +358,10 @@ suite.define(() => {
         pageA.goto(`${suite.server.baseUrl}settings/appearance`),
         pageB.goto(`${suite.server.baseUrl}settings/appearance`),
       ]);
-      await Promise.all([themeCard(pageA, "claw").waitFor(), themeCard(pageB, "claw").waitFor()]);
+      await Promise.all([
+        themeModeOption(pageA, "system").waitFor(),
+        themeModeOption(pageB, "system").waitFor(),
+      ]);
       await Promise.all([
         gatewayA.waitForRequest("config.get"),
         gatewayB.waitForRequest("config.get"),
@@ -366,22 +372,23 @@ suite.define(() => {
       });
 
       await proxyReconnect(pageA, gatewayA, async () => {
-        await themeCard(pageA, "knot").click();
-        await expectThemeActive(pageA, "knot");
-        expect(await readPendingPrefStorage(pageA)).toEqual([{ theme: "knot" }]);
-        await themeCard(pageB, "dash").click();
-        await expectThemeActive(pageB, "dash");
+        await themeModeOption(pageA, "light").click();
+        await expectThemeModeActive(pageA, "light");
+        expect(await readPendingPrefStorage(pageA)).toEqual([{ themeMode: "light" }]);
+        await themeModeOption(pageB, "dark").click();
+        await expectThemeModeActive(pageB, "dark");
         expect(await readPendingPrefStorage(pageB)).toEqual([]);
       });
       expect(await readPendingPrefStorage(pageA)).toEqual([]);
 
-      await themeModeOption(pageA, "dark").click();
+      await themeModeOption(pageA, "system").click();
       const patch = await gatewayA.waitForRequest("config.patch");
-      expect(patchPrefs(patch)).toEqual({ themeMode: "dark" });
+      // A fresh edit carries only itself: the superseded offline "light" stays gone.
+      expect(patchPrefs(patch)).toEqual({ themeMode: "system" });
       expect(await gatewayA.getRequests("config.patch")).toHaveLength(1);
       expect(await gatewayB.getRequests("config.patch")).toHaveLength(0);
-      await expectThemeActive(pageA, "dash");
-      await expectThemeActive(pageB, "dash");
+      await expectThemeModeActive(pageA, "system");
+      await expectThemeModeActive(pageB, "system");
     } finally {
       await context.close();
     }
@@ -392,7 +399,7 @@ suite.define(() => {
     const contextB = await createContext();
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
-    const initial = configResponse({ theme: "claw" }, "prefs-b-1");
+    const initial = configResponse({ themeMode: "system" }, "prefs-b-1");
     const gatewayA = await installMockGateway(pageA, {
       methodResponses: { "config.get": initial },
     });
@@ -405,13 +412,16 @@ suite.define(() => {
         pageA.goto(`${suite.server.baseUrl}settings/appearance`),
         pageB.goto(`${suite.server.baseUrl}settings/appearance`),
       ]);
-      await Promise.all([themeCard(pageA, "claw").waitFor(), themeCard(pageB, "claw").waitFor()]);
+      await Promise.all([
+        themeModeOption(pageA, "system").waitFor(),
+        themeModeOption(pageB, "system").waitFor(),
+      ]);
       await Promise.all([gatewayA.deferNext("config.patch"), gatewayB.deferNext("config.patch")]);
 
-      await themeCard(pageA, "knot").click();
+      await themeModeOption(pageA, "light").click();
       const patchA = await gatewayA.waitForRequest("config.patch");
       const prefsA = patchPrefs(patchA);
-      expect(prefsA).toEqual({ theme: "knot" });
+      expect(prefsA).toEqual({ themeMode: "light" });
       const themeCommitted = configResponse(prefsA, "prefs-b-2");
       await gatewayA.setMethodResponse("config.get", themeCommitted);
       await gatewayA.resolveDeferred("config.patch", themeCommitted);
@@ -431,19 +441,19 @@ suite.define(() => {
         ts: Date.now(),
       });
 
-      await expectThemeActive(pageA, "knot");
-      await expectThemeActive(pageB, "knot");
+      await expectThemeModeActive(pageA, "light");
+      await expectThemeModeActive(pageB, "light");
       await expect
         .poll(() => readSettingsMirror(pageA))
         .toMatchObject({
           chatFollowUpMode: "queue",
-          theme: "knot",
+          themeMode: "light",
         });
       await expect
         .poll(() => readSettingsMirror(pageB))
         .toMatchObject({
           chatFollowUpMode: "queue",
-          theme: "knot",
+          themeMode: "light",
         });
     } finally {
       await contextA.close();
@@ -454,23 +464,23 @@ suite.define(() => {
   it("applies a server delta without reverting a pending local key", async () => {
     const context = await createContext();
     const page = await context.newPage();
-    const initial = configResponse({ locale: "en", theme: "claw" }, "prefs-c-1");
+    const initial = configResponse({ locale: "en", themeMode: "system" }, "prefs-c-1");
     const gateway = await installMockGateway(page, {
       methodResponses: { "config.get": initial },
     });
 
     try {
       await page.goto(`${suite.server.baseUrl}settings/appearance`);
-      await themeCard(page, "claw").waitFor();
+      await themeModeOption(page, "system").waitFor();
       await gateway.waitForRequest("config.get");
       const initialConfigGets = (await gateway.getRequests("config.get")).length;
       await gateway.deferNext("config.patch");
 
-      await themeCard(page, "knot").click();
+      await themeModeOption(page, "light").click();
       const patch = await gateway.waitForRequest("config.patch");
-      expect(patchPrefs(patch)).toEqual({ theme: "knot" });
+      expect(patchPrefs(patch)).toEqual({ themeMode: "light" });
 
-      const serverChanged = configResponse({ locale: "de", theme: "claw" }, "prefs-c-2");
+      const serverChanged = configResponse({ locale: "de", themeMode: "system" }, "prefs-c-2");
       await gateway.setMethodResponse("config.get", serverChanged);
       await gateway.emitGatewayEvent("config.changed", {
         path: "/tmp/openclaw.json",
@@ -479,19 +489,19 @@ suite.define(() => {
       });
       await waitForRequestCount(gateway, "config.get", initialConfigGets + 1);
 
-      await expectThemeActive(page, "knot");
+      await expectThemeModeActive(page, "light");
       await expect
         .poll(() => readSettingsMirror(page))
         .toMatchObject({
           locale: "de",
-          theme: "knot",
+          themeMode: "light",
         });
 
       await gateway.rejectDeferred("config.patch", {
         code: "INVALID_REQUEST",
         message: "mock validation failure",
       });
-      await expectThemeActive(page, "knot");
+      await expectThemeModeActive(page, "light");
     } finally {
       await context.close();
     }

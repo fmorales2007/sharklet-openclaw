@@ -12,7 +12,7 @@ const suite = createControlUiE2eSuite({
 });
 
 suite.define(() => {
-  it("keeps theme controls laid out, with no accent or typography pickers across responsive layouts", async () => {
+  it("keeps the color-mode control laid out, with no theme, accent or typography pickers across responsive layouts", async () => {
     await suite.withPage(
       { colorScheme: "dark", locale: "en-US", viewport: { height: 1000, width: 1440 } },
       async ({ page }) => {
@@ -49,25 +49,9 @@ suite.define(() => {
         expect(headings).not.toContain("Accent color");
         expect(headings).not.toContain("Typography");
 
+        // Sharklet has one theme family: no family cards and no tweakcn import.
         const theme = page.locator("#settings-appearance-theme");
-        const grid = theme.locator(".settings-theme-grid");
-        for (const [width, expectedColumns] of [
-          [560, 3],
-          [320, 1],
-        ] as const) {
-          await page.setViewportSize({ height: 1000, width });
-          const layout = await grid.evaluate((element) => {
-            const cards = Array.from(element.children, (card) =>
-              (card as HTMLElement).getBoundingClientRect(),
-            );
-            return {
-              columns: new Set(cards.map((card) => Math.round(card.left))).size,
-              minWidth: Math.min(...cards.map((card) => card.width)),
-            };
-          });
-          expect(layout.columns).toBe(expectedColumns);
-          expect(layout.minWidth).toBeGreaterThanOrEqual(150);
-        }
+        expect(await theme.locator(".settings-theme-grid, .settings-theme-import").count()).toBe(0);
 
         const colorMode = page
           .locator(".settings-row")

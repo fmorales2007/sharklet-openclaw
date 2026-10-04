@@ -18,7 +18,6 @@ import {
 import { normalizeChatSplitLayout } from "../pages/chat/split-layout-persistence.ts";
 import type { ChatSplitLayout } from "../pages/chat/split-layout-types.ts";
 import { resolveControlUiPaths } from "./browser.ts";
-import { parseImportedCustomTheme, type ImportedCustomTheme } from "./custom-theme.ts";
 import { parseThemeSelection, type ThemeMode, type ThemeName } from "./theme.ts";
 import { normalizeTypefaceOverride, type TypefaceId } from "./typography.ts";
 import { normalizeLocalUserIdentity, type LocalUserIdentity } from "./user-identity.ts";
@@ -217,7 +216,6 @@ export type UiSettings = {
   showAdvancedSettings?: boolean; // Expand advanced schema settings (default false)
   pinnedAgentIds?: string[]; // Agents surfaced first in the agent-chip quick switcher
   textScale?: TextScaleStop; // Browser-local text scale percentage
-  customTheme?: ImportedCustomTheme;
   locale?: string;
   lobsterPetVisits?: boolean; // Whether the sidebar lobster pet drops by (default true)
   lobsterPetSounds?: boolean; // Opt-in poke/pet chirps from the lobster (default false)
@@ -496,7 +494,6 @@ export function loadUiPreferences(
     const gatewayUrl =
       targetGatewayUrl ?? (parsedGatewayUrl === pageDerivedUrl ? defaultUrl : parsedGatewayUrl);
     const scopedSessionSelection = resolveScopedSessionSelection(gatewayUrl, parsed, defaults);
-    const customTheme = parseImportedCustomTheme((parsed as { customTheme?: unknown }).customTheme);
     const { theme, mode } = parseThemeSelection(
       (parsed as { theme?: unknown }).theme,
       (parsed as { themeMode?: unknown }).themeMode,
@@ -518,7 +515,7 @@ export function loadUiPreferences(
       sessionKey: scopedSessionSelection.sessionKey,
       lastActiveSessionKey: scopedSessionSelection.lastActiveSessionKey,
       selectedAgentId: scopedSessionSelection.selectedAgentId,
-      theme: theme === "custom" && !customTheme ? "claw" : theme,
+      theme,
       themeMode: mode,
       accent: normalizeAccentColor(parsed.accent),
       fontUi: normalizeTypefaceOverride(parsed.fontUi),
@@ -583,7 +580,6 @@ export function loadUiPreferences(
         normalizeTextScale(parsed.textScale) !== UI_APPEARANCE_DEFAULTS.textScale
           ? normalizeTextScale(parsed.textScale)
           : undefined,
-      customTheme: customTheme ?? undefined,
       locale: isSupportedLocale(parsed.locale) ? parsed.locale : undefined,
       ...(parsed.lobsterPetVisits === false ? { lobsterPetVisits: false } : {}),
       ...(parsed.lobsterPetSounds === true ? { lobsterPetSounds: true } : {}),
@@ -735,7 +731,6 @@ function persistSettings(next: UiSettings, options: { selectGateway?: boolean } 
       ? { pinnedAgentIds: next.pinnedAgentIds }
       : {}),
     ...(next.textScale !== undefined ? { textScale: normalizeTextScale(next.textScale) } : {}),
-    ...(next.customTheme ? { customTheme: next.customTheme } : {}),
     sessionsByGateway,
     ...(next.locale ? { locale: next.locale } : {}),
     // Visits default on; only an explicit opt-out persists. Sounds default

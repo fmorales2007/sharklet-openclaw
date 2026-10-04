@@ -171,8 +171,8 @@ describe("ConfigPage synced preference provenance", () => {
 
   it("uses the committed snapshot for both display and reset while the form draft differs", () => {
     const page = new ConfigPage();
-    const committedConfig = { ui: { prefs: { theme: "claw" } } };
-    const draftConfig = { ui: { prefs: { theme: "knot" } } };
+    const committedConfig = { ui: { prefs: { themeMode: "system" } } };
+    const draftConfig = { ui: { prefs: { themeMode: "dark" } } };
     const runtimeConfig = {
       state: {
         client: null,
@@ -247,14 +247,14 @@ describe("ConfigPage synced preference provenance", () => {
     render(page.render(), container);
 
     const themeSection = container.querySelector<HTMLElement>("#settings-appearance-theme");
-    expect(themeSection?.textContent).toContain("Default: Claw");
+    expect(themeSection?.textContent).toContain("Default: System");
     expect(themeSection?.textContent).toContain("Synced across your devices");
-    expect(themeSection?.textContent).not.toContain("Default: Knot");
+    expect(themeSection?.textContent).not.toContain("Default: Dark");
     expect(themeSection?.textContent).not.toContain("Stored in this browser only");
 
-    themeSection?.querySelector<HTMLButtonElement>(".settings-theme-card--claw")?.click();
+    (page as unknown as { setThemeMode: (mode: "system") => void }).setThemeMode("system");
 
-    expect(changedServerUiPrefs(beforeReset, state.settings)).toEqual({ theme: null });
+    expect(changedServerUiPrefs(beforeReset, state.settings)).toEqual({ themeMode: null });
   });
 });
 

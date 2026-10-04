@@ -1,7 +1,7 @@
 // Control UI tests cover config behavior.
 import { render } from "lit";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import type { ThemeMode, ThemeName } from "../../app/theme.ts";
+import type { ThemeMode } from "../../app/theme.ts";
 import { renderConfigForm } from "../../components/config-form.ts";
 import "../../styles.css";
 import { warmJson5 } from "../../lib/json5-runtime.ts";
@@ -48,10 +48,6 @@ describe("config view", () => {
     onRawDiscard: vi.fn(),
     onSubsectionChange: vi.fn(),
     version: "2026.3.11",
-    theme: "claw" as ThemeName,
-    themeOverridden: false,
-    themeProvenance: "default" as const,
-    themeResetValue: "claw" as ThemeName,
     themeMode: "system" as ThemeMode,
     themeModeOverridden: false,
     themeModeProvenance: "default" as const,
@@ -62,20 +58,7 @@ describe("config view", () => {
     localeProvenance: "default" as const,
     localeResetValue: undefined,
     onLocaleChange: vi.fn(),
-    setTheme: vi.fn(),
     setThemeMode: vi.fn(),
-    hasCustomTheme: false,
-    customThemeLabel: null,
-    customThemeSourceUrl: null,
-    customThemeImportUrl: "",
-    customThemeImportBusy: false,
-    customThemeImportMessage: null,
-    customThemeImportExpanded: false,
-    customThemeImportFocusToken: 0,
-    onCustomThemeImportUrlChange: vi.fn(),
-    onImportCustomTheme: vi.fn(),
-    onClearCustomTheme: vi.fn(),
-    onOpenCustomThemeImport: vi.fn(),
     textScale: 100,
     textScaleOverridden: false,
     setTextScale: vi.fn(),
@@ -111,7 +94,6 @@ describe("config view", () => {
     const { container } = renderConfigView({
       activeSection: "__appearance__",
       includeSections: ["__appearance__"],
-      customThemeImportExpanded: true,
     });
     document.body.append(container);
 
@@ -1823,41 +1805,13 @@ describe("config view", () => {
     expect(onFormPatch).toHaveBeenCalledWith(["gateway", "mode"], "local");
   });
 
-  it("opens the tweakcn importer when custom is clicked without an imported theme", () => {
-    const onOpenCustomThemeImport = vi.fn();
+  it("exposes text-size selection to assistive technology", () => {
     const { container } = renderConfigView({
       activeSection: "__appearance__",
       includeSections: ["__appearance__"],
-      onOpenCustomThemeImport,
-    });
-
-    const customButton = findButtonByText(container, "Import");
-
-    expect(customButton.disabled).toBe(false);
-    expect(customButton.hasAttribute("aria-pressed")).toBe(false);
-    expect(
-      normalizedText(
-        queryRequired(container, ".settings-theme-import__inline-hint", HTMLParagraphElement),
-      ),
-    ).toBe(
-      "Click Import to add one browser-local tweakcn theme. In tweakcn, use Share and paste the copied link here.",
-    );
-
-    customButton.click();
-
-    expect(onOpenCustomThemeImport).toHaveBeenCalledTimes(1);
-  });
-
-  it("exposes theme and text-size selection to assistive technology", () => {
-    const { container } = renderConfigView({
-      activeSection: "__appearance__",
-      includeSections: ["__appearance__"],
-      theme: "knot",
       textScale: 110,
     });
 
-    expect(findButtonByText(container, "Knot").getAttribute("aria-pressed")).toBe("true");
-    expect(findButtonByText(container, "Claw").getAttribute("aria-pressed")).toBe("false");
     const textScaleButtons = [
       ...container.querySelectorAll<HTMLButtonElement>(".settings-text-scale__btn"),
     ];
@@ -1871,18 +1825,6 @@ describe("config view", () => {
         .find((button) => button.textContent?.includes("100%"))
         ?.getAttribute("aria-pressed"),
     ).toBe("false");
-
-    const { container: customContainer } = renderConfigView({
-      activeSection: "__appearance__",
-      includeSections: ["__appearance__"],
-      hasCustomTheme: true,
-      customThemeLabel: "Light Green",
-      theme: "custom",
-    });
-    expect(findButtonByText(customContainer, "Light Green").getAttribute("aria-pressed")).toBe(
-      "true",
-    );
-    expect(findButtonByText(customContainer, "Claw").getAttribute("aria-pressed")).toBe("false");
   });
 
   it("shows Appearance default descriptions", () => {
@@ -1900,7 +1842,6 @@ describe("config view", () => {
 
     for (const expected of [
       "Using default: System",
-      "Using default: Claw",
       "Using default: 100%",
       "Using default: Enabled",
       "Using default: 48rem",
@@ -1921,15 +1862,11 @@ describe("config view", () => {
   });
 
   it("keeps direct Appearance default selections independent", () => {
-    const setTheme = vi.fn();
     const setThemeMode = vi.fn();
     const setTextScale = vi.fn();
     const { container } = renderConfigView({
       activeSection: "__appearance__",
       includeSections: ["__appearance__"],
-      theme: "knot",
-      themeOverridden: true,
-      setTheme,
       themeMode: "dark",
       themeModeOverridden: true,
       setThemeMode,
@@ -1943,7 +1880,6 @@ describe("config view", () => {
           candidate.querySelector(".settings-row__title")?.textContent?.trim() === title,
       ) ?? null;
 
-    findButtonByText(container, "Claw").click();
     const colorModeGroup = row("Color mode")?.querySelector<HTMLElement & { value: string }>(
       "wa-radio-group",
     );
@@ -1956,21 +1892,15 @@ describe("config view", () => {
       .find((button) => button.textContent?.includes("100%"))
       ?.click();
 
-    expect(setTheme).toHaveBeenCalledWith("claw", expect.any(Object));
     expect(setThemeMode).toHaveBeenCalledWith("system", expect.any(Object));
     expect(setTextScale).toHaveBeenCalledWith(100);
   });
 
   it("keeps authored visual defaults direct", () => {
-    const setTheme = vi.fn();
     const setThemeMode = vi.fn();
     const { container } = renderConfigView({
       activeSection: "__appearance__",
       includeSections: ["__appearance__"],
-      theme: "claw",
-      themeOverridden: true,
-      themeProvenance: "synced",
-      setTheme,
       themeMode: "system",
       themeModeOverridden: true,
       themeModeProvenance: "synced",
@@ -1985,18 +1915,14 @@ describe("config view", () => {
         candidate.querySelector(".settings-row__title")?.textContent?.trim() === "Send shortcut",
     );
 
-    expect(normalizedText(themeSection)).toContain("Default: Claw");
     expect(normalizedText(themeSection)).toContain("Default: System");
     expect(shortcutRow?.textContent).toContain("Default: Enter");
-    findButtonByText(themeSection, "Claw").click();
     themeSection.querySelector<HTMLElement>('wa-radio[value="system"]')?.click();
 
-    expect(setTheme).toHaveBeenCalledWith("claw", expect.any(Object));
     expect(setThemeMode).toHaveBeenCalledWith("system", expect.any(Object));
   });
 
-  it("renders rejected theme and locale edits as browser-only fallbacks", () => {
-    const setTheme = vi.fn();
+  it("renders rejected color-mode and locale edits as browser-only fallbacks", () => {
     const { container } = renderConfigView({
       activeSection: "__appearance__",
       includeSections: ["__appearance__"],
@@ -2004,17 +1930,15 @@ describe("config view", () => {
       localeOverridden: true,
       localeProvenance: "device-local",
       localeResetValue: "de",
-      theme: "knot",
-      themeOverridden: true,
-      themeProvenance: "device-local",
-      themeResetValue: "claw",
-      setTheme,
+      themeMode: "dark",
+      themeModeOverridden: true,
+      themeModeProvenance: "device-local",
+      themeModeResetValue: "system",
     });
     const languageRow = queryRequired(container, "#settings-language .settings-row", HTMLElement);
-    const themeSection = queryRequired(container, "#settings-appearance-theme", HTMLElement);
-    const themeDescription = queryRequired(
-      themeSection,
-      ":scope > .settings-section__desc",
+    const colorModeRow = queryRequired(
+      container,
+      "#settings-appearance-theme .settings-row",
       HTMLElement,
     );
 
@@ -2028,33 +1952,23 @@ describe("config view", () => {
         }
       ).selected,
     ).toBe(true);
-    expect(themeDescription.textContent).toContain("Default: Claw");
-    expect(themeDescription.textContent).toContain("Stored in this browser only");
-    expect(themeDescription.textContent).not.toContain("Synced across your devices");
-    expect(
-      themeSection.querySelector(".settings-theme-card--knot")?.getAttribute("aria-pressed"),
-    ).toBe("true");
-
-    findButtonByText(themeSection, "Claw").click();
-
-    expect(setTheme).toHaveBeenCalledWith("claw", expect.any(Object));
+    expect(colorModeRow.textContent).toContain("Default: System");
+    expect(colorModeRow.textContent).toContain("Stored in this browser only");
+    expect(colorModeRow.textContent).not.toContain("Synced across your devices");
   });
 
   it("shows pending synced preferences without claiming they already synced", () => {
     const { container } = renderConfigView({
       activeSection: "__appearance__",
       includeSections: ["__appearance__"],
-      theme: "claw",
-      themeOverridden: false,
-      themeProvenance: "pending",
+      themeModeProvenance: "pending",
       chatFollowUpMode: "queue",
       chatFollowUpModeOverridden: true,
       chatFollowUpModeProvenance: "pending",
     });
-    const themeSection = queryRequired(container, "#settings-appearance-theme", HTMLElement);
-    const themeDescription = queryRequired(
-      themeSection,
-      ":scope > .settings-section__desc",
+    const colorModeRow = queryRequired(
+      container,
+      "#settings-appearance-theme .settings-row",
       HTMLElement,
     );
     const followUpRow = Array.from(container.querySelectorAll<HTMLElement>(".settings-row")).find(
@@ -2063,8 +1977,8 @@ describe("config view", () => {
         "Follow-ups while the agent is working",
     );
 
-    expect(themeDescription.textContent).toContain("Waiting to sync through the gateway");
-    expect(themeDescription.textContent).not.toContain("Synced across your devices");
+    expect(colorModeRow.textContent).toContain("Waiting to sync through the gateway");
+    expect(colorModeRow.textContent).not.toContain("Synced across your devices");
     expect(followUpRow?.textContent).toContain("Waiting to sync through the gateway");
     expect(followUpRow?.textContent).not.toContain("Synced across your devices");
   });
@@ -2122,75 +2036,6 @@ describe("config view", () => {
     expect(setChatCollapseTaskProgress).toHaveBeenCalledWith(true);
     expect(row?.textContent).toContain("Using default: Disabled");
     expect(row?.textContent).toContain("Stored in this browser only");
-  });
-
-  it("shows the tweakcn importer once the custom slot is opened", () => {
-    const { container } = renderConfigView({
-      activeSection: "__appearance__",
-      includeSections: ["__appearance__"],
-      customThemeImportExpanded: true,
-      customThemeImportFocusToken: 1,
-    });
-
-    const importButton = findButtonContainingText(container, "Import theme");
-
-    expect(importButton.disabled).toBe(true);
-    queryRequired(container, ".settings-theme-import__input", HTMLInputElement);
-    expect(
-      container.querySelector<HTMLAnchorElement>(".settings-theme-import__external")?.href,
-    ).toBe("https://tweakcn.com/editor/theme");
-    expect(
-      normalizedText(
-        queryRequired(container, ".settings-theme-import__hint", HTMLParagraphElement),
-      ),
-    ).toBe(
-      "Open tweakcn.com, choose or create a theme, click Share, then paste the copied theme link here. Share links, editor URLs, registry URLs, theme IDs, and default theme names like amethyst-haze are accepted.",
-    );
-  });
-
-  it("shows custom theme actions once a tweakcn import exists", () => {
-    const setTheme = vi.fn();
-    const onClearCustomTheme = vi.fn();
-    const onImportCustomTheme = vi.fn();
-    const onCustomThemeImportUrlChange = vi.fn();
-    const { container } = renderConfigView({
-      activeSection: "__appearance__",
-      includeSections: ["__appearance__"],
-      hasCustomTheme: true,
-      customThemeLabel: "Light Green",
-      customThemeSourceUrl: "https://tweakcn.com/themes/cmlhfpjhw000004l4f4ax3m7z",
-      customThemeImportUrl: "https://tweakcn.com/themes/cmlhfpjhw000004l4f4ax3m7z",
-      setTheme,
-      onClearCustomTheme,
-      onImportCustomTheme,
-      onCustomThemeImportUrlChange,
-    });
-
-    const customButton = findButtonByText(container, "Light Green");
-    expect(customButton.disabled).toBe(false);
-    customButton.click();
-    expect(setTheme).toHaveBeenCalledWith("custom", { element: customButton });
-
-    const replaceButton = findButtonContainingText(container, "Replace Light Green");
-    const clearButton = findButtonContainingText(container, "Clear Light Green");
-    replaceButton.click();
-    clearButton.click();
-
-    expect(onImportCustomTheme).toHaveBeenCalledTimes(1);
-    expect(onClearCustomTheme).toHaveBeenCalledTimes(1);
-    expect(container.querySelector(".settings-theme-import__meta-label")?.textContent?.trim()).toBe(
-      "Loaded",
-    );
-    expect(container.querySelector(".settings-theme-import__meta-value")?.textContent?.trim()).toBe(
-      "Light Green \u00b7 https://tweakcn.com/themes/cmlhfpjhw000004l4f4ax3m7z",
-    );
-
-    const input = container.querySelector(".settings-theme-import__input") as HTMLInputElement;
-    input.value = "/r/themes/cmlhfpjhw000004l4f4ax3m7z";
-    input.dispatchEvent(new Event("input"));
-    expect(onCustomThemeImportUrlChange).toHaveBeenCalledWith(
-      "/r/themes/cmlhfpjhw000004l4f4ax3m7z",
-    );
   });
 
   it("names the chat preference selects for assistive tech", () => {

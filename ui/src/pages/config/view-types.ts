@@ -13,7 +13,7 @@ import type {
 import type { ServerUiPrefProvenance } from "../../app/server-prefs.ts";
 import type { ChatFollowUpMode, ChatSendShortcut, CatalogOpenTarget } from "../../app/settings.ts";
 import type { ThemeTransitionContext } from "../../app/theme-transition.ts";
-import type { ThemeMode, ThemeName } from "../../app/theme.ts";
+import type { ThemeMode } from "../../app/theme.ts";
 import type { WebPushSnapshot } from "../../app/web-push.ts";
 import type { JsonSchema } from "../../components/config-form.shared.ts";
 import type { ConfigSchemaAnalysis } from "../../components/config-form.ts";
@@ -51,7 +51,6 @@ export type ConfigViewState = {
   envRevealed: boolean;
   validityDismissed: boolean;
   revealedSensitivePaths: Set<string>;
-  lastCustomThemeImportFocusToken: number | null;
   rawDiffCache?: RawDiffCache;
   schemaAnalysisCache?: SchemaAnalysisCache;
   lastConfigContextKey: string | null;
@@ -103,10 +102,6 @@ export type ConfigProps = {
   onRawDiscard: () => void;
   onOpenFile?: () => void;
   version: string;
-  theme: ThemeName;
-  themeOverridden: boolean;
-  themeProvenance: ServerUiPrefProvenance;
-  themeResetValue: ThemeName;
   themeMode: ThemeMode;
   themeModeOverridden: boolean;
   themeModeProvenance: ServerUiPrefProvenance;
@@ -117,20 +112,7 @@ export type ConfigProps = {
   localeProvenance: ServerUiPrefProvenance;
   localeResetValue?: Locale;
   onLocaleChange: (locale: Locale | undefined) => void;
-  setTheme: (theme: ThemeName, context?: ThemeTransitionContext) => void;
   setThemeMode: (mode: ThemeMode, context?: ThemeTransitionContext) => void;
-  hasCustomTheme: boolean;
-  customThemeLabel: string | null;
-  customThemeSourceUrl: string | null;
-  customThemeImportUrl: string;
-  customThemeImportBusy: boolean;
-  customThemeImportMessage: { kind: "success" | "error"; text: string } | null;
-  customThemeImportExpanded?: boolean;
-  customThemeImportFocusToken?: number;
-  onCustomThemeImportUrlChange: (next: string) => void;
-  onImportCustomTheme: () => void;
-  onClearCustomTheme: () => void;
-  onOpenCustomThemeImport?: () => void;
   textScale: number;
   textScaleOverridden: boolean;
   setTextScale: (value: number) => void;

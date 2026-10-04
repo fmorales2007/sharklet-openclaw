@@ -3675,7 +3675,6 @@ ui/src/app/assistant-identity.ts	2
 ui/src/app/browser.ts	1
 ui/src/app/canvas-surface-lease.runtime.ts	3
 ui/src/app/config.ts	1
-ui/src/app/custom-theme.ts	2
 ui/src/app/native-bridge.ts	3
 ui/src/app/native-gateways.runtime.ts	4
 ui/src/app/native-link-routing.ts	1

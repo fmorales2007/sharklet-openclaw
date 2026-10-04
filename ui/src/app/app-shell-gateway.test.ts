@@ -52,7 +52,7 @@ function createProfileAppearanceGateway(profileId: string | null) {
         configSnapshot: { config: { ui: { prefs: { accent: "#ff0000" } } } },
       },
     },
-    theme: { refresh: refreshTheme, recordServerSelection: vi.fn() },
+    theme: { refresh: refreshTheme },
   } as unknown as ApplicationContext;
   const host = {
     context,

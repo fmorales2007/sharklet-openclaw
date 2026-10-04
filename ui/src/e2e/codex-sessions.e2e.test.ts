@@ -465,19 +465,17 @@ suite.define(() => {
               runtime?: import("../app/bootstrap.ts").ApplicationRuntime;
             };
             const theme = app.runtime?.context.theme;
-            const palette = document.getElementById("openclaw-theme-palette-knot");
             const root = document.documentElement.dataset;
             return {
               preferences: [theme?.settings.theme, theme?.mode, theme?.resolvedMode],
-              paletteReady: palette instanceof HTMLLinkElement && Boolean(palette.sheet),
+              // One family: a stored "knot" resolves by mode alone.
               root: [root.theme, root.themeMode],
             };
           }),
         )
         .toEqual({
           preferences: ["knot", "dark", "dark"],
-          paletteReady: true,
-          root: ["openknot", "dark"],
+          root: ["dark", "dark"],
         });
       await expect.poll(() => section.locator("[data-session-catalog-host]").count()).toBe(2);
       expect(await section.locator('[data-session-catalog-host="gateway:local"]').count()).toBe(1);

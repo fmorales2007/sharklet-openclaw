@@ -32,7 +32,6 @@ export const uiIsolatedTestFiles = [
   "ui/src/pages/chat/components/chat-transcript-controller.test.ts",
   "ui/src/pages/chat/components/chat-transcript-invalidation.test.ts",
   "ui/src/pages/chat/components/chat-transcript-render.test.ts",
-  "ui/src/pages/config/config-page.custom-theme.test.ts",
   "ui/src/pages/config/memory-mutation-owner.test.ts",
   "ui/src/pages/config/memory-page.test.ts",
   "ui/src/pages/new-session/draft-persistence.test.ts",

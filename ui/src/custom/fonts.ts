@@ -1,14 +1,9 @@
 // Makes sure Geist is actually loaded.
 //
 // bridge.css points --font-body and --font-chat at "Geist", but the face only
-// arrives if its stylesheet is linked. Upstream links typeface stylesheets on
-// demand (app/typography.ts:77), and only for the typeface the settings resolve
-// to — which is Instrument Sans unless someone picked Geist by hand. Forcing the
-// token without linking the sheet gives the system sans, not Geist.
-//
-// loadTypefaceStylesheet is not exported and typography.ts is outside the
-// whitelist, so this links the same public asset itself, through the same path
-// helper, with the same id shape, and is idempotent.
+// arrives if its stylesheet is linked. Upstream's per-theme typeface loader is
+// gone with its themes (F1-10), so this is the only place that links one:
+// through the public-asset path helper, idempotently.
 //
 // Geist came with upstream. Geist Mono is ours: the latin and latin-ext
 // variable subsets, the same ranges geist.css uses, in ui/public/fonts/ with

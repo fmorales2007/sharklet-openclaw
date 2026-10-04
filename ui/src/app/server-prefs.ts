@@ -39,7 +39,6 @@ import {
   writeStorage,
 } from "./server-prefs-storage.ts";
 import { loadSettings, patchSettings, type UiSettings } from "./settings.ts";
-import type { ThemeName } from "./theme.ts";
 
 type ServerUiPrefsWriter = Pick<RuntimeConfigCapability, "canPatch" | "runExternalMutation"> & {
   readonly state: {
@@ -312,7 +311,6 @@ export function applyServerUiPrefs(
     scope?: string;
     profileId?: string | null;
     onApplied: (patch: Partial<UiSettings>) => void;
-    onThemeChanged?: (theme: ThemeName | null) => void;
   },
 ): boolean {
   const gatewayScope = hooks.scope ?? "";
@@ -389,9 +387,6 @@ export function applyServerUiPrefs(
     updateRetainedLocalKeys(scope, [...retainedLocalKeys], false);
   }
   recordReconciledObject();
-  if (Object.hasOwn(changed, "theme")) {
-    hooks.onThemeChanged?.(changed.theme ?? null);
-  }
   const patch = serverPrefsLocalPatch(changed, loadSettings(gatewayScope || undefined));
   if (!patch) {
     return false;
@@ -412,7 +407,6 @@ export async function refreshProfileAppearancePrefs(options: {
   configObject: unknown;
   scope?: string;
   onApplied: (patch: Partial<UiSettings>) => void;
-  onThemeChanged?: (theme: ThemeName | null) => void;
 }): Promise<boolean> {
   const scope = options.scope ?? options.client.gatewayUrl;
   if (!(await loadProfileAppearancePrefs(options.client, options.profileId, scope))) {
@@ -510,13 +504,6 @@ async function drainPendingPrefs(writer: ServerUiPrefsWriter, epoch: number): Pr
       cancelPendingKeys(pendingScope, localOnlyKeys);
       updateRetainedLocalKeys(pendingScope, localOnlyKeys, true);
       pushAfterCommit?.({ needsRefresh: false, retainedLocal: true });
-      continue;
-    }
-    if (pushProfileId && pendingPrefs.theme === "custom") {
-      // Offline-queued custom theme reaching a profile connection: browser-local
-      // by contract, so retain it here instead of syncing it to the profile.
-      cancelPendingKeys(pendingScope, ["theme"]);
-      updateRetainedLocalKeys(pendingScope, ["theme"], true);
       continue;
     }
     const profileBatch: ServerUiPrefs = {};
@@ -687,9 +674,7 @@ export function pushServerUiPrefs(
           return true;
         }
         if (pushProfileId && isAppearancePref(key)) {
-          // Imported custom palettes are browser-local by contract; a profile
-          // must never carry a theme another browser cannot render.
-          return !pushCanWrite || (key === "theme" && prefs.theme === "custom");
+          return !pushCanWrite;
         }
         return writer.canPatch === false;
       })

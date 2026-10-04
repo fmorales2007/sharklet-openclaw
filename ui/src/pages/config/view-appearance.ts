@@ -4,9 +4,6 @@ import {
   UI_APPEARANCE_DEFAULTS,
   type TextScaleStop,
 } from "../../app/settings.ts";
-import type { ThemeTransitionContext } from "../../app/theme-transition.ts";
-import type { ThemeName } from "../../app/theme.ts";
-import { icons } from "../../components/icons.ts";
 import {
   renderSettingsDefaultDescription,
   renderSettingsRow,
@@ -15,7 +12,6 @@ import {
   renderSettingsValue,
 } from "../../components/settings-ui.ts";
 import { t } from "../../i18n/index.ts";
-import { resolveScrollBehavior } from "../../lib/scroll-behavior.ts";
 import { APPEARANCE_SETTINGS_TARGET_IDS } from "./route-data.ts";
 import {
   renderChatPreferencesSection,
@@ -34,154 +30,16 @@ const TEXT_SCALE_LABELS: Record<TextScaleStop, string> = {
   140: "configView.textSizes.xxl",
 };
 
-type ThemeOption = {
-  id: ThemeName;
-  labelKey: string;
-  descriptionKey: string;
-};
-
-const BUILTIN_THEME_OPTIONS: ThemeOption[] = [
-  {
-    id: "claw",
-    labelKey: "configView.themes.claw.label",
-    descriptionKey: "configView.themes.claw.description",
-  },
-  {
-    id: "knot",
-    labelKey: "configView.themes.knot.label",
-    descriptionKey: "configView.themes.knot.description",
-  },
-  {
-    id: "dash",
-    labelKey: "configView.themes.dash.label",
-    descriptionKey: "configView.themes.dash.description",
-  },
-  {
-    id: "absolutely",
-    labelKey: "configView.themes.absolutely.label",
-    descriptionKey: "configView.themes.absolutely.description",
-  },
-  {
-    id: "tide",
-    labelKey: "configView.themes.tide.label",
-    descriptionKey: "configView.themes.tide.description",
-  },
-  {
-    id: "beacon",
-    labelKey: "configView.themes.beacon.label",
-    descriptionKey: "configView.themes.beacon.description",
-  },
-  {
-    id: "phosphor",
-    labelKey: "configView.themes.phosphor.label",
-    descriptionKey: "configView.themes.phosphor.description",
-  },
-  {
-    id: "crt",
-    labelKey: "configView.themes.crt.label",
-    descriptionKey: "configView.themes.crt.description",
-  },
-  {
-    id: "manuscript",
-    labelKey: "configView.themes.manuscript.label",
-    descriptionKey: "configView.themes.manuscript.description",
-  },
-  {
-    id: "rose",
-    labelKey: "configView.themes.rose.label",
-    descriptionKey: "configView.themes.rose.description",
-  },
-  {
-    id: "miami",
-    labelKey: "configView.themes.miami.label",
-    descriptionKey: "configView.themes.miami.description",
-  },
-];
-
-/* Builtin cards preview their real palette (chip colors live in config.css,
-   mirrored from the base.css theme blocks). The custom card only has real
-   colors while active — its chips read the live CSS variables — so it falls
-   back to the spark icon otherwise. */
-function renderThemeCardVisual(id: ThemeName, activeTheme: ThemeName) {
-  if (id === "custom" && activeTheme !== "custom") {
-    return html`<span class="settings-theme-card__icon" aria-hidden="true"
-      >${icons.download}</span
-    >`;
-  }
-  return html`
-    <span class="settings-theme-card__palette" aria-hidden="true">
-      <span class="settings-theme-card__chip settings-theme-card__chip--accent"></span>
-      <span class="settings-theme-card__chip settings-theme-card__chip--accent-2"></span>
-      <span class="settings-theme-card__chip settings-theme-card__chip--bg"></span>
-    </span>
-  `;
-}
-
-function importedThemeName(props: Pick<ConfigProps, "hasCustomTheme" | "customThemeLabel">) {
-  return props.hasCustomTheme && props.customThemeLabel
-    ? props.customThemeLabel
-    : t("configView.appearance.importedTheme");
-}
-
-function focusCustomThemeImportInput() {
-  const schedule =
-    typeof requestAnimationFrame === "function"
-      ? requestAnimationFrame
-      : (cb: FrameRequestCallback) => window.setTimeout(() => cb(0), 0);
-  schedule(() => {
-    const input = globalThis.document?.querySelector<HTMLInputElement>(
-      "[data-custom-theme-import-input]",
-    );
-    if (!input) {
-      return;
-    }
-    if (typeof input.scrollIntoView === "function") {
-      input.scrollIntoView({ block: "center", behavior: resolveScrollBehavior() });
-    }
-    input.focus();
-    input.select();
-  });
-}
-
 export function renderAppearanceSection(
   props: ConfigProps,
-  inputs: { customThemeImport: TemplateResult; chatMessageWidth: TemplateResult },
+  inputs: { chatMessageWidth: TemplateResult },
 ) {
-  const viewState = props.viewState;
-  const showCustomThemeImport = props.hasCustomTheme || props.customThemeImportExpanded === true;
-  if (
-    showCustomThemeImport &&
-    props.customThemeImportFocusToken != null &&
-    props.customThemeImportFocusToken !== viewState.lastCustomThemeImportFocusToken
-  ) {
-    viewState.lastCustomThemeImportFocusToken = props.customThemeImportFocusToken;
-    focusCustomThemeImportInput();
-  }
-  const importedName = importedThemeName(props);
-  const themeOptions: Array<{ id: ThemeName; label: string; description: string }> = [
-    ...BUILTIN_THEME_OPTIONS.map((option) => ({
-      id: option.id,
-      label: t(option.labelKey),
-      description: t(option.descriptionKey),
-    })),
-    {
-      id: "custom",
-      label: props.hasCustomTheme ? importedName : t("configView.appearance.import"),
-      description: props.hasCustomTheme
-        ? t("configView.appearance.importedFrom", { name: importedName })
-        : t("configView.appearance.importHint"),
-    },
-  ];
-  const themeDefault =
-    themeOptions.find((option) => option.id === props.themeResetValue)?.label ??
-    t("configView.themes.claw.label");
   const themeModeDefault =
     props.themeModeResetValue === "light"
       ? t("common.light")
       : props.themeModeResetValue === "dark"
         ? t("common.dark")
         : t("common.system");
-  const themeProvenance = serverUiPrefProvenanceHint(props.themeProvenance);
   const themeModeProvenance = serverUiPrefProvenanceHint(props.themeModeProvenance);
   return html`
     <div class="settings-page">
@@ -190,49 +48,7 @@ export function renderAppearanceSection(
         <div class="settings-section__header">
           <h2 class="settings-section__heading">${t("configView.appearance.theme")}</h2>
         </div>
-        <p class="settings-section__desc">
-          ${t("configView.appearance.chooseTheme")}
-          ${renderSettingsDefaultDescription(themeDefault, props.themeOverridden)}
-          ${themeProvenance}
-        </p>
         <div class="settings-group">
-          <div class="settings-row settings-row--stacked">
-            <div class="settings-theme-grid">
-              ${themeOptions.map(
-                (opt) => html`
-                  <button
-                    class="settings-theme-card settings-theme-card--${opt.id} ${
-                      opt.id === props.theme ? "settings-theme-card--active" : ""
-                    }"
-                    aria-pressed=${
-                      opt.id === "custom" && !props.hasCustomTheme
-                        ? nothing
-                        : String(opt.id === props.theme)
-                    }
-                    title=${opt.description}
-                    @click=${(e: Event) => {
-                      if (opt.id === "custom" && !props.hasCustomTheme) {
-                        props.onOpenCustomThemeImport?.();
-                        return;
-                      }
-                      if (
-                        opt.id !== props.theme ||
-                        (opt.id === props.themeResetValue && props.themeOverridden)
-                      ) {
-                        const context: ThemeTransitionContext = {
-                          element: (e.currentTarget as HTMLElement) ?? undefined,
-                        };
-                        props.setTheme(opt.id, context);
-                      }
-                    }}
-                  >
-                    ${renderThemeCardVisual(opt.id, props.theme)}
-                    <span class="settings-theme-card__label">${opt.label}</span>
-                  </button>
-                `,
-              )}
-            </div>
-          </div>
           ${renderSettingsRow({
             title: t("common.colorMode"),
             description: html`${renderSettingsDefaultDescription(
@@ -257,96 +73,6 @@ export function renderAppearanceSection(
               },
             }),
           })}
-          <div class="settings-row settings-row--stacked">
-            ${
-              showCustomThemeImport
-                ? html`
-                    <div class="settings-theme-import">
-                      <div class="settings-theme-import__copy">
-                        <div class="settings-theme-import__title">
-                          ${t("configView.appearance.importFromTweakcn")}
-                        </div>
-                        <p class="settings-theme-import__hint">
-                          ${t("configView.appearance.tweakcnInstructions")}
-                        </p>
-                      </div>
-                      <a
-                        class="settings-theme-import__external"
-                        href="https://tweakcn.com/editor/theme"
-                        target="_blank"
-                        rel="noreferrer noopener"
-                      >
-                        ${t("configView.appearance.browseTweakcn")} ${icons.externalLink}
-                      </a>
-                      <label class="settings-theme-import__field">
-                        <span class="settings-theme-import__label"
-                          >${t("configView.appearance.themeLink")}</span
-                        >
-                        ${inputs.customThemeImport}
-                      </label>
-                      <div class="settings-theme-import__actions">
-                        <button
-                          class="btn btn--sm primary"
-                          ?disabled=${
-                            props.customThemeImportBusy ||
-                            props.customThemeImportUrl.trim().length === 0
-                          }
-                          @click=${props.onImportCustomTheme}
-                        >
-                          ${
-                            props.customThemeImportBusy
-                              ? t("common.importing")
-                              : props.hasCustomTheme
-                                ? t("configView.appearance.replace", { name: importedName })
-                                : t("configView.appearance.importTheme")
-                          }
-                        </button>
-                        ${
-                          props.hasCustomTheme
-                            ? html`<button
-                                class="btn btn--sm danger"
-                                @click=${props.onClearCustomTheme}
-                              >
-                                ${t("configView.appearance.clear", { name: importedName })}
-                              </button>`
-                            : nothing
-                        }
-                      </div>
-                      ${
-                        props.hasCustomTheme
-                          ? html`<div class="settings-theme-import__meta">
-                              <span class="settings-theme-import__meta-label"
-                                >${t("configView.appearance.loaded")}</span
-                              >
-                              <span class="settings-theme-import__meta-value"
-                                >${importedName} · ${props.customThemeSourceUrl ?? "tweakcn"}</span
-                              >
-                            </div>`
-                          : nothing
-                      }
-                      ${
-                        props.customThemeImportMessage
-                          ? html`<div
-                              class="settings-theme-import__message settings-theme-import__message--${
-                                props.customThemeImportMessage.kind
-                              }"
-                              role=${
-                                props.customThemeImportMessage.kind === "error" ? "alert" : "status"
-                              }
-                            >
-                              ${props.customThemeImportMessage.text}
-                            </div>`
-                          : nothing
-                      }
-                    </div>
-                  `
-                : html`<p class="settings-theme-import__inline-hint">
-                    ${t("configView.appearance.inlineHintBefore")}
-                    <strong>${t("configView.appearance.import")}</strong>
-                    ${t("configView.appearance.inlineHintAfter")}
-                  </p>`
-            }
-          </div>
         </div>
       </section>
 

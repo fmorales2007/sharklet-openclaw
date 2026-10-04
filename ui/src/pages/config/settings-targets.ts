@@ -223,14 +223,8 @@ export const SETTINGS_SEARCH_TARGETS = {
     labelKey: "configView.appearance.theme",
     search: "?section=__appearance__",
     hash: `#${APPEARANCE_SETTINGS_TARGET_IDS.theme}`,
-    searchKeys: [
-      "configView.appearance.chooseTheme",
-      "configView.appearance.importedTheme",
-      "configView.appearance.import",
-      "configView.appearance.importFromTweakcn",
-      "configView.appearance.browseTweakcn",
-    ],
-    aliases: "tweakcn light dark system",
+    searchKeys: ["common.colorMode"],
+    aliases: "light dark system",
   },
   appearanceTextSize: {
     routeId: "appearance",

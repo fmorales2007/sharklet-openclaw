@@ -72,18 +72,6 @@ function renderAppearance(props: ConfigProps) {
         }}
       />
     `,
-    customThemeImport: html`
-      <input
-        class="settings-theme-import__input"
-        data-custom-theme-import-input
-        type="text"
-        spellcheck="false"
-        placeholder="https://tweakcn.com/editor/theme?theme=... or amethyst-haze"
-        .value=${props.customThemeImportUrl}
-        @input=${(event: Event) =>
-          props.onCustomThemeImportUrlChange((event.currentTarget as HTMLInputElement).value)}
-      />
-    `,
   });
 }
 
