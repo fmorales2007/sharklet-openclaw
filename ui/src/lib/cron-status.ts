@@ -10,7 +10,7 @@ export function resolveCronJobLastRunStatus(job: CronJob): CronJobLastRunStatus 
 // The gateway intentionally leaves nextRunAtMs past-due while a run executes
 // (it only advances on the outcome), so "overdue" surfaces must not flag a
 // job that is actively running. runningAtMs is the recorded fact for that.
-export function isCronJobRunning(job: CronJob): boolean {
+export function isCronJobRunning(job: { state?: { runningAtMs?: number } }): boolean {
   const runningAtMs = job.state?.runningAtMs;
   return typeof runningAtMs === "number" && Number.isFinite(runningAtMs);
 }

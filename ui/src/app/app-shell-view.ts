@@ -71,6 +71,7 @@ import { renderShellPageSlot } from "./shell-page-slot.ts";
 import { createUpdateProgressWatcher } from "./update-confirmation.ts";
 
 const EMPTY_SESSION_HAS_DRAFT = () => false;
+const NO_OFF_PAGES: ReadonlySet<string> = new Set();
 
 export interface ShellViewHost extends DevicePairSetupHost {
   readonly context: ApplicationContext<RouteId> | undefined;
@@ -152,15 +153,17 @@ export function renderApplicationShell(host: ShellViewHost) {
   const lazyElementState = host.lazyCustomElements.visibleState;
   const activeRoute = host.routeState.routeId ?? "chat";
   const sessionRoute = isSessionRouteId(activeRoute);
-  // Session routes have an offline outbox, New Session keeps a local draft, and
-  // Appearance persists local preference intent for replay. Their server actions
-  // are independently gated; other pages cannot submit useful disconnected work.
+  // Session routes have an offline outbox, New Session keeps a local draft (Home
+  // embeds the same composer), and Appearance persists local preference intent
+  // for replay. Their server actions are independently gated; other pages cannot
+  // submit useful disconnected work.
   const reloadRequired = gatewaySnapshot.phase === "reload-required";
   const pageActionsBlocked =
     !reloadRequired &&
     !gatewayConnected &&
     !sessionRoute &&
     activeRoute !== "new-session" &&
+    activeRoute !== "home" &&
     activeRoute !== "appearance";
   // Plugin tabs share one route; the URL picks the active item.
   const activePluginRef =
@@ -259,11 +262,13 @@ export function renderApplicationShell(host: ShellViewHost) {
   // its scrolling and pins the composer dock to the bottom.
   const chatLikeRoute = sessionRoute || activeRoute === "new-session";
   // Mission Control's compact bar heads every ordinary page; chat, settings and
-  // onboarding keep their own chrome, and Home carries the full strip.
+  // onboarding keep their own chrome, Home carries the full strip, and Usage
+  // already shows the month's spend (the bar would only ask for it twice).
   const missionBar =
     !(nativeEmbed || onboarding || settingsTakeover || chatLikeRoute) &&
     activeRoute !== "home" &&
-    activeRoute !== "custodian";
+    activeRoute !== "custodian" &&
+    activeRoute !== "usage";
   if (!settingsTakeover && !nativeEmbed) {
     Object.assign(host.navigationSidebar, {
       basePath: context.basePath,
@@ -397,7 +402,7 @@ export function renderApplicationShell(host: ShellViewHost) {
         ? html`<openclaw-command-palette
             .desktopAvailable=${desktopPanelAvailable}
             .custodianAvailable=${custodianPanelAvailable}
-            .offPageIds=${host.pagesOff?.ids() ?? new Set<string>()}
+            .offPageIds=${host.pagesOff?.ids() ?? NO_OFF_PAGES}
             .onNavigate=${(routeId: RouteId, options?: ApplicationNavigationOptions) =>
               host.navigate(routeId, options)}
             .onSelectSession=${(sessionKey: string) => host.selectChatSession(sessionKey)}

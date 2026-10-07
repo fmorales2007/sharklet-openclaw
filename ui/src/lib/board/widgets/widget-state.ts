@@ -2,7 +2,7 @@
 // every widget and page built on the RPC layer. Markup is the design
 // system's `sk-state`; copy comes from i18n.
 import { html, nothing, type TemplateResult } from "lit";
-import type { RpcError, RpcLoading, RpcOff } from "../../../api/rpc.ts";
+import type { RpcError, RpcLoading } from "../../../api/rpc.ts";
 import { icons } from "../../../components/icons.ts";
 import { t } from "../../../i18n/index.ts";
 
@@ -20,9 +20,9 @@ export function renderWidgetLoading(
       role="status"
       aria-label=${t("missionControl.state.loading", { name: options.name })}
     >
-      <span class="sk-skeleton" style="height:28px"></span>
-      <span class="sk-skeleton" style="height:12px;width:70%"></span>
-      <span class="sk-skeleton" style="height:12px;width:52%"></span>
+      <span class="sk-skeleton"></span>
+      <span class="sk-skeleton"></span>
+      <span class="sk-skeleton"></span>
       ${
         slow
           ? html`<span class="sk-stale"
@@ -41,20 +41,22 @@ export function renderWidgetLoading(
   `;
 }
 
-/** `inline` is the shape under stale content: it never removes what is on screen. */
+/**
+ * `inline` is the shape under stale content: it never removes what is on screen.
+ * Try again is always offered (board.md, "Error, with a way out"): `retryable`
+ * only decides whether the layer retries by itself.
+ */
 export function renderWidgetError(
   error: RpcError,
   options: { name: string; inline: boolean; onRetry: () => void },
 ): TemplateResult {
-  const retry = error.retryable
-    ? html`<button
-        type="button"
-        class="sk-btn sk-btn--secondary sk-btn--sm"
-        @click=${options.onRetry}
-      >
-        ${icons.rotateCcw}${t("missionControl.state.retry")}
-      </button>`
-    : nothing;
+  const retry = html`<button
+    type="button"
+    class="sk-btn sk-btn--secondary sk-btn--sm"
+    @click=${options.onRetry}
+  >
+    ${icons.rotateCcw}${t("missionControl.state.retry")}
+  </button>`;
   if (options.inline) {
     return html`<div class="sk-state sk-state--error sk-state--inline" role="status">
       ${icons.circleX}
@@ -75,20 +77,5 @@ export function renderWidgetError(
           </details>`
         : nothing
     }
-  </div>`;
-}
-
-/** Off is a decision, not a failure: neutral, no retry. */
-export function renderWidgetOff(off: RpcOff): TemplateResult {
-  return html`<div class="sk-state sk-state--off">
-    ${icons.powerOff}
-    <b
-      >${
-        off.reason === "disabled"
-          ? t("missionControl.state.offDisabled")
-          : t("missionControl.state.offUnavailable")
-      }</b
-    >
-    <p>${off.message}</p>
   </div>`;
 }

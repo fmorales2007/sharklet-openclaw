@@ -29,7 +29,7 @@ export class MissionControlPage extends OpenClawLightDomElement {
 
   private readonly sourcesController = new MissionControlSourcesController(
     this,
-    () => this.context?.gateway.snapshot.client ?? null,
+    () => this.context?.gateway,
   );
 
   private readonly callbacks: BoardViewCallbacks = {
@@ -71,7 +71,10 @@ export class MissionControlPage extends OpenClawLightDomElement {
           }
         </section>
         <section class="sk-mc__composer" aria-label=${t("missionControl.composerLabel")}>
-          <openclaw-new-session-page .data=${this.data}></openclaw-new-session-page>
+          <openclaw-new-session-page
+            .data=${this.data}
+            .composerOnly=${true}
+          ></openclaw-new-session-page>
         </section>
       </div>
     `;

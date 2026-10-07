@@ -1,17 +1,16 @@
 // Mocked gateway responses for Mission Control's four values, in the
 // control-ui-e2e format: pass to `installMockGateway(page, { methodResponses })`.
 // Fixed in F1-02 and shared by both tracks; add new fixtures in your own file.
-import type { AgentsListResult, CronJobsListResult, SessionsListResult } from "../api/types.ts";
+import type { AgentsListResult, SessionsListResult } from "../api/types.ts";
 import type { CostUsageSummary } from "../pages/usage/data-types.ts";
 
 const NOW = Date.UTC(2026, 9, 15, 12);
 const MINUTE = 60_000;
 
-function cronJob(
-  id: string,
-  name: string,
-  nextRunAtMs: number,
-): CronJobsListResult["jobs"][number] {
+// A row as cron.list really sends it (src/gateway/server-methods/cron.ts:
+// cronJobReadView plus effectiveAgentId), with a scheduler-only state counter.
+// That is more than the protocol's CronJob type declares, on purpose.
+function cronJob(id: string, name: string, nextRunAtMs: number) {
   return {
     id,
     configRevision: `${id}-revision`,
@@ -23,7 +22,10 @@ function cronJob(
     sessionTarget: "main",
     wakeMode: "next-heartbeat",
     payload: { kind: "systemEvent", text: `Synthetic ${name.toLowerCase()}` },
-    state: { nextRunAtMs, lastRunStatus: "ok" },
+    state: { nextRunAtMs, lastRunStatus: "ok", scheduleErrorCount: 0 },
+    nextRunAtMs,
+    lastRunStatus: "ok",
+    effectiveAgentId: "main",
   };
 }
 
@@ -86,7 +88,7 @@ export function createMissionControlMethodResponses(): Record<string, unknown> {
       limit: 50,
       hasMore: false,
       nextOffset: null,
-    } satisfies CronJobsListResult,
+    },
     "usage.cost": {
       updatedAt: NOW,
       days: 15,

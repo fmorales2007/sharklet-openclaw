@@ -9,10 +9,7 @@ import {
   AgentsListParamsSchema,
   AgentsListResultSchema,
 } from "../../../packages/gateway-protocol/src/schema/agents-models-skills.js";
-import {
-  CronJobSchema,
-  CronListParamsSchema,
-} from "../../../packages/gateway-protocol/src/schema/cron.js";
+import { CronListParamsSchema } from "../../../packages/gateway-protocol/src/schema/cron.js";
 import { SessionsListParamsSchema } from "../../../packages/gateway-protocol/src/schema/sessions-list.js";
 import { SessionRowSchema } from "../../../packages/gateway-protocol/src/schema/sessions-row.js";
 import type { RpcMethod, RpcResultOf } from "./rpc.ts";
@@ -56,7 +53,7 @@ function findOverLimit(value: unknown, limits: Limits, path = "", depth = 0): st
   return null;
 }
 
-// ---- cero llaves en el cliente ---------------------------------------------
+// ---- no keys in the client --------------------------------------------------
 
 // Exact names only: `totalTokens`, `key` and `sessionKey` are not secrets.
 const SECRET_FIELD_NAMES = new Set([
@@ -113,7 +110,7 @@ export function findKeyShapedField(value: unknown, path = "", depth = 0): string
   return null;
 }
 
-// ---- esquemas --------------------------------------------------------------
+// ---- schemas ----------------------------------------------------------------
 
 const closed = <T extends Record<string, TSchema>>(properties: T) =>
   Type.Object(properties, { additionalProperties: false });
@@ -167,15 +164,46 @@ const UsageCostResultSchema = closed({
   ),
 });
 
-const CronListResultSchema = closed({
-  jobs: Type.Array(CronJobSchema, { maxItems: 500 }),
-  snapshotRevision: str(),
-  total: Type.Integer({ minimum: 0 }),
-  limit: Type.Integer({ minimum: 0 }),
-  offset: Type.Integer({ minimum: 0 }),
-  nextOffset: Type.Union([Type.Integer({ minimum: 0 }), Type.Null()]),
-  hasMore: Type.Boolean(),
-});
+// cron.list rows are more than the protocol's closed CronJobSchema: the read
+// view adds effectiveAgentId and flattened run fields (src/gateway/server-methods/
+// cron.ts, cronJobReadView), and the scheduler keeps counters of its own in
+// `state`. Up next reads a few fields: those are checked and kept, the rest is
+// dropped, as with session rows.
+const UpNextJobSchema = Type.Object(
+  {
+    id: str(),
+    name: str(1024),
+    enabled: Type.Boolean(),
+    agentId: Type.Optional(str()),
+    state: Type.Optional(
+      Type.Object(
+        { nextRunAtMs: Type.Optional(num()), runningAtMs: Type.Optional(num()) },
+        { additionalProperties: true },
+      ),
+    ),
+  },
+  { additionalProperties: true },
+);
+const CronListResultSchema = Type.Object(
+  { jobs: Type.Array(UpNextJobSchema, { maxItems: 500 }), total: Type.Integer({ minimum: 0 }) },
+  { additionalProperties: true },
+);
+
+function projectCronList(value: unknown): unknown {
+  const list = value as { jobs: Record<string, unknown>[]; total: number };
+  return {
+    total: list.total,
+    jobs: list.jobs.map((job) => {
+      const kept = pick(job, ["id", "name", "enabled", "agentId"]);
+      return job.state
+        ? {
+            ...kept,
+            state: pick(job.state as Record<string, unknown>, ["nextRunAtMs", "runningAtMs"]),
+          }
+        : kept;
+    }),
+  };
+}
 
 // Session rows and the list envelope grow with the gateway. They are checked
 // field by field and then projected: what the contract does not name never
@@ -239,7 +267,7 @@ function projectSessionsList(value: unknown): unknown {
 }
 
 const PagesStateResultSchema = closed({
-  off: Type.Array(closed({ id: str(40), reason: Type.Optional(str(200)) }), { maxItems: 64 }),
+  off: Type.Array(closed({ id: str(40), reason: Type.Optional(str(200)) }), { maxItems: 256 }),
 });
 
 const METHOD_SCHEMAS = {
@@ -248,7 +276,11 @@ const METHOD_SCHEMAS = {
     result: SessionsListEnvelopeSchema,
     project: projectSessionsList,
   },
-  "cron.list": { params: CronListParamsSchema, result: CronListResultSchema },
+  "cron.list": {
+    params: CronListParamsSchema,
+    result: CronListResultSchema,
+    project: projectCronList,
+  },
   "usage.cost": { params: UsageCostParamsSchema, result: UsageCostResultSchema },
   "agents.list": { params: AgentsListParamsSchema, result: AgentsListResultSchema },
   "pages.state": { params: closed({}), result: PagesStateResultSchema },

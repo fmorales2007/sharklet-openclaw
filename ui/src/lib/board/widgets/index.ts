@@ -6,6 +6,8 @@ import type { BoardWidget } from "../types.ts";
 type CoreBoardWidgetElement = OptionalCustomElement & {
   kind: string;
   previewSafe: boolean;
+  /** Part of the app itself: mounts without a gateway plugin advertising the kind. */
+  builtIn?: true;
 };
 
 /**
@@ -39,6 +41,7 @@ export const CORE_BOARD_WIDGET_ELEMENTS: readonly CoreBoardWidgetElement[] = [
     },
     loadModule: () => import("./mission-control.ts"),
     previewSafe: false,
+    builtIn: true,
   },
 ];
 
@@ -58,8 +61,7 @@ export function getPluginWidgetKindContribution(
     return null;
   }
   const pluginId = pluginIdForWidgetKind(kind);
-  // Sharklet's own kinds are part of the app, not a plugin the gateway advertises.
-  return pluginId === "sharklet" ||
+  return contribution.builtIn ||
     activeKinds.some((entry) => entry.kind === kind && entry.pluginId === pluginId)
     ? contribution
     : null;

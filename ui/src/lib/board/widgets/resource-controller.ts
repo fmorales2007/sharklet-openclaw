@@ -14,12 +14,7 @@ import { t } from "../../../i18n/index.ts";
 import { formatRelativeTimestamp } from "../../format.ts";
 import type { MissionControlSources } from "../../mission-control/sources.ts";
 import { getMissionControlSources } from "./mission-control-sources.ts";
-import {
-  renderWidgetError,
-  renderWidgetLoading,
-  renderWidgetOff,
-  STILL_LOADING_MS,
-} from "./widget-state.ts";
+import { renderWidgetError, renderWidgetLoading, STILL_LOADING_MS } from "./widget-state.ts";
 
 export class ResourceController<T> implements ReactiveController {
   snapshot?: RpcSnapshot<T>;
@@ -87,8 +82,6 @@ export class ResourceController<T> implements ReactiveController {
           now: this.now,
           onCancel: () => this.resource?.cancel(),
         });
-      case "off":
-        return renderWidgetOff(snapshot);
       case "error":
         return snapshot.last
           ? html`${renderData(snapshot.last.data)}${renderWidgetError(snapshot, {

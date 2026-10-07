@@ -171,6 +171,14 @@ async function openApp(browser, { mode, density, width, reducedMotion = false })
     )
     .catch(() => {});
   await page.waitForTimeout(4_000);
+  // Home (Mission Control) loads its strip after the shell: wait for it, so the
+  // checks and screenshots below see the page and not its skeleton.
+  if (new URL(page.url()).pathname === "/home") {
+    await page
+      .locator("sharklet-mission-strip .sk-strip-row")
+      .waitFor({ timeout: 20_000 })
+      .catch(() => {});
+  }
   return { context, page, consoleErrors, pageErrors, failedRequests };
 }
 
@@ -219,6 +227,13 @@ try {
             inviteShown: [...document.querySelectorAll(".sidebar-shell__invite")].some(
               (el) => el.offsetParent !== null,
             ),
+            onHome: location.pathname === "/home",
+            missionStrip: Boolean(document.querySelector("sharklet-mission-strip .sk-strip-row")),
+            // The narrow top bar names the app on phones (app-topbar.ts).
+            topbarBrand: (() => {
+              const title = document.querySelector(".topbar-brand__title");
+              return title && title.offsetParent !== null ? title.textContent.trim() : null;
+            })(),
           };
         });
         const painted = await app.page.evaluate(scanPainted);
@@ -239,6 +254,20 @@ try {
           `${state.uiPx}px, data-density=${state.density}`,
         );
         check(run, "title names Sharklet", /Sharklet/.test(state.title), state.title);
+        check(
+          run,
+          "the phone top bar names Sharklet",
+          state.topbarBrand === null || state.topbarBrand === "Sharklet",
+          String(state.topbarBrand),
+        );
+        if (state.onHome) {
+          check(
+            run,
+            "Home shows Mission Control's strip",
+            state.missionStrip,
+            String(state.missionStrip),
+          );
+        }
         check(run, "mascot element is Sharklet's", state.mascotIsOurs, String(state.mascotIsOurs));
         check(
           run,
@@ -389,68 +418,79 @@ try {
       await page.waitForTimeout(4_000);
       const other = mode === "light" ? "dark" : "light";
       const colorMode = page.locator("#settings-appearance-theme");
-      for (const [label, expected] of [
-        [other === "light" ? "Light" : "Dark", other],
-        ["System", mode],
-      ]) {
-        await colorMode.getByText(label, { exact: true }).click();
-        await page.waitForTimeout(800);
-        const after = await page.evaluate(() => {
-          const html = document.documentElement;
-          const css = getComputedStyle(html);
-          return {
-            themeMode: html.dataset.themeMode,
-            bg: css.getPropertyValue("--bg").trim(),
-            accent: css.getPropertyValue("--accent").trim(),
-            text: css.getPropertyValue("--text").trim(),
-            inline: ["--accent", "--primary", "--ring", "--font-body", "--font-chat"].filter(
-              (name) => html.style.getPropertyValue(name),
-            ),
-            competitors: [
-              ...document.querySelectorAll(
-                'link[id^="openclaw-theme-palette-"], #openclaw-custom-theme',
+      try {
+        for (const [label, expected] of [
+          [other === "light" ? "Light" : "Dark", other],
+          ["System", mode],
+        ]) {
+          await colorMode.getByText(label, { exact: true }).click();
+          await page.waitForTimeout(800);
+          const after = await page.evaluate(() => {
+            const html = document.documentElement;
+            const css = getComputedStyle(html);
+            return {
+              themeMode: html.dataset.themeMode,
+              bg: css.getPropertyValue("--bg").trim(),
+              accent: css.getPropertyValue("--accent").trim(),
+              text: css.getPropertyValue("--text").trim(),
+              inline: ["--accent", "--primary", "--ring", "--font-body", "--font-chat"].filter(
+                (name) => html.style.getPropertyValue(name),
               ),
-            ].map((el) => el.id),
-          };
-        });
-        const where = ` after ${label}`;
-        check(
-          run,
-          `theme mode is ${expected}${where}`,
-          after.themeMode === expected,
-          after.themeMode,
-        );
-        check(run, `--bg is Sharklet canvas${where}`, after.bg === EXPECT[expected].bg, after.bg);
-        check(
-          run,
-          `--accent is Sharklet ocean${where}`,
-          after.accent === EXPECT[expected].accent,
-          after.accent,
-        );
-        check(
-          run,
-          `--text is Sharklet ink${where}`,
-          after.text === EXPECT[expected].text,
-          after.text,
-        );
-        check(
-          run,
-          `no inline palette or typeface on <html>${where}`,
-          after.inline.length === 0,
-          after.inline.join(", ") || "none",
-        );
-        check(
-          run,
-          `no upstream palette sheet or tweakcn style${where}`,
-          after.competitors.length === 0,
-          after.competitors.join(", ") || "none",
-        );
-        checkPainted(run, where, await page.evaluate(scanPainted));
-        await page.screenshot({
-          path: join(outDir, `${mode}-theme-switch-${label.toLowerCase()}.png`),
-        });
+              competitors: [
+                ...document.querySelectorAll(
+                  'link[id^="openclaw-theme-palette-"], #openclaw-custom-theme',
+                ),
+              ].map((el) => el.id),
+            };
+          });
+          const where = ` after ${label}`;
+          check(
+            run,
+            `theme mode is ${expected}${where}`,
+            after.themeMode === expected,
+            after.themeMode,
+          );
+          check(run, `--bg is Sharklet canvas${where}`, after.bg === EXPECT[expected].bg, after.bg);
+          check(
+            run,
+            `--accent is Sharklet ocean${where}`,
+            after.accent === EXPECT[expected].accent,
+            after.accent,
+          );
+          check(
+            run,
+            `--text is Sharklet ink${where}`,
+            after.text === EXPECT[expected].text,
+            after.text,
+          );
+          check(
+            run,
+            `no inline palette or typeface on <html>${where}`,
+            after.inline.length === 0,
+            after.inline.join(", ") || "none",
+          );
+          check(
+            run,
+            `no upstream palette sheet or tweakcn style${where}`,
+            after.competitors.length === 0,
+            after.competitors.join(", ") || "none",
+          );
+          checkPainted(run, where, await page.evaluate(scanPainted));
+          await page.screenshot({
+            path: join(outDir, `${mode}-theme-switch-${label.toLowerCase()}.png`),
+          });
+        }
+      } finally {
+        // Against a real gateway the color mode is a synced profile preference:
+        // leave it on System (the default this script runs under) even when a
+        // check above threw halfway.
+        await colorMode
+          .getByText("System", { exact: true })
+          .click()
+          .catch(() => {});
+        await page.waitForTimeout(800);
+        await app.context.close();
       }
-      await app.context.close();
     }
 
     // Reduced motion, once per mode: CSS cannot stop SMIL, so motion.js must.

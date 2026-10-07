@@ -141,7 +141,7 @@ describeControlUiE2e("Control UI Help panel toggle mocked Gateway E2E", () => {
 
       // The command palette opens the same conversation directly.
       await page.locator(".sidebar-brand__search").click();
-      await page.getByPlaceholder("Search chats and commands…").fill("Help");
+      await page.getByPlaceholder("Search chats, agents, pages and actions").fill("Help");
       const paletteItem = page.getByRole("option", { name: "Help", exact: true });
       await paletteItem.waitFor();
       await page.screenshot({

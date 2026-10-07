@@ -103,6 +103,17 @@ describe("rpcCall validation", () => {
     expect(result.ok && result.value.sessions[0]).not.toHaveProperty("futureGatewayField");
     expect(result.ok && result.value.sessions[0]).toHaveProperty("key");
   });
+
+  it("keeps only what Up next reads from the gateway's wider cron.list rows", async () => {
+    const { client } = respondWith("cron.list");
+    const result = await rpcCall(client, "cron.list", {}, { retry });
+    expect(result.ok && result.value.jobs[0]).toEqual({
+      id: "synthetic-inbox",
+      name: "Inbox digest",
+      enabled: true,
+      state: { nextRunAtMs: expect.any(Number) },
+    });
+  });
 });
 
 describe("no keys in the client", () => {
@@ -246,7 +257,7 @@ describe("backoff", () => {
     expect(!result.ok && result.error).toMatchObject({ kind, retryable: false });
   });
 
-  it("reports a method the gateway does not know as off, without retrying", async () => {
+  it("shows a method the gateway does not know as an error, not as off", async () => {
     const { client, request } = clientOf(async () => {
       throw new GatewayProtocolRequestError({
         code: "INVALID_REQUEST",
@@ -256,10 +267,20 @@ describe("backoff", () => {
     const result = await rpcCall(client, "usage.cost", usageParams, { retry });
     expect(request).toHaveBeenCalledTimes(1);
     expect(!result.ok && result.error).toMatchObject({
-      state: "off",
-      reason: "unavailable",
+      state: "error",
+      kind: "rejected",
       method: "usage.cost",
     });
+  });
+
+  it("gives every call a deadline", async () => {
+    const { client, request } = respondWith("agents.list");
+    await rpcCall(client, "agents.list", {}, { retry });
+    expect(request).toHaveBeenCalledWith(
+      "agents.list",
+      {},
+      expect.objectContaining({ timeoutMs: expect.any(Number) }),
+    );
   });
 
   it("stops waiting when the caller aborts during backoff", async () => {

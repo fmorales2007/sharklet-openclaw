@@ -245,10 +245,6 @@
 .sk-mc__composer .new-session-page {
   height: 100%;
 }
-.sk-mc__composer .agent-chat__welcome-identity,
-.sk-mc__composer .agent-chat__welcome-secondary {
-  display: none;
-}
 
 /* A Sharklet widget fills its body: head at its own size, state or content after it. */
 .sk-mc-widget {
@@ -289,12 +285,6 @@
   flex: none;
   color: var(--sk-text-2);
 }
-.sk-mc-usage {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 /* States shed parts by widget size (board.md): Stat shows icon, one line and
    retry in a row; Card drops the raw detail; Panel and up keep everything. */
 .sk-mc-widget[data-size="stat"] .sk-state--error {
@@ -308,9 +298,7 @@
 }
 
 /* Upstream icons carry no size of their own. */
-.sk-mc-widget .sk-state > svg,
-.sk-mc-widget .sk-state .sk-btn svg,
-.sk-mc-widget .sk-stale svg {
+.sk-mc-widget .sk-state > svg {
   width: 20px;
   height: 20px;
   flex: none;
@@ -319,6 +307,7 @@
 .sk-mc-widget .sk-stale svg {
   width: 14px;
   height: 14px;
+  flex: none;
 }
 
 /* Instrument strip: Mission Control's fixed band above the board. The base
@@ -358,13 +347,27 @@ sharklet-mission-strip {
   min-height: 36px;
   padding: 0 8px;
 }
+/* The loading shape (board.md, Loading): a head bar, then two text lines. */
+.sk-state--loading .sk-skeleton {
+  display: block;
+  height: 12px;
+}
+.sk-state--loading .sk-skeleton:first-child {
+  height: 28px;
+}
+.sk-state--loading .sk-skeleton:nth-child(2) {
+  width: 70%;
+}
+.sk-state--loading .sk-skeleton:nth-child(3) {
+  width: 52%;
+}
 .sk-strip .sk-state--loading .sk-skeleton {
   display: none;
 }
 .sk-strip .sk-state--loading .sk-skeleton:first-child {
   display: block;
   flex: 1;
-  height: 16px !important;
+  height: 16px;
 }
 .sk-strip .sk-state p,
 .sk-strip .sk-state details {

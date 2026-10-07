@@ -4,6 +4,9 @@ import { normalizeOptionalString } from "@openclaw/normalization-core/string-coe
 import { html, nothing } from "lit";
 import { property, state } from "lit/decorators.js";
 import { ref } from "lit/directives/ref.js";
+// The palette is drawn with the design system (sk-pop, sk-palette, sk-menu-item),
+// so it brings the sheet itself instead of relying on Home having loaded it.
+import "../custom/theme/components.css";
 import { pathForAgentPanel, type RouteId } from "../app-route-paths.ts";
 import { applicationContext, type ApplicationContext } from "../app/context.ts";
 import { hasOperatorAdminAccess } from "../app/operator-access.ts";
@@ -287,8 +290,8 @@ function renderCommandPalette(props: CommandPaletteProps) {
         </div>
         <div class="sk-palette-foot">
           <span><span class="sk-kbd">↑↓</span> ${t("palette.footer.navigate")}</span>
-          <span><span class="sk-kbd">↵</span> ${t("palette.footer.select")}</span>
-          <span><span class="sk-kbd">esc</span> ${t("palette.footer.close")}</span>
+          <span><span class="sk-kbd">Enter</span> ${t("palette.footer.select")}</span>
+          <span><span class="sk-kbd">Esc</span> ${t("palette.footer.close")}</span>
         </div>
       </div>
     </openclaw-modal-dialog>

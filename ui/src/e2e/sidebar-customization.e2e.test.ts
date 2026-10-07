@@ -263,7 +263,7 @@ suite.define(() => {
       );
       await expect
         .poll(() => trimmedTextContents(pinnedItems))
-        .toEqual(["Dashboards", "Automations", "Plugins"]);
+        .toEqual(["Home", "Dashboards", "Automations", "Plugins"]);
       // Desktop renders no topbar row: the sidebar owns navigation.
       await expect.poll(() => page.locator(".topbar").isVisible()).toBe(false);
       const shellNav = page.locator(".shell-nav");
@@ -590,7 +590,7 @@ suite.define(() => {
       await menu.getByRole("menuitem", { name: "Reset pinned items" }).click();
       await expect
         .poll(() => trimmedTextContents(pinnedItems))
-        .toEqual(["Dashboards", "Automations", "Plugins"]);
+        .toEqual(["Home", "Dashboards", "Automations", "Plugins"]);
 
       // The sidebar header search button is the command palette entry point.
       const searchButton = page.locator(".sidebar-brand__search");
@@ -979,7 +979,8 @@ suite.define(() => {
     );
   });
 
-  it("keeps the lobster on the community invite ledge across desktop and drawer layouts", async () => {
+  // Hidden in Sharklet with the invite card (SHARKLET.md, E7) until phase 7.
+  it.skip("keeps the lobster on the community invite ledge across desktop and drawer layouts", async () => {
     const { context, page } = await openSidebarTestPage();
 
     try {

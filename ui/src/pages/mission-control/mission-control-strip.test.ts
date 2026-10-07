@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { RpcSnapshot } from "../../api/rpc.ts";
-import type { CronJob, GatewayAgentRow, GatewaySessionRow } from "../../api/types.ts";
+import type { RpcSnapshot, UpNextJob } from "../../api/rpc.ts";
+import type { GatewayAgentRow, GatewaySessionRow } from "../../api/types.ts";
 import {
   setMissionControlSources,
   staticResource,
@@ -20,10 +20,11 @@ const rows = [
   { key: "agent:main:a", label: "Refactor billing", status: "running", updatedAt: 1 },
   { key: "agent:writer:b", label: "Draft notes", status: "queued", updatedAt: 2 },
 ] as GatewaySessionRow[];
-const jobs = [
-  { id: "1", name: "Inbox digest", state: { nextRunAtMs: Date.now() + 60_000 } },
-  { id: "2", name: "Backup", state: { nextRunAtMs: Date.now() + 120_000 } },
-] as CronJob[];
+const jobs: UpNextJob[] = [
+  { id: "0", name: "Running sync", enabled: true, state: { runningAtMs: Date.now() } },
+  { id: "1", name: "Inbox digest", enabled: true, state: { nextRunAtMs: Date.now() + 60_000 } },
+  { id: "2", name: "Backup", enabled: true, state: { nextRunAtMs: Date.now() + 120_000 } },
+];
 const usage: MonthUsage = {
   spentUsd: 6.42,
   startDate: "2026-10-01",

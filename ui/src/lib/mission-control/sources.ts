@@ -1,7 +1,7 @@
 // The four live values Mission Control reads, each over an existing gateway
 // method. Contract fixed in F1-02; F1-06 implements it on `rpcResource`.
-import { rpcResource, type RpcClient, type RpcResource } from "../../api/rpc.ts";
-import type { CronJob, GatewayAgentRow, GatewaySessionRow } from "../../api/types.ts";
+import { rpcResource, type RpcClient, type RpcResource, type UpNextJob } from "../../api/rpc.ts";
+import type { GatewayAgentRow, GatewaySessionRow } from "../../api/types.ts";
 import { buildSessionUsageDateParams } from "../sessions/usage.ts";
 
 export type MonthUsage = {
@@ -23,7 +23,7 @@ export type MissionControlSources = {
    * Up next. `cron.list` with
    * `{ enabled: "enabled", sortBy: "nextRunAtMs", sortDir: "asc", includeDeliveryPreviews: false }`.
    */
-  upNext: RpcResource<readonly CronJob[]>;
+  upNext: RpcResource<readonly UpNextJob[]>;
   /**
    * Month usage. `usage.cost` with `{ startDate, endDate, agentScope: "all" }`
    * plus `buildSessionUsageDateParams("local")`, as `requestUsageSnapshot` sends it.
@@ -36,10 +36,16 @@ export type MissionControlSources = {
 const localDay = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
-export function createMissionControlSources(client: RpcClient): MissionControlSources {
+/** This month so far, recomputed on every call so an open page follows the clock. */
+function monthToDate() {
   const today = new Date();
-  const startDate = localDay(new Date(today.getFullYear(), today.getMonth(), 1));
-  const endDate = localDay(today);
+  return {
+    startDate: localDay(new Date(today.getFullYear(), today.getMonth(), 1)),
+    endDate: localDay(today),
+  };
+}
+
+export function createMissionControlSources(client: RpcClient): MissionControlSources {
   return {
     workingNow: rpcResource(client, "sessions.list", { activeOnly: true }, (r) => r.sessions),
     upNext: rpcResource(
@@ -51,11 +57,10 @@ export function createMissionControlSources(client: RpcClient): MissionControlSo
     monthUsage: rpcResource(
       client,
       "usage.cost",
-      { startDate, endDate, agentScope: "all", ...buildSessionUsageDateParams("local") },
+      () => ({ ...monthToDate(), agentScope: "all", ...buildSessionUsageDateParams("local") }),
       (r) => ({
         spentUsd: r.totals.totalCost,
-        startDate,
-        endDate,
+        ...monthToDate(),
         updatedAt: r.updatedAt,
         budgetUsd: null,
       }),

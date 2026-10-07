@@ -5,8 +5,8 @@ import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts"
 import { createMissionControlMethodResponses } from "./mission-control-fixtures.test-support.ts";
 
 // The RPC layer runs in the page against the app's real gateway client and the
-// mocked WebSocket. Mission Control (pista A) is not mounted yet, so the layer
-// is driven directly; F1-03 covers its own UI over these resources.
+// mocked WebSocket, driven directly: this is the layer's own contract (retry,
+// stale). What Mission Control draws over it is in mission-control-strip.e2e.
 const suite = createControlUiE2eSuite({
   name: "RPC layer",
   startServer: () => startControlUiE2eServer(undefined, { source: true }),

@@ -98,20 +98,19 @@ describe("agents widget", () => {
     expect(el.querySelector(".sk-state--inline")).not.toBeNull();
   });
 
-  it("is neutral when off, with no retry", async () => {
-    setMissionControlSources(
-      sources(
-        staticResource({
-          state: "off",
-          reason: "disabled",
-          method: "agents.list",
-          message: "Off while it is being fixed.",
-        }),
-      ),
-    );
+  it("offers Try again for an error the layer does not retry by itself", async () => {
+    const refresh = vi.fn();
+    const error: RpcSnapshot<Agents> = {
+      state: "error",
+      kind: "invalid",
+      method: "agents.list",
+      message: "The gateway sent unexpected data.",
+      retryable: false,
+    };
+    setMissionControlSources(sources(staticResource(error, refresh)));
     const el = await mount();
-    expect(el.querySelector(".sk-state--off b")?.textContent).toBe("Turned off");
-    expect(el.querySelector("button")).toBeNull();
+    el.querySelector<HTMLButtonElement>(".sk-state--error button")?.click();
+    expect(refresh).toHaveBeenCalledOnce();
   });
 
   it("marks the size so states can shed parts", async () => {

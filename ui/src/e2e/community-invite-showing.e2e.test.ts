@@ -80,8 +80,11 @@ async function settleSidebarIdleWork(page: Page) {
   );
 }
 
+// Sharklet hides the community invite card and the lobster pet that sits on it
+// (SHARKLET.md, E7) until phase 7 settles their Appearance settings, so this
+// upstream behavior is skipped here. Unskip with that decision.
 suite.define(() => {
-  it("keeps the first policy-confirmed sidebar layout stable while invitation artwork loads", async () => {
+  it.skip("keeps the first policy-confirmed sidebar layout stable while invitation artwork loads", async () => {
     type LayoutWindow = Window & {
       sidebarInviteFirstLayout?: { invitationHeight: number; sidebarHeight: number };
     };
@@ -190,7 +193,7 @@ suite.define(() => {
     }
   });
 
-  it.each(["pointer", "keyboard", "drag", "touch"] as const)(
+  it.skip.each(["pointer", "keyboard", "drag", "touch"] as const)(
     "defers a late invitation during %s interaction without blocking navigation",
     async (interaction) => {
       await suite.withPage(
@@ -370,7 +373,7 @@ suite.define(() => {
     },
   );
 
-  it("honors deployment policy before showing and preserves browser dismissals", async () => {
+  it.skip("honors deployment policy before showing and preserves browser dismissals", async () => {
     const viewport = { height: 900, width: 1280 };
     const context = await suite.newBrowserContext({
       locale: "en-US",
@@ -457,7 +460,7 @@ suite.define(() => {
     }
   });
 
-  it("shows immediately, survives Join, and stays dismissed across gateway connections on one origin", async () => {
+  it.skip("shows immediately, survives Join, and stays dismissed across gateway connections on one origin", async () => {
     const context = await suite.browser.newContext(createControlUiE2eContextOptions());
     const page = await context.newPage();
     await installMockGateway(page, { communityInviteDismissed: false });
@@ -516,7 +519,7 @@ suite.define(() => {
     }
   });
 
-  it("does not mount the workspace invite in Settings", async () => {
+  it.skip("does not mount the workspace invite in Settings", async () => {
     const context = await suite.browser.newContext(createControlUiE2eContextOptions());
     const page = await context.newPage();
     await installMockGateway(page, { communityInviteDismissed: false });
@@ -531,7 +534,7 @@ suite.define(() => {
     }
   });
 
-  it("dismisses for this page and reports when the preference cannot be saved", async () => {
+  it.skip("dismisses for this page and reports when the preference cannot be saved", async () => {
     const viewport = { height: 900, width: 1280 };
     const context = await suite.newBrowserContext({
       locale: "en-US",
@@ -576,7 +579,7 @@ suite.define(() => {
     }
   });
 
-  it("hides after a malformed cross-tab state update", async () => {
+  it.skip("hides after a malformed cross-tab state update", async () => {
     const context = await suite.browser.newContext(createControlUiE2eContextOptions());
     const page = await context.newPage();
     await installMockGateway(page, { communityInviteDismissed: false });

@@ -37,7 +37,8 @@ suite.define(() => {
     await installMockGateway(page, {
       featureMethods: ["chat.metadata", "chat.startup", "sessions.create"],
     });
-    const response = await page.goto(suite.server.baseUrl);
+    // The app root opens Home (Mission Control); these cases are about chat.
+    const response = await page.goto(`${suite.server.baseUrl}chat`);
     expect(response?.status()).toBe(200);
     await page.locator(".sidebar-brand").waitFor({ state: "attached" });
     return page;

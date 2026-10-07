@@ -25,6 +25,7 @@ import {
 import { renderAgentSelectAvatar, renderAgentSelectCopy } from "./agent-select.ts";
 import { icons, type IconName } from "./icons.ts";
 import { CUSTODIAN_PANEL_TOGGLE_EVENT } from "./panel-toggle-contract.ts";
+import "../custom/density.ts";
 import "./sidebar-build-chip.ts";
 import "./viewer-facepile.ts";
 import {
@@ -600,6 +601,7 @@ export function renderSidebarIdentityMenu(params: SidebarIdentityMenuParams) {
         ></openclaw-sidebar-build-chip>
         <span class="sidebar-mode-switch">
           <openclaw-theme-mode-toggle .mode=${params.themeMode}></openclaw-theme-mode-toggle>
+          <sharklet-density-toggle></sharklet-density-toggle>
         </span>
       </div>
     </wa-dropdown>

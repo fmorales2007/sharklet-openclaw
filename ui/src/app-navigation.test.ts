@@ -95,7 +95,7 @@ describe("navigationIconForRoute", () => {
     ).toEqual({
       home: "layoutDashboard",
       chat: "messageSquare",
-      custodian: "lobster",
+      custodian: "circleQuestionMark",
       activity: "activity",
       meetings: "book",
       apps: "layoutGrid",

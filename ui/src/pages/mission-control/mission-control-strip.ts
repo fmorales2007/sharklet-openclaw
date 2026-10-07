@@ -4,13 +4,16 @@
 import { consume } from "@lit/context";
 import { html, nothing, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
-import type { CronJob, GatewayAgentRow, GatewaySessionRow } from "../../api/types.ts";
+import type { UpNextJob } from "../../api/rpc.ts";
+import type { GatewayAgentRow, GatewaySessionRow } from "../../api/types.ts";
 import { applicationContext, type ApplicationContext } from "../../app/context.ts";
 import { icons } from "../../components/icons.ts";
 import { navigateMarkdownSession } from "../../components/markdown-session-links.ts";
 import { t } from "../../i18n/index.ts";
+import { normalizeAgentLabel } from "../../lib/agents/display.ts";
 import { ResourceController } from "../../lib/board/widgets/resource-controller.ts";
-import { formatRelativeTimestamp } from "../../lib/format.ts";
+import { isCronJobRunning } from "../../lib/cron-status.ts";
+import { formatCost, formatRelativeTimestamp } from "../../lib/format.ts";
 import type { MonthUsage } from "../../lib/mission-control/sources.ts";
 import { parseAgentSessionKey } from "../../lib/sessions/session-key.ts";
 import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
@@ -18,7 +21,6 @@ import { renderUsageRing, usageRing } from "./usage-ring.ts";
 
 const TILE_COLORS = ["teal", "violet", "plum", "indigo", "olive", "rose", "sand"] as const;
 const INLINE_ITEMS = 3;
-const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
 function tileColor(agentId: string): string {
   let hash = 0;
@@ -45,7 +47,7 @@ export class MissionControlStrip extends OpenClawLightDomElement {
     this,
     (sources) => sources.monthUsage,
   );
-  private readonly upNext = new ResourceController<readonly CronJob[]>(
+  private readonly upNext = new ResourceController<readonly UpNextJob[]>(
     this,
     (sources) => sources.upNext,
   );
@@ -58,19 +60,23 @@ export class MissionControlStrip extends OpenClawLightDomElement {
     super.connectedCallback();
     this.classList.add("sk-strip");
     this.setAttribute("role", "region");
+  }
+
+  protected override willUpdate() {
+    // Here and not in connectedCallback, so a language switch relabels it.
     this.setAttribute("aria-label", t("missionControl.stripLabel"));
   }
 
   private agentFor(row: GatewaySessionRow): { id: string; name: string } {
     const id = row.agentId ?? parseAgentSessionKey(row.key)?.agentId ?? "";
     const agent = this.agents.data?.find((entry) => entry.id === id);
-    return { id, name: agent?.identity?.name ?? agent?.name ?? id };
+    return { id, name: agent ? normalizeAgentLabel(agent) : id };
   }
 
   private renderTile(row: GatewaySessionRow): TemplateResult {
     const { id, name } = this.agentFor(row);
     return html`<span class="sk-tile sk-tile--xs" data-agent=${tileColor(id)} aria-hidden="true"
-      >${(name || "?").slice(0, 1).toUpperCase()}</span
+      >${(Array.from(name || "?")[0] ?? "?").toUpperCase()}</span
     >`;
   }
 
@@ -108,10 +114,14 @@ export class MissionControlStrip extends OpenClawLightDomElement {
   }
 
   private renderJobs(rows: readonly GatewaySessionRow[]): TemplateResult {
+    const open = this.open && rows.length > 0;
+    // Collapsed to zero height is not hidden: inert keeps its Open buttons out
+    // of the tab order and the accessibility tree until it is expanded.
     return html`<div
       class="sk-working-list"
       id="sk-strip-jobs"
-      data-open=${this.open && rows.length > 0 ? "true" : "false"}
+      data-open=${open ? "true" : "false"}
+      ?inert=${!open}
     >
       <div>
         ${rows.map((row) => {
@@ -155,14 +165,15 @@ export class MissionControlStrip extends OpenClawLightDomElement {
 
   private renderUsage(data: MonthUsage): TemplateResult {
     const ring = usageRing(data);
-    const spent = usd.format(data.spentUsd);
+    const spent = formatCost(data.spentUsd);
     const budget = data.budgetUsd;
     const percent =
-      ring.mode === "spent" ? `${Math.round((data.spentUsd / (budget ?? 1)) * 100)}%` : "";
+      // Floor, so the text never shows a threshold (70%, 90%) the ring has not reached.
+      ring.mode === "spent" ? `${Math.floor((data.spentUsd / (budget ?? 1)) * 100)}%` : "";
     const label =
       budget === null
         ? t("missionControl.monthUsage.labelNoBudget", { spent })
-        : t("missionControl.monthUsage.labelBudget", { spent, budget: usd.format(budget) });
+        : t("missionControl.monthUsage.labelBudget", { spent, budget: formatCost(budget) });
     return html`<button
         type="button"
         class="sk-usage-btn"
@@ -179,9 +190,9 @@ export class MissionControlStrip extends OpenClawLightDomElement {
                 : ring.mode === "spent"
                   ? t("missionControl.monthUsage.percentOfBudget", {
                       percent,
-                      budget: usd.format(budget),
+                      budget: formatCost(budget),
                     })
-                  : t("missionControl.monthUsage.ofBudget", { budget: usd.format(budget) })
+                  : t("missionControl.monthUsage.ofBudget", { budget: formatCost(budget) })
             }</small
           ></span
         >
@@ -201,13 +212,15 @@ export class MissionControlStrip extends OpenClawLightDomElement {
                   ${t("missionControl.monthUsage.setBudget")}
                 </button>`
             : html`<p>
-                ${t("missionControl.monthUsage.ofBudget", { budget: usd.format(budget) })}
+                ${t("missionControl.monthUsage.ofBudget", { budget: formatCost(budget) })}
               </p>`
         }
       </div>`;
   }
 
-  private renderUpNext(jobs: readonly CronJob[]): TemplateResult {
+  private renderUpNext(all: readonly UpNextJob[]): TemplateResult {
+    // A job that is running now is not "next"; cron.list still sorts it first.
+    const jobs = all.filter((job) => !isCronJobRunning(job));
     const [next] = jobs;
     return html`<div class="sk-upnext">
       ${icons.calendarClock}
@@ -239,7 +252,7 @@ export class MissionControlStrip extends OpenClawLightDomElement {
         )}
       </div>
       <div class="sk-strip-cell">
-        ${this.usage.render(t("missionControl.monthUsage.title"), (data) => this.renderUsage(data))}
+        ${this.usage.render(t("missionControl.monthUsage.name"), (data) => this.renderUsage(data))}
       </div>
       <div class="sk-strip-cell sk-strip-cell--upnext">
         ${this.upNext.render(t("missionControl.upNext.title"), (jobs) => this.renderUpNext(jobs))}
@@ -258,7 +271,7 @@ export class MissionControlStrip extends OpenClawLightDomElement {
           )}
         </div>
         <div class="sk-strip-cell">
-          ${this.usage.render(t("missionControl.monthUsage.title"), (data) =>
+          ${this.usage.render(t("missionControl.monthUsage.name"), (data) =>
             this.renderUsage(data),
           )}
         </div>

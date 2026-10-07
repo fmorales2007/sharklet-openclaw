@@ -112,7 +112,7 @@ describeControlUiE2e("Control UI Markdown table interactions", () => {
         await page.goto(`${server.baseUrl}chat`);
         if (surface === "assistant panel") {
           await page.locator(".sidebar-brand__search").click();
-          await page.getByPlaceholder("Search chats and commands…").fill("Help");
+          await page.getByPlaceholder("Search chats, agents, pages and actions").fill("Help");
           await page.getByRole("option", { name: "Help", exact: true }).click();
         }
         const bubble = page.locator(

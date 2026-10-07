@@ -15,7 +15,7 @@ export class MissionControlBar extends OpenClawLightDomElement {
 
   private readonly sourcesController = new MissionControlSourcesController(
     this,
-    () => this.context?.gateway.snapshot.client ?? null,
+    () => this.context?.gateway,
   );
 
   override render() {

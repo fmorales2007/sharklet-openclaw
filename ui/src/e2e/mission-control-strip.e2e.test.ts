@@ -74,4 +74,66 @@ suite.define(() => {
       expect(await page.locator(`${STRIP} .sk-upnext`).textContent()).toContain("Inbox digest");
     });
   });
+
+  it("loads with a skeleton, says Still loading after 10 s, then shows the spend", async () => {
+    await suite.withPage({ locale: "en-US", serviceWorkers: "block" }, async ({ page }) => {
+      const gateway = await installMockGateway(page, {
+        methodResponses: createMissionControlMethodResponses(),
+      });
+      await gateway.deferNext("usage.cost");
+      await page.goto(suite.server.baseUrl, { timeout: 60_000 });
+      const loading = page.locator(`${STRIP} .sk-state--loading[aria-label="Loading Usage"]`);
+      await loading.locator(".sk-skeleton").first().waitFor();
+      await loading.getByText("Still loading").waitFor({ timeout: 15_000 });
+      await gateway.resolveDeferred("usage.cost");
+      await expect
+        .poll(() => page.locator(`${STRIP} .sk-usage-btn`).getAttribute("aria-label"))
+        .toBe("Spent $6.42 this month. No budget set.");
+    });
+  });
+
+  it("retries only the failed section from its Try again", async () => {
+    await suite.withPage({ locale: "en-US", serviceWorkers: "block" }, async ({ page }) => {
+      const responses = createMissionControlMethodResponses();
+      const gateway = await installMockGateway(page, {
+        methodResponses: {
+          ...responses,
+          "usage.cost": {
+            sequence: [
+              // Not retryable: the layer stops, and Try again is the way out.
+              { __mockError: { code: "UNAVAILABLE", message: "Usage is busy" } },
+              responses["usage.cost"],
+            ],
+          },
+        },
+      });
+      await page.goto(suite.server.baseUrl, { timeout: 60_000 });
+      const error = page.locator(`${STRIP} .sk-state--error`);
+      await error.getByRole("button", { name: "Try again" }).click();
+      await expect
+        .poll(() => page.locator(`${STRIP} .sk-usage-btn`).getAttribute("aria-label"))
+        .toBe("Spent $6.42 this month. No budget set.");
+      expect((await gateway.getRequests("usage.cost")).length).toBe(2);
+      expect((await gateway.getRequests("cron.list")).length).toBe(1);
+    });
+  });
+
+  it("keeps the collapsed job list out of the tab order", async () => {
+    await suite.withPage({ locale: "en-US", serviceWorkers: "block" }, async ({ page }) => {
+      await installMockGateway(page, { methodResponses: createMissionControlMethodResponses() });
+      await page.goto(suite.server.baseUrl, { timeout: 60_000 });
+      const toggle = page.locator(`${STRIP} .sk-working`);
+      await expect.poll(async () => toggle.textContent()).toContain("3 working");
+      const focusInJobs = () =>
+        page.evaluate(() => Boolean(document.activeElement?.closest(".sk-working-list")));
+      await toggle.focus();
+      await page.keyboard.press("Tab");
+      expect(await focusInJobs()).toBe(false);
+      await toggle.click();
+      await toggle.focus();
+      await page.keyboard.press("Tab");
+      await page.keyboard.press("Tab");
+      expect(await focusInJobs()).toBe(true);
+    });
+  });
 });

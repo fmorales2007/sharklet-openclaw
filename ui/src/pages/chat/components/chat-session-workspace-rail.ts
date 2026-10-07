@@ -324,7 +324,7 @@ export function renderSessionWorkspaceRail(
                 ${renderRailHeaderAction({ icon: icons.diff, label: t("chat.sessionDiff.show"), onClick: sessionWorkspace.onOpenDiff, className: "chat-session-diff-toggle" })}
                 ${renderRailHeaderAction({ icon: icons.terminal, label: t("terminal.toggle"), onClick: sessionWorkspace.onToggleTerminal })}
                 ${renderRailHeaderAction({ icon: icons.globe, label: t("browser.toggle"), onClick: sessionWorkspace.onToggleBrowser })}
-                ${renderRailHeaderAction({ icon: icons.lobster, label: t("custodian.panel.toggle"), onClick: sessionWorkspace.onToggleCustodian })}
+                ${renderRailHeaderAction({ icon: icons.circleQuestionMark, label: t("custodian.panel.toggle"), onClick: sessionWorkspace.onToggleCustodian })}
                 ${
                   sessionWorkspace.narrowLayout
                     ? nothing

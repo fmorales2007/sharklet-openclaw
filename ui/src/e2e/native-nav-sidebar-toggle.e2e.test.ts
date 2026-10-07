@@ -147,7 +147,8 @@ suite.define(() => {
       ...options.scenario,
     });
     await options.beforeNavigate?.(page);
-    const response = await page.goto(`${suite.server.baseUrl}${options.pathname ?? ""}`, {
+    // The app root opens Home (Mission Control); these cases default to chat.
+    const response = await page.goto(`${suite.server.baseUrl}${options.pathname ?? "chat"}`, {
       waitUntil: options.beforeNavigate ? "domcontentloaded" : "load",
     });
     expect(response?.status()).toBe(200);

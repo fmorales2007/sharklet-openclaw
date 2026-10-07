@@ -69,7 +69,7 @@ suite.define(() => {
       await page.goto(suite.server.baseUrl, { timeout: 60_000 });
       await page.locator("sharklet-mission-strip").waitFor();
       await page.keyboard.press("Control+k");
-      const search = page.getByPlaceholder("Search chats and commands…");
+      const search = page.getByPlaceholder("Search chats, agents, pages and actions");
       await search.fill("Home");
       await page.getByRole("option").first().waitFor();
       const labels = (await page.getByRole("option").allTextContents()).map((text) =>

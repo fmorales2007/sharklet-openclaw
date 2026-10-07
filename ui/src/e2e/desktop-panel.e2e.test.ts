@@ -59,7 +59,7 @@ async function openPalette(page: import("playwright").Page) {
   await page.evaluate(() => {
     window.dispatchEvent(new CustomEvent("openclaw:command-palette-open"));
   });
-  await page.getByRole("combobox", { name: "Search chats and commands…" }).waitFor();
+  await page.getByRole("combobox", { name: "Search chats, agents, pages and actions" }).waitFor();
 }
 
 async function openDesktopPanel(page: import("playwright").Page) {

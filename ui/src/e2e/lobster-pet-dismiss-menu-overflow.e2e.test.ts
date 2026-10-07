@@ -174,8 +174,11 @@ async function useOversizedDismissLabels(currentPage: Page) {
   }, ENLARGED_TEXT_SCALE);
 }
 
+// Sharklet hides the community invite card and the lobster pet that sits on it
+// (SHARKLET.md, E7) until phase 7 settles their Appearance settings, so this
+// upstream behavior is skipped here. Unskip with that decision.
 suite.define(() => {
-  it("keeps the lobster clickable and its dismissal menu within the viewport on both sidebar ledges", () =>
+  it.skip("keeps the lobster clickable and its dismissal menu within the viewport on both sidebar ledges", () =>
     withDismissMenuPage({}, async (page) => {
       await configureRealSidebarPet(page, 42);
       const sprite = page.locator(".lobster-pet");
@@ -233,7 +236,7 @@ suite.define(() => {
 
   // Control: the identical menu content, anchored away from the bottom edge.
   // Isolates the anchor position as the cause rather than the menu's content.
-  it("has room for the same two items when the ledge is not at the viewport edge", () =>
+  it.skip("has room for the same two items when the ledge is not at the viewport edge", () =>
     withDismissMenuPage({}, async (page) => {
       await configureRealSidebarPet(page, 42);
       await page.evaluate(() => {
@@ -253,7 +256,7 @@ suite.define(() => {
       expect(measurement).toMatchObject({ overflowPx: 0 });
     }));
 
-  it("keeps both items fully visible under long labels and an enlarged type scale", () =>
+  it.skip("keeps both items fully visible under long labels and an enlarged type scale", () =>
     withDismissMenuPage({}, async (page) => {
       await configureRealSidebarPet(page, 42);
       const sprite = page.locator(".lobster-pet");
@@ -290,7 +293,7 @@ suite.define(() => {
       );
     }));
 
-  it("keeps the popup within the viewport at a compact sidebar height", async () => {
+  it.skip("keeps the popup within the viewport at a compact sidebar height", async () => {
     await withDismissMenuPage({ viewport: { width: 1280, height: 420 } }, async (shortPage) => {
       await configureRealSidebarPet(shortPage, 42);
       const sprite = shortPage.locator(".lobster-pet");
@@ -342,7 +345,7 @@ suite.define(() => {
       }));
   }
 
-  it("does not scroll its two dismissal items under a dark color scheme", async () => {
+  it.skip("does not scroll its two dismissal items under a dark color scheme", async () => {
     await withDismissMenuPage(
       { viewport: { width: 1280, height: 900 }, colorScheme: "dark" },
       async (darkPage) => {

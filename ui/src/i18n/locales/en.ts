@@ -41,23 +41,25 @@ export const en: TranslationMap & {
     execHost: "Codex exec",
   },
   sharklet: {
+    brand: "Sharklet",
     density: "Density: {density}",
     comfortable: "Comfortable",
     compact: "Compact",
     pageOff: {
       title: "{page} is off",
-      detail: "It was turned off on this gateway. It comes back when someone turns it on.",
-      goHome: "Go to Chat",
+      detail:
+        "It's turned off in the gateway config. Remove it from ui.pages.off to bring it back.",
+      goToChat: "Go to Chat",
     },
   },
   rpc: {
     unreachable: "Can't reach the gateway. Check your connection and try again.",
     timeout: "The gateway took too long. Try again.",
-    unauthorized: "You don't have access to this.",
+    unauthorized:
+      "This device doesn't have access to this. Check its access on the gateway, then try again.",
     rejected: "The gateway couldn't do this. Try again, or open the details.",
     invalid: "The gateway sent unexpected data. Reload the page and try again.",
     cancelled: "Loading was canceled. Try again to reload it.",
-    offUnavailable: "This gateway doesn't offer this yet.",
   },
   common: {
     health: "Health",
@@ -3936,7 +3938,6 @@ export const en: TranslationMap & {
     },
   },
   missionControl: {
-    pageTitle: "Mission Control",
     homeTab: "Home",
     boardLabel: "Mission Control board",
     composerLabel: "Start a chat",
@@ -3958,10 +3959,10 @@ export const en: TranslationMap & {
     },
     monthUsage: {
       title: "Spent this month",
+      name: "Usage",
       setBudget: "Set a budget",
       noBudgetNote: "Set a monthly budget to see how much of it you have used.",
       percentOfBudget: "{percent} of {budget}",
-      projected: "On pace for {amount} by the end of the month.",
       noBudget: "No budget set",
       ofBudget: "of {budget}",
       labelNoBudget: "Spent {spent} this month. No budget set.",
@@ -3977,10 +3978,6 @@ export const en: TranslationMap & {
       details: "Details",
       refreshFailed: "Couldn’t refresh. Showing the last figures.",
       stale: "Last updated {time}",
-      offDisabled: "Turned off",
-      offUnavailable: "Not available",
-      unavailableMessage:
-        "This gateway can’t provide this yet. It appears once the gateway is updated.",
     },
   },
   board: {
@@ -4244,9 +4241,7 @@ export const en: TranslationMap & {
     },
     items: {
       apps: "Apps",
-      sessions: "Sessions",
       scheduled: "Automations",
-      skills: "Skills",
       plugins: "Plugins",
       settings: "Settings",
       agents: "Agents",

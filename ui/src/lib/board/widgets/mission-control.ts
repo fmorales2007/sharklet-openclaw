@@ -8,6 +8,7 @@ import { property } from "lit/decorators.js";
 import type { GatewayAgentRow } from "../../../api/types.ts";
 import { t } from "../../../i18n/index.ts";
 import { OpenClawLightDomElement } from "../../../lit/openclaw-element.ts";
+import { normalizeAgentLabel } from "../../agents/display.ts";
 import type { BoardWidget } from "../types.ts";
 import { ResourceController } from "./resource-controller.ts";
 
@@ -49,10 +50,7 @@ class AgentsWidget extends OpenClawLightDomElement {
           : html`<ul class="sk-mc-rows">
               ${data
                 .slice(0, VISIBLE_ROWS)
-                .map(
-                  (agent) =>
-                    html`<li><span>${agent.identity?.name ?? agent.name ?? agent.id}</span></li>`,
-                )}
+                .map((agent) => html`<li><span>${normalizeAgentLabel(agent)}</span></li>`)}
             </ul>`,
       )}`;
   }

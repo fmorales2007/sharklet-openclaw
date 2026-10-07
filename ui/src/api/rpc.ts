@@ -2,6 +2,7 @@
 // shared errors and stale-while-refreshing. Contract fixed in F1-02;
 // F1-06 adds the logic: schema validation both ways, backoff, refresh.
 // Nothing here carries a token or key: the browser never sees one.
+import { ErrorCodes } from "@openclaw/gateway-client/browser";
 import { err, ok, type Result } from "@openclaw/normalization-core/result";
 import type { AgentsListParams } from "../../../packages/gateway-protocol/src/schema/agents-models-skills.js";
 import type { CronListParams } from "../../../packages/gateway-protocol/src/schema/cron.types.js";
@@ -10,7 +11,7 @@ import { t } from "../i18n/index.ts";
 import type { CostUsageSummary } from "../pages/usage/data-types.ts";
 import type { GatewayBrowserClient } from "./gateway.ts";
 import { findKeyShapedField, validateParams, validateResult } from "./rpc-schemas.ts";
-import type { AgentsListResult, CronJobsListResult, SessionsListResult } from "./types.ts";
+import type { AgentsListResult, SessionsListResult } from "./types.ts";
 
 export type RpcClient = Pick<GatewayBrowserClient, "request">;
 
@@ -28,10 +29,19 @@ export type UsageCostParams = {
 /** `pages.state` result: the page kill switch (`ui.pages.off` in the gateway config). */
 export type PagesStateResult = { off: { id: string; reason?: string }[] };
 
+/** A `cron.list` row reduced to what Up next reads (rpc-schemas.ts projects it). */
+export type UpNextJob = {
+  id: string;
+  name: string;
+  enabled: boolean;
+  agentId?: string;
+  state?: { nextRunAtMs?: number; runningAtMs?: number };
+};
+
 /** Gateway methods the typed layer knows. Later phases add rows here. */
 export type RpcMethodMap = {
   "sessions.list": { params: SessionsListParams; result: SessionsListResult };
-  "cron.list": { params: CronListParams; result: CronJobsListResult };
+  "cron.list": { params: CronListParams; result: { jobs: UpNextJob[]; total: number } };
   "usage.cost": { params: UsageCostParams; result: CostUsageSummary };
   "agents.list": { params: AgentsListParams; result: AgentsListResult };
   "pages.state": { params: Record<string, never>; result: PagesStateResult };
@@ -41,9 +51,9 @@ export type RpcMethod = keyof RpcMethodMap;
 export type RpcParams<M extends RpcMethod> = RpcMethodMap[M]["params"];
 export type RpcResultOf<M extends RpcMethod> = RpcMethodMap[M]["result"];
 
-// One type per generic state in docs/design-system/board.md. `state` is the
-// board state, literally: loading → skeleton, error → error with Try again,
-// off → `.board-widget__disabled-plugin`.
+// One type per generic state of docs/design-system/board.md that a call can be
+// in. `state` is the board state, literally: loading → skeleton, error → error
+// with Try again. Off is a page's state (lib/pages-off.ts), not a call's.
 
 /** First load only; the widget shows "Still loading" and a cancel at `since` + 10 s. */
 export type RpcLoading = { state: "loading"; since: number };
@@ -75,15 +85,6 @@ export type RpcError = {
   retryAfterMs?: number;
 };
 
-export type RpcOff = {
-  state: "off";
-  /** `disabled`: a page kill switch (F1-07). `unavailable`: the gateway lacks the method. */
-  reason: "disabled" | "unavailable";
-  method: RpcMethod;
-  /** Why it is off and when it comes back. */
-  message: string;
-};
-
 /** `stale` is true while a refresh runs over data already on screen. */
 export type RpcReady<T> = { state: "ready"; data: T; fetchedAt: number; stale: boolean };
 
@@ -91,10 +92,7 @@ export type RpcReady<T> = { state: "ready"; data: T; fetchedAt: number; stale: b
 export type RpcSnapshot<T> =
   | RpcLoading
   | RpcReady<T>
-  | (RpcError & { last?: { data: T; fetchedAt: number } })
-  | RpcOff;
-
-export type RpcFailure = RpcError | RpcOff;
+  | (RpcError & { last?: { data: T; fetchedAt: number } });
 
 /** Retry knobs. Defaults: 3 retries, 500 ms base, 8 s cap. `random` and `sleep` exist for tests. */
 export type RpcRetryOptions = {
@@ -169,8 +167,9 @@ function safeDetail(message: string): string | undefined {
 
 // Duck-typed on `code`/`retryable`: GatewayProtocolRequestError and its
 // subclasses (the UI's GatewayRequestError among them) share that shape, and
-// the local deadline error carries CLIENT_TIMEOUT.
-function classifyFailure(error: unknown, method: RpcMethod, signal?: AbortSignal): RpcFailure {
+// the local deadline error carries CLIENT_TIMEOUT. A method the gateway does not
+// know is an error like any other: UI and gateway ship together (ui/AGENTS.md).
+function classifyFailure(error: unknown, method: RpcMethod, signal?: AbortSignal): RpcError {
   if (signal?.aborted) {
     return rpcError(method, "cancelled", false);
   }
@@ -188,10 +187,7 @@ function classifyFailure(error: unknown, method: RpcMethod, signal?: AbortSignal
     // A plain Error from the client: socket not connected, closed, stopped.
     return rpcError(method, "unreachable", true, safeDetail(text));
   }
-  if (code === "INVALID_REQUEST" && text.startsWith("unknown method")) {
-    return { state: "off", reason: "unavailable", method, message: t("rpc.offUnavailable") };
-  }
-  if (code === "FORBIDDEN" || code === "NOT_PAIRED") {
+  if (code === ErrorCodes.FORBIDDEN || code === ErrorCodes.NOT_PAIRED) {
     return rpcError(method, "unauthorized", false, safeDetail(text));
   }
   return rpcError(
@@ -203,13 +199,16 @@ function classifyFailure(error: unknown, method: RpcMethod, signal?: AbortSignal
   );
 }
 
+/** No call waits longer than this; the gateway client rejects it with CLIENT_TIMEOUT. */
+const REQUEST_TIMEOUT_MS = 15_000;
+
 /** One validated call, retried with backoff while the error is transient. */
 export async function rpcCall<M extends RpcMethod>(
   client: RpcClient,
   method: M,
   params: RpcParams<M>,
   options: { signal?: AbortSignal; retry?: RpcRetryOptions } = {},
-): Promise<Result<RpcResultOf<M>, RpcFailure>> {
+): Promise<Result<RpcResultOf<M>, RpcError>> {
   const { signal, retry = {} } = options;
   const badParams = validateParams(method, params);
   if (badParams) {
@@ -220,9 +219,12 @@ export async function rpcCall<M extends RpcMethod>(
     if (signal?.aborted) {
       return err(rpcError(method, "cancelled", false));
     }
-    let failure: RpcFailure;
+    let failure: RpcError;
     try {
-      const payload = await client.request(method, params, signal ? { signal } : undefined);
+      const payload = await client.request(method, params, {
+        timeoutMs: REQUEST_TIMEOUT_MS,
+        ...(signal ? { signal } : {}),
+      });
       const checked = validateResult(method, payload);
       return checked.ok
         ? ok(checked.value)
@@ -230,7 +232,7 @@ export async function rpcCall<M extends RpcMethod>(
     } catch (error) {
       failure = classifyFailure(error, method, signal);
     }
-    if (failure.state === "off" || !failure.retryable || attempt >= maxRetries) {
+    if (!failure.retryable || attempt >= maxRetries) {
       return err(failure);
     }
     await sleep(backoffDelayMs(attempt, retry, failure.retryAfterMs), signal);
@@ -244,8 +246,11 @@ export async function rpcCall<M extends RpcMethod>(
 export type RpcResource<T> = {
   readonly snapshot: RpcSnapshot<T>;
   subscribe(listener: (snapshot: RpcSnapshot<T>) => void): () => void;
-  /** Widget-scoped Try again, or a background refresh. */
-  refresh(): void;
+  /**
+   * Widget-scoped Try again marks what is on screen as stale while it runs; a
+   * `quiet` background refresh replaces it only when the new value arrives.
+   */
+  refresh(options?: { quiet?: boolean }): void;
   /** The cancel under "Still loading"; ends in `error` with kind `cancelled`. */
   cancel(): void;
   dispose(): void;
@@ -254,7 +259,8 @@ export type RpcResource<T> = {
 export function rpcResource<M extends RpcMethod, T>(
   client: RpcClient,
   method: M,
-  params: RpcParams<M>,
+  /** A function is called on every run, for params that move with the clock. */
+  params: RpcParams<M> | (() => RpcParams<M>),
   select: (result: RpcResultOf<M>) => T,
   options: { retry?: RpcRetryOptions; now?: () => number } = {},
 ): RpcResource<T> {
@@ -279,7 +285,8 @@ export function rpcResource<M extends RpcMethod, T>(
     const mine = ++generation;
     const own = new AbortController();
     controller = own;
-    void rpcCall(client, method, params, { signal: own.signal, retry: options.retry }).then(
+    const current = typeof params === "function" ? params() : params;
+    void rpcCall(client, method, current, { signal: own.signal, retry: options.retry }).then(
       (result) => {
         if (mine !== generation) {
           return;
@@ -287,13 +294,14 @@ export function rpcResource<M extends RpcMethod, T>(
         controller = undefined;
         if (!result.ok) {
           const failure = result.error;
-          publish(failure.state === "error" && last ? { ...failure, last } : failure);
+          publish(last ? { ...failure, last } : failure);
           return;
         }
         try {
           last = { data: select(result.value), fetchedAt: now() };
         } catch {
-          publish(rpcError(method, "invalid", false, "/: select failed"));
+          const invalid = rpcError(method, "invalid", false, "/: select failed");
+          publish(last ? { ...invalid, last } : invalid);
           return;
         }
         publish({ state: "ready", ...last, stale: false });
@@ -313,12 +321,16 @@ export function rpcResource<M extends RpcMethod, T>(
         listeners.delete(listener);
       };
     },
-    refresh() {
+    refresh({ quiet = false } = {}) {
       if (disposed || controller) {
         return;
       }
       // Keep what is known on screen, marked old, instead of a skeleton.
-      publish(last ? { state: "ready", ...last, stale: true } : { state: "loading", since: now() });
+      if (!quiet) {
+        publish(
+          last ? { state: "ready", ...last, stale: true } : { state: "loading", since: now() },
+        );
+      }
       run();
     },
     cancel() {

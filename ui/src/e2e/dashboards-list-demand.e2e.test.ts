@@ -51,10 +51,23 @@ function isDashboardRequest(request: { params?: unknown }): boolean {
   );
 }
 
+// Mission Control's compact bar asks for running sessions on its own
+// ({ activeOnly: true }); this test counts the page's list queries.
+function isMissionControlRequest(request: { params?: unknown }): boolean {
+  return (
+    typeof request.params === "object" &&
+    request.params !== null &&
+    "activeOnly" in request.params &&
+    request.params.activeOnly === true
+  );
+}
+
 async function requestCounts(gateways: MockGatewayControls[]) {
   const requests = (
     await Promise.all(gateways.map((gateway) => gateway.getRequests("sessions.list")))
-  ).flat();
+  )
+    .flat()
+    .filter((request) => !isMissionControlRequest(request));
   const dashboard = requests.filter(isDashboardRequest).length;
   return { canonical: requests.length - dashboard, dashboard, total: requests.length };
 }

@@ -45,6 +45,8 @@ const { activateDraft, restoreDraft, restoreDraftOwner, retainDraft } = drafts;
 
 export class NewSessionPage extends OpenClawLightDomElement {
   @property({ attribute: false }) data: NewSessionRouteData | undefined;
+  /** Only the draft composer, without the hero and the recents (Mission Control's dock). */
+  @property({ attribute: false }) composerOnly = false;
 
   @consume({ context: applicationContext, subscribe: true })
   private context?: ApplicationContext;
@@ -435,7 +437,8 @@ export class NewSessionPage extends OpenClawLightDomElement {
       assistantAvatarUrl: agent?.identity?.avatarUrl ?? null,
       hint: t(catalog.isTarget(this.data) ? "newSession.nativeTerminalHint" : "newSession.hint"),
       composer: this.renderDraftBlock(),
-      hideSecondaryContent: this.submission.visibility === "incognito",
+      hideHero: this.composerOnly,
+      hideSecondaryContent: this.composerOnly || this.submission.visibility === "incognito",
       fadeSecondaryContent: this.submission.message.trim().length > 0,
       modelSetupRequired: this.submission.requiresModelSetup(),
       onModelSetup: () => this.context?.navigate("model-setup"),

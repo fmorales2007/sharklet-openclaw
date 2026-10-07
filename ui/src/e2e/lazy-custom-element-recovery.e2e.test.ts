@@ -372,7 +372,9 @@ suite.define(() => {
       }
 
       await retryThroughReload(page, error);
-      await page.getByRole("combobox", { name: "Search chats and commands…" }).waitFor();
+      await page
+        .getByRole("combobox", { name: "Search chats, agents, pages and actions" })
+        .waitFor();
 
       await expect.poll(failure.chunkRequestCount).toBe(2);
       expect(await page.locator("openclaw-command-palette").count()).toBe(1);
@@ -380,7 +382,7 @@ suite.define(() => {
         await writeFile(
           path.join(artifactDir, "recovered.png"),
           await takeControlUiViewportScreenshot(page, page.locator(".sk-palette"), [
-            page.getByRole("combobox", { name: "Search chats and commands…" }),
+            page.getByRole("combobox", { name: "Search chats, agents, pages and actions" }),
           ]),
         );
       }

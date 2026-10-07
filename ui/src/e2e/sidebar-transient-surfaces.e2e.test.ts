@@ -19,13 +19,9 @@ const captureProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
 const themes = [
   { colorScheme: "light", resolvedTheme: "light", theme: "claw" },
   { colorScheme: "dark", resolvedTheme: "dark", theme: "claw" },
-  { colorScheme: "light", resolvedTheme: "openknot-light", theme: "knot" },
-  { colorScheme: "dark", resolvedTheme: "openknot", theme: "knot" },
-  { colorScheme: "light", resolvedTheme: "dash-light", theme: "dash" },
-  { colorScheme: "dark", resolvedTheme: "dash", theme: "dash" },
 ] as const;
 
-function configResponse(theme: "claw" | "knot" | "dash", colorScheme: "light" | "dark") {
+function configResponse(theme: "claw", colorScheme: "light" | "dark") {
   const config = { ui: { prefs: { locale: "en", theme, themeMode: colorScheme } } };
   const hash = `transient-surfaces-${theme}-${colorScheme}`;
   return {
