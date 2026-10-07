@@ -195,12 +195,10 @@ function projectCronList(value: unknown): unknown {
     total: list.total,
     jobs: list.jobs.map((job) => {
       const kept = pick(job, ["id", "name", "enabled", "agentId"]);
-      return job.state
-        ? {
-            ...kept,
-            state: pick(job.state as Record<string, unknown>, ["nextRunAtMs", "runningAtMs"]),
-          }
-        : kept;
+      if (job.state) {
+        kept.state = pick(job.state as Record<string, unknown>, ["nextRunAtMs", "runningAtMs"]);
+      }
+      return kept;
     }),
   };
 }

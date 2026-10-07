@@ -266,9 +266,7 @@ export function renderApplicationShell(host: ShellViewHost) {
   // already shows the month's spend (the bar would only ask for it twice).
   const missionBar =
     !(nativeEmbed || onboarding || settingsTakeover || chatLikeRoute) &&
-    activeRoute !== "home" &&
-    activeRoute !== "custodian" &&
-    activeRoute !== "usage";
+    !["home", "custodian", "usage"].includes(activeRoute);
   if (!settingsTakeover && !nativeEmbed) {
     Object.assign(host.navigationSidebar, {
       basePath: context.basePath,
