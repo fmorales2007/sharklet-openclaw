@@ -33,7 +33,7 @@ suite.define(() => {
       await gateway.setMethodResponse("pages.state", { off: [{ id: "usage" }] });
       await gateway.emitGatewayEvent("config.changed", {});
       await off.waitFor({ state: "visible" });
-      expect(await off.textContent()).toContain("It was turned off on this gateway");
+      expect(await off.textContent()).toContain("It's turned off in the gateway config.");
 
       expect(
         await page.evaluate(() => (window as unknown as { skNoReload?: boolean }).skNoReload),

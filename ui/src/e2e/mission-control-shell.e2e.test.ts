@@ -71,11 +71,12 @@ suite.define(() => {
       await page.keyboard.press("Control+k");
       const search = page.getByPlaceholder("Search chats, agents, pages and actions");
       await search.fill("Home");
-      await page.getByRole("option").first().waitFor();
-      const labels = (await page.getByRole("option").allTextContents()).map((text) =>
-        text.replace(/\s+/g, " ").trim(),
-      );
-      expect(labels.filter((label) => label.startsWith("Home"))).toHaveLength(1);
+      // The results settle after the search filters them; poll instead of reading once.
+      const homeOptions = async () =>
+        (await page.getByRole("option").allTextContents())
+          .map((text) => text.replace(/\s+/g, " ").trim())
+          .filter((label) => label.startsWith("Home")).length;
+      await expect.poll(homeOptions).toBe(1);
     });
   });
 });

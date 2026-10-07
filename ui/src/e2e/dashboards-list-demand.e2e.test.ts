@@ -10,6 +10,7 @@ import {
   type MockGatewayControls,
 } from "../test-helpers/control-ui-e2e.ts";
 import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts";
+import { isMissionControlRequest } from "./mission-control-fixtures.test-support.ts";
 
 const suite = createControlUiE2eSuite({
   name: "Control UI dashboard session-list demand",
@@ -48,17 +49,6 @@ function isDashboardRequest(request: { params?: unknown }): boolean {
     request.params !== null &&
     "hasBoard" in request.params &&
     request.params.hasBoard === true
-  );
-}
-
-// Mission Control's compact bar asks for running sessions on its own
-// ({ activeOnly: true }); this test counts the page's list queries.
-function isMissionControlRequest(request: { params?: unknown }): boolean {
-  return (
-    typeof request.params === "object" &&
-    request.params !== null &&
-    "activeOnly" in request.params &&
-    request.params.activeOnly === true
   );
 }
 
@@ -394,9 +384,9 @@ suite.define(() => {
         tabs.map(({ gateway }, index) =>
           expect
             .poll(async () => {
-              const added = (await gateway.getRequests("sessions.list")).slice(
-                beforeWave[index]?.length ?? 0,
-              );
+              const added = (await gateway.getRequests("sessions.list"))
+                .slice(beforeWave[index]?.length ?? 0)
+                .filter((request) => !isMissionControlRequest(request));
               const dashboard = added.filter(isDashboardRequest).length;
               return { canonical: added.length - dashboard, dashboard };
             })
@@ -408,7 +398,9 @@ suite.define(() => {
         tabs.map(({ gateway }) => gateway.getRequests("sessions.list")),
       );
       for (const [index, requests] of afterWave.entries()) {
-        const added = requests.slice(beforeWave[index]?.length ?? 0);
+        const added = requests
+          .slice(beforeWave[index]?.length ?? 0)
+          .filter((request) => !isMissionControlRequest(request));
         expect(added.filter(isDashboardRequest)).toHaveLength(1);
         expect(added.filter((request) => !isDashboardRequest(request))).toHaveLength(1);
       }

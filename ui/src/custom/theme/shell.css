@@ -56,7 +56,10 @@ body:has(
       )
       > *,
     .shell--onboarding,
-    .shell--embed
+    .shell--embed,
+    /* A split chat reaches the corner: the right pane's send button sits there. */
+    .chat-split-view__column ~ .chat-split-view__column,
+    .chat-split-view__pane ~ .chat-split-view__pane
   )
   .sk-help-btn[data-shell] {
   display: none;

@@ -364,9 +364,11 @@ sharklet-mission-strip {
 .sk-strip .sk-state--loading .sk-skeleton {
   display: none;
 }
+/* A loading cell has nothing else to size it: without a floor the bar is 0 px wide. */
 .sk-strip .sk-state--loading .sk-skeleton:first-child {
   display: block;
   flex: 1;
+  min-width: 96px;
   height: 16px;
 }
 .sk-strip .sk-state p,

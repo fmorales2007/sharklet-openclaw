@@ -4,6 +4,18 @@
 import type { AgentsListResult, SessionsListResult } from "../api/types.ts";
 import type { CostUsageSummary } from "../pages/usage/data-types.ts";
 
+// Mission Control asks for running sessions on its own ({ activeOnly: true }),
+// on Home and from the compact bar on other pages. Tests that count a page's
+// sessions.list queries leave these out.
+export function isMissionControlRequest(request: { params?: unknown }): boolean {
+  return (
+    typeof request.params === "object" &&
+    request.params !== null &&
+    "activeOnly" in request.params &&
+    request.params.activeOnly === true
+  );
+}
+
 const NOW = Date.UTC(2026, 9, 15, 12);
 const MINUTE = 60_000;
 

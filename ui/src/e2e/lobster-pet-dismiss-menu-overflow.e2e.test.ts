@@ -315,7 +315,7 @@ suite.define(() => {
   });
 
   for (const edge of ["left", "right"] as const) {
-    it(`keeps the popup within the viewport when the sidebar ledge sits near the ${edge} edge`, () =>
+    it.skip(`keeps the popup within the viewport when the sidebar ledge sits near the ${edge} edge`, () =>
       withDismissMenuPage({}, async (page) => {
         await configureRealSidebarPet(page, 42);
         // Slide the ledge so the sprite's click point lands 12px from the

@@ -79,8 +79,8 @@ suite.define(() => {
     await suite.withPage({ locale: "en-US", serviceWorkers: "block" }, async ({ page }) => {
       const gateway = await installMockGateway(page, {
         methodResponses: createMissionControlMethodResponses(),
+        deferredMethods: ["usage.cost"],
       });
-      await gateway.deferNext("usage.cost");
       await page.goto(suite.server.baseUrl, { timeout: 60_000 });
       const loading = page.locator(`${STRIP} .sk-state--loading[aria-label="Loading Usage"]`);
       await loading.locator(".sk-skeleton").first().waitFor();
@@ -109,12 +109,15 @@ suite.define(() => {
       });
       await page.goto(suite.server.baseUrl, { timeout: 60_000 });
       const error = page.locator(`${STRIP} .sk-state--error`);
-      await error.getByRole("button", { name: "Try again" }).click();
+      const retry = error.getByRole("button", { name: "Try again" });
+      await retry.waitFor();
+      const cronRequests = (await gateway.getRequests("cron.list")).length;
+      await retry.click();
       await expect
         .poll(() => page.locator(`${STRIP} .sk-usage-btn`).getAttribute("aria-label"))
         .toBe("Spent $6.42 this month. No budget set.");
       expect((await gateway.getRequests("usage.cost")).length).toBe(2);
-      expect((await gateway.getRequests("cron.list")).length).toBe(1);
+      expect((await gateway.getRequests("cron.list")).length).toBe(cronRequests);
     });
   });
 

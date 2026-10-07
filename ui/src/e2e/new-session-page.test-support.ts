@@ -205,11 +205,9 @@ export async function expectPendingNewSessionPresentation(page: Page) {
   expect(presentation.background).not.toBe("rgba(0, 0, 0, 0)");
   // Sharklet's shark stands in for the claw glyph (SHARKLET.md, E2): 22px wide.
   expect(presentation.clawSize[0]).toBe("22px");
-  if (presentation.reducedMotion) {
-    expect(presentation.animation).toBe("none");
-  } else {
-    expect(presentation.animation).toContain("chatWorkingClawFlex");
-  }
+  // The shark swims with SMIL, paused by motion.js under reduced motion, so it
+  // never carries upstream's CSS claw animation.
+  expect(presentation.animation).toBe("none");
   return presentation;
 }
 

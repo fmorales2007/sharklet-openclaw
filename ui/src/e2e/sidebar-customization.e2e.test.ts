@@ -564,11 +564,11 @@ suite.define(() => {
       await tasksItem.click();
       await expect
         .poll(() => trimmedTextContents(pinnedItems))
-        .toEqual(["Dashboards", "Automations", "Plugins", "Tasks"]);
+        .toEqual(["Home", "Dashboards", "Automations", "Plugins", "Tasks"]);
       await page.reload();
       await expect
         .poll(() => trimmedTextContents(pinnedItems))
-        .toEqual(["Dashboards", "Automations", "Plugins", "Tasks"]);
+        .toEqual(["Home", "Dashboards", "Automations", "Plugins", "Tasks"]);
       // The More menu is transient: closed after reload, unpinned routes inside.
       await expect.poll(() => moreButton.getAttribute("aria-expanded")).toBe("false");
       await moreButton.click();
