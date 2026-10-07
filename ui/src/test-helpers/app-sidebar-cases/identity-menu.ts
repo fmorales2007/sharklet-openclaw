@@ -304,11 +304,18 @@ describe("AppSidebar footer identity menu", () => {
       arrow(theme ?? undefined, "ArrowUp");
       expect(document.activeElement).toBe(lastItem);
 
+      // Sharklet's density switch follows the theme switch, so it is the last
+      // footer control the arrows wrap to (custom/density.ts).
+      const densityToggle = menu?.querySelector<HTMLElement & { updateComplete: Promise<unknown> }>(
+        "sharklet-density-toggle",
+      );
+      await densityToggle?.updateComplete;
+      const density = densityToggle?.querySelector<HTMLButtonElement>("button");
       items[0]?.focus();
       items.forEach((item) => (item.active = item === items[0]));
       arrow(items[0], "ArrowUp");
-      expect(document.activeElement).toBe(theme);
-      arrow(theme ?? undefined, "ArrowDown");
+      expect(document.activeElement).toBe(density);
+      arrow(density ?? undefined, "ArrowDown");
       expect(document.activeElement).toBe(items[0]);
     },
   );
