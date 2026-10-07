@@ -69,6 +69,8 @@ overrides:
   axios: 1.20.0
   # GHSA-jqcg-44mw-7w3h (critical), found by the F1-X scan.
   proxy-addr: 2.0.8
+  # GHSA-68fv-2mgg-jv7q (high), found by the F1-X scan.
+  source-map-js: 1.2.2
   fast-uri: 4.1.4
   follow-redirects: 1.16.0
   defu: 6.1.7
