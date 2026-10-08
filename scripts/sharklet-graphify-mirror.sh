@@ -30,7 +30,7 @@ cd "$out"
 git init -q -b main
 git config core.autocrlf false
 git config core.longpaths true
-git add -A
+git add -A --
 git -c user.name="Sharklet mirror" -c user.email="sharklet-mirror@users.noreply.github.com" \
   commit -qm "Mirror of $src_ref@$src_sha"
 git push -q --force "$url" main
