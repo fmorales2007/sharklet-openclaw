@@ -1,0 +1,22 @@
+/* The user's own chat bubble.
+ *
+ * Upstream tints each human sender's bubble with a stable identity hue,
+ * hsl(var(--chat-sender-hue) 48% 42% / 0.16), where the hue is a hash of the
+ * sender (styles/chat/grouped.css:1043). That is a free hue, not a token, so the
+ * bridge cannot reach it — and for this owner it lands on a warm sienna that
+ * reads as OpenClaw's coral inside a Sharklet page.
+ *
+ * Sharklet's approved user bubble is sk-msg-user: a neutral --sk-fill, no hue.
+ * Senders stay distinguishable by avatar and name, which is where upstream's
+ * same seed also shows. Only .user groups change; messages forwarded from other
+ * sessions keep upstream's tint until phase 2 revisits the chat.
+ *
+ * Specificity: upstream's light-mode name rule is (0,6,0); these are (0,6,1).
+ */
+html:root[data-theme-mode] .chat-group.user.chat-group--sender-tint .chat-bubble {
+  --chat-bubble-background: var(--sk-fill);
+}
+
+html:root[data-theme-mode] .chat-group.user.chat-group--sender-tint .chat-sender-name {
+  color: var(--sk-text-2);
+}

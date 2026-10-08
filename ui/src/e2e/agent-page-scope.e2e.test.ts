@@ -103,7 +103,7 @@ suite.define(() => {
         await page.goto(`${suite.server.baseUrl}usage`);
         await gateway.waitForRequest("agents.list");
         await page.keyboard.press("ControlOrMeta+k");
-        const input = page.locator(".cmd-palette__input");
+        const input = page.locator(".sk-palette-input input");
         await input.fill("Needle");
         await page.getByRole("option", { name: "Needle Bravo", exact: true }).waitFor();
         const options = page.locator("openclaw-command-palette").getByRole("option");
@@ -152,7 +152,7 @@ suite.define(() => {
             )
             .toBe("Main");
           await page.keyboard.press("ControlOrMeta+k");
-          await page.locator(".cmd-palette__input").fill("Reviewer");
+          await page.locator(".sk-palette-input input").fill("Reviewer");
           const result = page.getByRole("option", { name: "Reviewer reviewer", exact: true });
           await result.waitFor();
           await screenshot(page, "07-palette-reviewer-result.png");
@@ -391,7 +391,7 @@ suite.define(() => {
           )
           .toBe("Writer");
 
-        await sidebar.getByRole("link", { name: "Home" }).click();
+        await sidebar.getByRole("link", { name: "Main chat" }).click();
         await expect.poll(() => new URL(page.url()).pathname).toBe("/chat/writer");
         await sidebar.locator(".sidebar-identity-card").click();
         await sidebar

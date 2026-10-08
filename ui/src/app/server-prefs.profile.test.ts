@@ -43,8 +43,7 @@ describe("profile-bound appearance preferences", () => {
     // Record<ThemeName, boolean> turns a theme added to the UI but missing from
     // this table into a compile error, and the loop turns a wire-contract
     // mismatch into a runtime failure — a mismatch silently drops profile
-    // themes. "custom" is the deliberate exception: its palette is
-    // browser-local, so the selection must never follow the profile.
+    // themes.
     const profileStorable: Record<ThemeName, boolean> = {
       claw: true,
       knot: true,
@@ -57,34 +56,12 @@ describe("profile-bound appearance preferences", () => {
       manuscript: true,
       rose: true,
       miami: true,
-      custom: false,
     };
     for (const [theme, storable] of Object.entries(profileStorable)) {
       expect(normalizeUiAppearancePreference(UI_APPEARANCE_PREFERENCE_KEYS.theme, theme)).toBe(
         storable ? theme : undefined,
       );
     }
-  });
-
-  it("keeps a profile-bound custom theme selection in this browser only", async () => {
-    const request = vi.fn(async () => ({ status: "ok" as const }));
-    const writer = createServerPrefsWriter(request, scope, true, { ok: true }, false);
-    const afterCommit = vi.fn();
-
-    pushServerUiPrefs(
-      writer,
-      { theme: "custom", accent: "#123456" },
-      { profileId, canWrite: true, afterCommit },
-    );
-
-    // The accent still syncs; the custom theme is retained browser-local and
-    // never reaches users.prefs.set.
-    await waitForFast(() =>
-      expect(request).toHaveBeenCalledExactlyOnceWith("users.prefs.set", {
-        entries: { "ui.accent": "#123456" },
-      }),
-    );
-    expect(afterCommit).toHaveBeenCalledWith({ needsRefresh: false, retainedLocal: true });
   });
 
   it("overlays profile appearance values without changing anonymous snapshot resolution", () => {

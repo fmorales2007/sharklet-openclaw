@@ -1,0 +1,81 @@
+/* Sharklet's pieces of the shell (custom/shell.ts).
+ *
+ * The help button: components.css .sk-help-btn, marked data-shell so these
+ * rules hold whether or not components.css (lazy, from Mission Control) has
+ * loaded, fixed to the page's
+ * bottom-right corner. Shown only where that corner is free — from 1160px the
+ * chat column (upstream's composer, ~770px) leaves room beside it with the
+ * sidebar open. Narrower screens reach Help through upstream's own panel (the
+ * Home button, then its Help tab) or Settings → Help. Hidden while a dock panel is open (it
+ * would sit on the panel's corner, where the Help panel has its send button),
+ * during onboarding (the same agent is already in front) and when embedded.
+ */
+.sk-help-btn[data-shell] {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 40;
+  display: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sk-glass);
+  color: var(--sk-text-2);
+  cursor: var(--sk-cursor-action);
+  -webkit-backdrop-filter: var(--sk-glass-filter);
+  backdrop-filter: var(--sk-glass-filter);
+  box-shadow:
+    var(--sk-shadow-float),
+    inset 0 0 0 1px var(--sk-line);
+}
+
+.sk-help-btn[data-shell]:hover {
+  color: var(--sk-text);
+}
+
+.sk-help-btn[data-shell] svg {
+  width: 18px;
+  height: 18px;
+}
+
+@media (min-width: 1160px) {
+  .sk-help-btn[data-shell] {
+    display: grid;
+  }
+}
+
+body:has(
+    :is(
+        openclaw-assistant-panel,
+        openclaw-browser-panel,
+        openclaw-desktop-panel,
+        openclaw-terminal-panel
+      )
+      > *,
+    .shell--onboarding,
+    .shell--embed,
+    /* A split chat reaches the corner: the right pane's send button sits there. */
+    .chat-split-view__column ~ .chat-split-view__column,
+    .chat-split-view__pane ~ .chat-split-view__pane
+  )
+  .sk-help-btn[data-shell] {
+  display: none;
+}
+
+/* Upstream's Discord invite card and the lobster pet that lives beside it, at
+   the foot of the sidebar. Neither belongs to Sharklet; the lobster's
+   Appearance settings are left for phase 7's Settings pass. */
+.sidebar-shell__invite {
+  display: none;
+}
+
+/* Command palette (sk-palette): upstream icons carry no size of their own. */
+.sk-palette-input svg,
+.sk-palette-list .sk-menu-item > svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}

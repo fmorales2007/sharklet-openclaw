@@ -12,7 +12,7 @@ const suite = createControlUiE2eSuite({
 });
 
 suite.define(() => {
-  it("keeps accent and theme controls accessible across responsive layouts", async () => {
+  it("keeps the color-mode control laid out, with no theme, accent or typography pickers across responsive layouts", async () => {
     await suite.withPage(
       { colorScheme: "dark", locale: "en-US", viewport: { height: 1000, width: 1440 } },
       async ({ page }) => {
@@ -44,59 +44,14 @@ suite.define(() => {
           )
           .allTextContents();
         const themeIndex = appearanceHeadings.findIndex((heading) => heading.trim() === "Theme");
-        expect(
-          appearanceHeadings.slice(themeIndex, themeIndex + 3).map((heading) => heading.trim()),
-        ).toEqual(["Theme", "Accent color", "Typography"]);
+        expect(themeIndex).toBeGreaterThanOrEqual(0);
+        const headings = appearanceHeadings.map((heading) => heading.trim());
+        expect(headings).not.toContain("Accent color");
+        expect(headings).not.toContain("Typography");
 
-        const accent = page.locator("#settings-appearance-accent");
-        const customPicker = accent.locator("[data-accent-custom]");
-        const customSwatch = accent.locator(".settings-accent-swatch--custom");
-        await expect
-          .poll(() => customPicker.getAttribute("aria-describedby"))
-          .toBe("settings-accent-status");
-        await expect
-          .poll(() => accent.locator("#settings-accent-status").textContent())
-          .toContain("Using Custom color");
-        await accent.locator('[data-accent-preset="slate"]').focus();
-        await page.keyboard.press("Tab");
-        await expect
-          .poll(() => customPicker.evaluate((element) => element.matches(":focus-visible")))
-          .toBe(true);
-        await expect
-          .poll(() =>
-            customSwatch.evaluate((element) => {
-              const style = getComputedStyle(element);
-              return {
-                boxShadow: style.boxShadow,
-                outlineOffset: style.outlineOffset,
-                outlineWidth: style.outlineWidth,
-              };
-            }),
-          )
-          .toMatchObject({ outlineOffset: "4px", outlineWidth: "2px" });
-        expect(
-          await customSwatch.evaluate((element) => getComputedStyle(element).boxShadow),
-        ).not.toBe("none");
-
+        // Sharklet has one theme family: no family cards and no tweakcn import.
         const theme = page.locator("#settings-appearance-theme");
-        const grid = theme.locator(".settings-theme-grid");
-        for (const [width, expectedColumns] of [
-          [560, 3],
-          [320, 1],
-        ] as const) {
-          await page.setViewportSize({ height: 1000, width });
-          const layout = await grid.evaluate((element) => {
-            const cards = Array.from(element.children, (card) =>
-              (card as HTMLElement).getBoundingClientRect(),
-            );
-            return {
-              columns: new Set(cards.map((card) => Math.round(card.left))).size,
-              minWidth: Math.min(...cards.map((card) => card.width)),
-            };
-          });
-          expect(layout.columns).toBe(expectedColumns);
-          expect(layout.minWidth).toBeGreaterThanOrEqual(150);
-        }
+        expect(await theme.locator(".settings-theme-grid, .settings-theme-import").count()).toBe(0);
 
         const colorMode = page
           .locator(".settings-row")

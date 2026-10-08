@@ -56,14 +56,7 @@ export function buildControlUiCspHeader(opts?: {
   }
   // Web Awesome resolves its bundled system icons to data: SVGs, then fetches
   // them before rendering. This allows local bytes only, not another origin.
-  const connectTokens = [
-    "'self'",
-    "ws:",
-    "wss:",
-    "data:",
-    "https://api.openai.com",
-    "https://tweakcn.com",
-  ];
+  const connectTokens = ["'self'", "ws:", "wss:", "data:", "https://api.openai.com"];
   if (opts?.portalHost) {
     try {
       const parsed = new URL(`http://${opts.portalHost}`);

@@ -1,37 +1,14 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { expect, it } from "vitest";
-import { finishElementAnimations } from "../test-helpers/animations.ts";
-import { controlUiBundledGatewayUrl, installMockGateway } from "../test-helpers/control-ui-e2e.ts";
+import { installMockGateway } from "../test-helpers/control-ui-e2e.ts";
 import { resolveRenderedColors, type RenderedColor } from "../test-helpers/rendered-colors.ts";
 import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts";
 
 const captureUiProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
 
-const themeCases = [
-  { family: "claw", mode: "dark", resolved: "dark" },
-  { family: "claw", mode: "light", resolved: "light" },
-  { family: "knot", mode: "dark", resolved: "openknot" },
-  { family: "knot", mode: "light", resolved: "openknot-light" },
-  { family: "dash", mode: "dark", resolved: "dash" },
-  { family: "dash", mode: "light", resolved: "dash-light" },
-  { family: "absolutely", mode: "dark", resolved: "absolutely" },
-  { family: "absolutely", mode: "light", resolved: "absolutely-light" },
-  { family: "tide", mode: "dark", resolved: "tide" },
-  { family: "tide", mode: "light", resolved: "tide-light" },
-  { family: "beacon", mode: "dark", resolved: "beacon" },
-  { family: "beacon", mode: "light", resolved: "beacon-light" },
-  { family: "phosphor", mode: "dark", resolved: "phosphor" },
-  { family: "phosphor", mode: "light", resolved: "phosphor-light" },
-  { family: "crt", mode: "dark", resolved: "crt" },
-  { family: "crt", mode: "light", resolved: "crt-light" },
-  { family: "manuscript", mode: "dark", resolved: "manuscript" },
-  { family: "manuscript", mode: "light", resolved: "manuscript-light" },
-  { family: "rose", mode: "dark", resolved: "rose" },
-  { family: "rose", mode: "light", resolved: "rose-light" },
-  { family: "miami", mode: "dark", resolved: "miami" },
-  { family: "miami", mode: "light", resolved: "miami-light" },
-] as const;
+// Sharklet ships one theme family (F1-10); its two modes are the cases.
+const themeCases = [{ mode: "dark" }, { mode: "light" }] as const;
 
 const textTokens = [
   "--text",
@@ -44,26 +21,11 @@ const textTokens = [
 
 const surfaceTokens = ["--bg", "--bg-elevated", "--bg-muted", "--card", "--panel"] as const;
 
-function themeConfigResponse(
-  family:
-    | "claw"
-    | "knot"
-    | "dash"
-    | "absolutely"
-    | "tide"
-    | "beacon"
-    | "phosphor"
-    | "crt"
-    | "manuscript"
-    | "rose"
-    | "miami",
-  mode: "dark" | "light",
-  accent?: string,
-) {
+function themeConfigResponse(mode: "dark" | "light") {
   const config = {
-    ui: { prefs: { ...(family === "claw" ? {} : { theme: family }), themeMode: mode, accent } },
+    ui: { prefs: { themeMode: mode } },
   };
-  const hash = `theme-contrast-${family}-${mode}`;
+  const hash = `theme-contrast-${mode}`;
   return {
     appliedConfigHash: hash,
     config,
@@ -136,81 +98,25 @@ suite.define(() => {
     });
   });
 
-  it.each(
-    themeCases.flatMap(({ family, mode, resolved }) =>
-      (family === "claw" ? [undefined, "#000000", "#ffffff"] : [undefined]).map((accent) => ({
-        family,
-        mode,
-        resolved,
-        accent,
-      })),
-    ),
-  )(
-    "keeps $resolved appearance and picker states legible (accent $accent)",
-    async ({ family, mode, resolved, accent }) => {
+  it.each(themeCases)(
+    "keeps the $mode palette and Appearance description legible",
+    async ({ mode }) => {
       const context = await suite.newBrowserContext({
         colorScheme: mode,
         locale: "en-US",
         serviceWorkers: "block",
         viewport: { height: 900, width: 1440 },
       });
-      const initialFamily = family === "claw" ? "knot" : "claw";
-      await context.addInitScript(
-        ({ gatewayUrl, initialMode, initialTheme }) => {
-          localStorage.setItem(
-            `openclaw.control.settings.v1:${gatewayUrl}`,
-            JSON.stringify({ gatewayUrl, theme: initialTheme, themeMode: initialMode }),
-          );
-        },
-        {
-          gatewayUrl: controlUiBundledGatewayUrl(suite.server.baseUrl),
-          initialMode: mode,
-          initialTheme: initialFamily,
-        },
-      );
-
       const page = await context.newPage();
-      const gateway = await installMockGateway(page, {
-        methodResponses: {
-          "config.get": themeConfigResponse(initialFamily, mode, accent),
-        },
+      await installMockGateway(page, {
+        methodResponses: { "config.get": themeConfigResponse(mode) },
       });
+      const resolved = mode;
 
       try {
         const response = await page.goto(`${suite.server.baseUrl}settings/appearance`);
         expect(response?.status()).toBe(200);
-
-        const selectedCard = page.locator(`.settings-theme-card--${family}`);
-        await selectedCard.waitFor({ state: "visible" });
-        await gateway.waitForRequest("config.get");
-        const initialConfigGets = (await gateway.getRequests("config.get")).length;
-        const committed = themeConfigResponse(family, mode, accent);
-        await gateway.deferNext("config.patch");
-        await selectedCard.click();
-        const patch = await gateway.waitForRequest("config.patch");
-        const raw = (patch.params as { raw?: unknown } | undefined)?.raw;
-        expect(typeof raw).toBe("string");
-        expect(JSON.parse(String(raw))).toMatchObject({
-          ui: { prefs: { theme: family === "claw" ? null : family } },
-        });
-
-        // Theme clicks apply immediately; the eventual Gateway acknowledgement must not revert them.
-        await expect.poll(() => page.locator("html").getAttribute("data-theme")).toBe(resolved);
-        await expect
-          .poll(() => selectedCard.getAttribute("class"))
-          .toContain("settings-theme-card--active");
-
-        await gateway.setMethodResponse("config.get", committed);
-        await gateway.resolveDeferred("config.patch", committed);
-        await expect
-          .poll(async () => (await gateway.getRequests("config.get")).length)
-          .toBe(initialConfigGets + 1);
-
-        await expect.poll(() => page.locator("html").getAttribute("data-theme")).toBe(resolved);
         await expect.poll(() => page.locator("html").getAttribute("data-theme-mode")).toBe(mode);
-        await expect
-          .poll(() => selectedCard.getAttribute("class"))
-          .toContain("settings-theme-card--active");
 
         const visibleDescription = page.locator(".settings-section__desc").first();
         await visibleDescription.waitFor({ state: "visible" });
@@ -297,70 +203,9 @@ suite.define(() => {
           `${resolved}: actual rendered muted Appearance description, including ancestor backgrounds and opacity`,
         ).toBeGreaterThanOrEqual(4.5);
 
-        const picker = page.locator("openclaw-select-picker:has(#settings-font-chat)");
-        await picker.locator(".picker-select__trigger").click();
-        const selected = picker.locator('[role="option"][aria-selected="true"]');
-        await selected.waitFor({ state: "visible" });
-        const optionPaint = async (option: typeof selected) => {
-          await option.evaluate(finishElementAnimations);
-          return option.evaluate((element) => {
-            const style = getComputedStyle(element);
-            return {
-              background: style.backgroundColor,
-              label: getComputedStyle(element.querySelector(".picker-select__label")!).color,
-              description: getComputedStyle(element.querySelector(".picker-select__description")!)
-                .color,
-              outline: style.outlineStyle,
-              outlineWidth: Number.parseFloat(style.outlineWidth),
-              outlineColor: style.outlineColor,
-            };
-          });
-        };
-        // Composite translucent option fills against the painted menu surface.
-        const listboxBackground = await picker
-          .locator(".picker-select__menu")
-          .evaluate((element) => getComputedStyle(element).backgroundColor);
-        const assertOptionContrast = async (option: typeof selected) => {
-          const paint = await optionPaint(option);
-          const optionColors = await page.evaluate(resolveRenderedColors, {
-            background: paint.background,
-            listbox: listboxBackground,
-            label: paint.label,
-            description: paint.description,
-            outline: paint.outlineColor,
-          });
-          const background = compositeColor(optionColors.background!, optionColors.listbox!);
-          for (const text of [optionColors.label!, optionColors.description!]) {
-            expect(
-              contrastRatio(text, background),
-              `${resolved} picker text`,
-            ).toBeGreaterThanOrEqual(4.5);
-          }
-          return { paint, background, outline: optionColors.outline! };
-        };
-        const selectedValue = await selected.getAttribute("data-value");
-        const initialPaint = await optionPaint(selected);
-        await page.keyboard.press("ArrowDown");
-        const current = picker.locator('[role="option"][data-active]');
-        await expect.poll(() => current.getAttribute("data-value")).not.toBe(selectedValue);
-        expect(await selected.getAttribute("data-value")).toBe(selectedValue);
-        await expect
-          .poll(async () => (await optionPaint(selected)).background)
-          .toBe(initialPaint.background);
-        await assertOptionContrast(selected);
-        const focused = await assertOptionContrast(current);
-        expect(focused.paint.outline).not.toBe("none");
-        expect(focused.paint.outlineWidth).toBeGreaterThanOrEqual(2);
-        expect(contrastRatio(focused.outline, focused.background)).toBeGreaterThanOrEqual(3);
-        await picker.locator('[role="option"][data-value="system"]').hover();
-        await assertOptionContrast(picker.locator('[role="option"][data-value="system"]'));
-        await page.keyboard.press("Escape");
-        expect(new URL(page.url()).pathname).toBe("/settings/appearance");
-        expect(await selected.getAttribute("data-value")).toBe(selectedValue);
-
         if (captureUiProof) {
           await mkdir(path.join(suite.artifactDir, "theme-muted-contrast"), { recursive: true });
-          const proofName = accent ? `${resolved}-${accent.slice(1)}` : resolved;
+          const proofName = resolved;
           await page.screenshot({
             animations: "disabled",
             fullPage: true,
@@ -373,7 +218,6 @@ suite.define(() => {
             path.join(path.join(suite.artifactDir, "theme-muted-contrast"), `${proofName}.json`),
             `${JSON.stringify(
               {
-                accent,
                 description: {
                   background: descriptionBackground,
                   contrast: Number(descriptionContrast.toFixed(3)),
@@ -383,7 +227,6 @@ suite.define(() => {
                 mode,
                 pairings,
                 resolved,
-                selectedFamily: family,
               },
               null,
               2,
@@ -419,7 +262,7 @@ suite.define(() => {
         };
         const gateway = await installMockGateway(page, {
           methodResponses: {
-            "config.get": themeConfigResponse("claw", "light"),
+            "config.get": themeConfigResponse("light"),
             "skills.proposals.inspect": {
               content: "Review unread mail and archive low-priority threads.",
               record: {

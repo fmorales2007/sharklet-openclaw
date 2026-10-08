@@ -33,9 +33,5 @@ await runWithFailedTrailer("lint", async () => {
     return;
   }
   // Oxlint cannot see plain stylesheets or css`` templates in Lit components.
-  process.exitCode = await runStylelint([
-    "ui/src/**/*.css",
-    "ui/src/**/*.ts",
-    "ui/public/themes/*.css",
-  ]);
+  process.exitCode = await runStylelint(["ui/src/**/*.css", "ui/src/**/*.ts"]);
 });

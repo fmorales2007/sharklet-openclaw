@@ -1,5 +1,8 @@
 // Control UI module implements main behavior.
 import "./styles.css";
+// Sharklet's runtime (fonts, mascot). The theme itself is @imported at the end of
+// styles.css. Before app-host.ts on purpose: see custom/index.ts.
+import "./custom/index.ts";
 import "./app/app-host.ts";
 import { inferControlUiPublicAssetPath } from "./app/public-assets.ts";
 import {

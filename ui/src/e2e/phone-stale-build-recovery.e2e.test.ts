@@ -501,13 +501,8 @@ suite.define(() => {
         expect(installedArtifact.buildId).not.toBeNull();
         expect(installedArtifact.bodyDisplay).toBe("block");
         expect(installedArtifact.icon.pathname).toBe("/favicon.svg");
-        expect(installedArtifact.font.pathname).toBe("/fonts/space-grotesk.css");
-        expect(installedArtifact.theme.pathname).toBe("/themes/absolutely.css");
-        for (const asset of [
-          installedArtifact.icon,
-          installedArtifact.font,
-          installedArtifact.theme,
-        ]) {
+        expect(installedArtifact.font.pathname).toBe("/fonts/geist.css");
+        for (const asset of [installedArtifact.icon, installedArtifact.font]) {
           expect(asset.url).not.toBeNull();
           expect(asset.version).toBe(installedArtifact.buildId);
         }

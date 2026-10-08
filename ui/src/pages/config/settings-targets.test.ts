@@ -59,12 +59,6 @@ describe("settings search target manifest", () => {
         "#settings-appearance-theme",
       ],
       [
-        "appearanceAccent",
-        "/settings/appearance",
-        "?section=__appearance__",
-        "#settings-appearance-accent",
-      ],
-      [
         "appearanceTextSize",
         "/settings/appearance",
         "?section=__appearance__",

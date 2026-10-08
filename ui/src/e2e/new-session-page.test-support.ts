@@ -203,12 +203,11 @@ export async function expectPendingNewSessionPresentation(page: Page) {
   expect(presentation.rightGap).toBeLessThanOrEqual(1);
   expect(presentation.padding).toEqual(presentation.images ? ["10px", "14px"] : ["16px", "16px"]);
   expect(presentation.background).not.toBe("rgba(0, 0, 0, 0)");
-  expect(presentation.clawSize).toEqual(["18px", "18px"]);
-  if (presentation.reducedMotion) {
-    expect(presentation.animation).toBe("none");
-  } else {
-    expect(presentation.animation).toContain("chatWorkingClawFlex");
-  }
+  // Sharklet's shark stands in for the claw glyph (SHARKLET.md, E2): 22px wide.
+  expect(presentation.clawSize[0]).toBe("22px");
+  // The shark swims with SMIL, paused by motion.js under reduced motion, so it
+  // never carries upstream's CSS claw animation.
+  expect(presentation.animation).toBe("none");
   return presentation;
 }
 

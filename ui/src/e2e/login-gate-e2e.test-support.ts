@@ -24,7 +24,6 @@ type InstalledArtifactObservation = {
   buildId: string | null;
   font: ObservedAssetLink;
   icon: ObservedAssetLink;
-  theme: ObservedAssetLink;
 };
 
 export type ServiceWorkerObservation = {
@@ -293,9 +292,8 @@ export async function observeInstalledArtifact(page: Page): Promise<InstalledArt
     return {
       bodyDisplay: getComputedStyle(document.body).display,
       buildId: document.documentElement.getAttribute("data-openclaw-control-ui-build-id"),
-      font: observeLink('link[id^="openclaw-typeface-"]'),
+      font: observeLink("#sharklet-font-fonts-geist-css"),
       icon: observeLink('link[rel="icon"][type="image/svg+xml"]'),
-      theme: observeLink("#openclaw-theme-palette-absolutely"),
     };
   });
 }

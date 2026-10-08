@@ -1,0 +1,334 @@
+/* Sharklet token bridge.
+ *
+ * tokens.css by itself changes nothing. Upstream defines 397 custom properties
+ * and uses 351; ours are 75 --sk-* names. The intersection is empty, so load
+ * order buys nothing. This file is what changes the app: it rewrites upstream's
+ * tokens in terms of ours.
+ *
+ * WINNING THE CASCADE. Sharklet has one theme family (F1-10): upstream's ten
+ * palette sheets, the tweakcn <style>, and the inline accent and typeface
+ * writers on <html> are gone, so nothing re-enters the cascade after this file
+ * and no declaration needs !important. One thing here is still not a style
+ * choice: the selector is :root[data-theme-mode="..."], specificity (0,2,0).
+ * That ties base.css's :root[data-theme="dark"] (the claw family's
+ * --destructive) and wins by order, since styles.css imports custom/theme
+ * last; base.css's other blocks are (0,1,0). A bare :root would lose that tie.
+ *
+ * The theme axis is data-theme-mode ("light" | "dark"), which index.html stamps
+ * before the first paint. data-theme carries upstream's resolved theme name,
+ * which for the one family left is also "dark" or "light"; upstream component
+ * CSS keys on it, the bridge does not.
+ */
+
+/* ---------------------------------------------------------------------------
+ * Mode-independent: everything that reads a --sk-* token resolves per mode on
+ * its own, so one block covers both. Only the handful that cannot be expressed
+ * that way is repeated in the per-mode blocks below.
+ * ------------------------------------------------------------------------- */
+:root[data-theme-mode="light"],
+:root[data-theme-mode="dark"] {
+  /* Surfaces */
+  --bg: var(--sk-canvas);
+  --bg-accent: var(--sk-sidebar);
+  --bg-elevated: var(--sk-surface);
+  --bg-hover: var(--sk-fill);
+  --bg-muted: var(--sk-fill);
+  --bg-content: var(--sk-surface);
+  --card: var(--sk-surface);
+  --card-foreground: var(--sk-text);
+  --card-highlight: color-mix(in oklab, var(--sk-text) 4%, transparent);
+  --popover: var(--sk-surface);
+  --popover-foreground: var(--sk-text);
+  --session-hovercard-surface: var(--sk-surface);
+  --session-hovercard-progress-surface: var(--sk-fill);
+  --panel: var(--sk-surface);
+  --panel-strong: var(--sk-fill);
+  --panel-hover: var(--sk-fill-2);
+  --chrome: var(--sk-glass);
+  --chrome-strong: var(--sk-surface);
+  --secondary: var(--sk-fill);
+  --secondary-foreground: var(--sk-text);
+  --menu-selected: var(--sk-fill);
+
+  /* Text. Upstream's --text is a dimmed body gray and --text-strong the real
+     one; Sharklet has one body color that already passes AA, so both take it
+     and --muted carries the step down. */
+  --text: var(--sk-text);
+  --text-strong: var(--sk-text);
+  --chat-text: var(--sk-text);
+  --muted: var(--sk-text-2);
+  --muted-strong: var(--sk-text-2);
+  --muted-foreground: var(--sk-text-2);
+  --file-icon-glyph: var(--sk-text-3);
+
+  /* Lines */
+  --border: var(--sk-line);
+  --border-strong: var(--sk-line-strong);
+  --border-hover: var(--sk-line-strong);
+  --input: var(--sk-line-strong);
+  --overlay-border: var(--sk-line);
+  --grid-line: color-mix(in oklab, var(--sk-line) 50%, transparent);
+  --resize-handle-rest-color: color-mix(in oklab, var(--sk-line) 74%, transparent);
+  --resize-handle-active-color: color-mix(in oklab, var(--sk-text) 42%, transparent);
+  --scrollbar-thumb: var(--sk-line-strong);
+  --scrollbar-thumb-hover: var(--sk-text-3);
+
+  /* Accent. --accent-hover mixes toward --sk-text, which darkens in light and
+     lightens in dark, so one expression is right in both modes.
+     --accent-foreground is ink ON the accent fill: our --sk-on-primary is
+     already white in light and near-black in dark, which is exactly the
+     contrast the ocean accent needs in each mode. */
+  --accent: var(--sk-accent);
+  --accent-hover: color-mix(in oklab, var(--sk-accent) 86%, var(--sk-text));
+  --accent-muted: var(--sk-accent);
+  --accent-subtle: var(--sk-accent-soft);
+  --accent-foreground: var(--sk-on-primary);
+  --accent-glow: color-mix(in oklab, var(--sk-accent) 20%, transparent);
+  --accent-2: var(--sk-agent-teal);
+  --accent-2-muted: color-mix(in oklab, var(--sk-agent-teal) 70%, transparent);
+  --accent-2-subtle: color-mix(in oklab, var(--sk-agent-teal) 10%, transparent);
+  --link: var(--sk-accent);
+  --link-hover: color-mix(in oklab, var(--sk-accent) 86%, var(--sk-text));
+  --selection-bg: color-mix(in oklab, var(--sk-accent) 28%, transparent);
+  --selection-fg: var(--sk-text);
+
+  /* Actions are monochrome in Sharklet: primary is near-black on light and
+     near-white on dark, which is the one real departure from upstream, where
+     primary is the accent hue. */
+  --primary: var(--sk-primary);
+  --primary-hover: var(--sk-primary-hover);
+  --primary-foreground: var(--sk-on-primary);
+
+  /* Status */
+  --ok: var(--sk-ok);
+  --ok-muted: color-mix(in oklab, var(--sk-ok) 75%, transparent);
+  --ok-subtle: var(--sk-ok-soft);
+  --warn: var(--sk-warn);
+  --warn-muted: color-mix(in oklab, var(--sk-warn) 75%, transparent);
+  --warn-subtle: var(--sk-warn-soft);
+  --warn-bright: var(--sk-warn);
+  --warn-strong: var(--sk-warn);
+  --danger: var(--sk-bad);
+  --danger-muted: color-mix(in oklab, var(--sk-bad) 75%, transparent);
+  --danger-subtle: var(--sk-bad-soft);
+  --danger-solid-hover: color-mix(in oklab, var(--sk-bad) 88%, black);
+  --destructive: var(--sk-bad);
+  --destructive-hover: color-mix(in oklab, var(--sk-bad) 88%, black);
+  --destructive-foreground: var(--sk-on-danger);
+  --info: var(--sk-accent);
+  --info-subtle: var(--sk-accent-soft);
+  --pr-merged: var(--sk-agent-violet);
+  --inbox-attention: var(--sk-bad);
+  --inbox-attention-hover: color-mix(in oklab, var(--sk-bad) 88%, black);
+  --inbox-attention-foreground: var(--sk-on-danger);
+
+  /* Focus. --focus-ring keeps upstream's shape (a 2px hole in --bg then the
+     ring) because dozens of components consume it as a whole box-shadow. */
+  --ring: var(--sk-accent);
+  --focus: color-mix(in oklab, var(--sk-accent) 22%, transparent);
+  --focus-ring: 0 0 0 2px var(--sk-surface), 0 0 0 4px var(--sk-accent);
+  --focus-glow: 0 0 0 2px var(--sk-surface), 0 0 0 4px var(--sk-accent);
+
+  /* Agent identity. Upstream's eight session colors map one to one onto our
+     eight; this is the one part of the palette that was a gift. Orange is the
+     exception: Sharklet has no orange, so it takes graphite, the deliberate
+     neutral, rather than a hue that means something else. */
+  --session-color-red: var(--sk-agent-rose);
+  --session-color-blue: var(--sk-agent-indigo);
+  --session-color-green: var(--sk-agent-olive);
+  --session-color-yellow: var(--sk-agent-sand);
+  --session-color-purple: var(--sk-agent-violet);
+  --session-color-orange: var(--sk-agent-graphite);
+  --session-color-pink: var(--sk-agent-plum);
+  --session-color-cyan: var(--sk-agent-teal);
+
+  /* Syntax highlighting: nine tokens no theme touches, so without this the
+     code blocks stay on OpenClaw's palette inside a Sharklet page. */
+  --hljs-keyword: var(--sk-agent-violet);
+  --hljs-number: var(--sk-agent-indigo);
+  --hljs-string: var(--sk-agent-teal);
+  --hljs-title: var(--sk-agent-plum);
+  --hljs-type: var(--sk-agent-sand);
+  --hljs-attribute: var(--sk-agent-rose);
+  --hljs-meta: var(--sk-text-3);
+  --hljs-deletion: var(--sk-bad);
+  --hljs-addition: var(--sk-ok);
+
+  /* Environment badges: eighteen more that no theme touches. The -ink pair is
+     the text on the tinted fill; our agent tokens already lighten in dark mode,
+     so both sides take the same token and stay legible in each. */
+  --control-ui-environment-teal: var(--sk-agent-teal);
+  --control-ui-environment-teal-ink: var(--sk-agent-teal);
+  --control-ui-environment-amber: var(--sk-agent-sand);
+  --control-ui-environment-amber-ink: var(--sk-agent-sand);
+  --control-ui-environment-purple: var(--sk-agent-violet);
+  --control-ui-environment-purple-ink: var(--sk-agent-violet);
+  --control-ui-environment-coral: var(--sk-agent-rose);
+  --control-ui-environment-coral-ink: var(--sk-agent-rose);
+  --control-ui-environment-pink: var(--sk-agent-plum);
+  --control-ui-environment-pink-ink: var(--sk-agent-plum);
+  --control-ui-environment-blue: var(--sk-agent-indigo);
+  --control-ui-environment-blue-ink: var(--sk-agent-indigo);
+  --control-ui-environment-green: var(--sk-agent-olive);
+  --control-ui-environment-green-ink: var(--sk-agent-olive);
+  --control-ui-environment-red: var(--sk-bad);
+  --control-ui-environment-red-ink: var(--sk-bad);
+  --control-ui-environment-gray: var(--sk-agent-graphite);
+  --control-ui-environment-gray-ink: var(--sk-agent-graphite);
+
+  /* Depth */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06);
+  --shadow-md: var(--sk-shadow-float);
+  --shadow-lg: var(--sk-shadow-pop);
+  --shadow-xl: var(--sk-shadow-pop);
+  --overlay-shadow: var(--sk-shadow-pop);
+
+  /* Shape. 212 of upstream's 815 border-radius declarations are written as
+     literal numbers, so a quarter of the app will not follow these. That is
+     known and accepted: the ones that do follow are the large surfaces where
+     the difference reads. */
+  --radius-sm: var(--sk-r-xs);
+  --radius: var(--sk-r-control);
+  --radius-md: var(--sk-r-control);
+  --radius-lg: var(--sk-r-card);
+  --radius-xl: var(--sk-r-pop);
+  --radius-full: var(--sk-r-pill);
+
+  /* Type: the arrow points the other way.
+     Upstream already defines --control-ui-text-xs/sm/md/lg as
+     calc(11|12|14|16px * --control-ui-text-scale), and those are exactly our
+     four sizes. Overriding them with our fixed pixels would silently kill the
+     text-scale setting in Settings -> Appearance, which is what the phase D
+     audit caught. So OUR tokens are redefined in terms of THEIRS, and the
+     slider moves the whole system, ours included. */
+  --sk-fs-xs: var(--control-ui-text-xs);
+  --sk-fs-sm: var(--control-ui-text-sm);
+  --sk-fs-ui: var(--control-ui-text-md);
+  --sk-fs-chat: var(--control-ui-text-lg);
+  --sk-fs-title: calc(18px * var(--control-ui-text-scale, 1));
+  --sk-fs-h2: calc(22px * var(--control-ui-text-scale, 1));
+  --sk-fs-h1: calc(28px * var(--control-ui-text-scale, 1));
+
+  --font-body: var(--sk-font);
+  --font-chat: var(--sk-font);
+  /* Geist Mono is self-hosted in ui/public/fonts/ and linked by custom/fonts.ts. */
+  --mono: var(--sk-mono);
+}
+
+/* Compact density, restated.
+ *
+ * tokens.css declares [data-density="compact"] at (0,1,0). The block above is
+ * (0,2,0), so it would have silently outranked it and compact density would
+ * have stopped changing type size — the same specificity trap as the focus
+ * ring, the theme axis and the board collapse. Restating it at (0,3,0) is what
+ * keeps the density control honest. The sizes are the approved ones, now
+ * carried through --control-ui-text-scale like everything else. */
+:root[data-theme-mode="light"][data-density="compact"],
+:root[data-theme-mode="dark"][data-density="compact"] {
+  --sk-fs-ui: calc(13px * var(--control-ui-text-scale, 1));
+  --sk-fs-chat: calc(14px * var(--control-ui-text-scale, 1));
+}
+
+/* Space: eight of upstream's map one to one onto ours. */
+:root[data-theme-mode="light"],
+:root[data-theme-mode="dark"] {
+  --space-1: var(--sk-s1);
+  --space-2: var(--sk-s2);
+  --space-3: var(--sk-s3);
+  --space-4: var(--sk-s4);
+  --space-5: var(--sk-s5);
+  --space-6: var(--sk-s6);
+  --space-7: var(--sk-s8);
+  --space-8: var(--sk-s10);
+  --widget-frame-inset: var(--sk-s3);
+
+  /* Controls take the arrow; the hand is for links. Both systems agree, and
+     upstream's cursor-policy test enforces it on every stylesheet. */
+  --cursor-action: var(--sk-cursor-action);
+}
+
+/* ---------------------------------------------------------------------------
+ * Left on upstream's values, on purpose.
+ *
+ *   --button-icon-bg, --brand-logo-chip-bg, --qr-bg, --qr-text  chips and codes
+ *     that must stay white or black to scan and to carry third-party marks.
+ *   --media-bg, --media-foreground                              video letterbox
+ *   --brand-codex, --brand-claude, --brand-google               other people's
+ *     brand colors; recoloring them would misrepresent them.
+ *   --lobster-icon-*, --moon-*, --exec-highlight                artwork, not
+ *     surface. The mascot is replaced outright (see custom/mascot), not tinted.
+ * ------------------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------------------
+ * Web Awesome. Its components draw inside their own shadow roots, where none
+ * of the above reaches. Overriding the semantic layer is enough: WA's own
+ * definitions point the semantics at numbered ramps, so replacing the
+ * semantics leaves the ramps unused rather than fighting them.
+ * ------------------------------------------------------------------------- */
+:root[data-theme-mode="light"],
+:root[data-theme-mode="dark"] {
+  --wa-color-surface-default: var(--sk-canvas);
+  --wa-color-surface-raised: var(--sk-surface);
+  --wa-color-surface-lowered: var(--sk-fill);
+  --wa-color-surface-border: var(--sk-line);
+  --wa-color-text-normal: var(--sk-text);
+  --wa-color-text-quiet: var(--sk-text-2);
+  --wa-color-text-link: var(--sk-accent);
+  --wa-color-focus: var(--sk-accent);
+  --wa-color-overlay-inline: color-mix(in oklab, var(--sk-text) 8%, transparent);
+  --wa-color-overlay-modal: color-mix(in oklab, var(--sk-canvas) 68%, transparent);
+
+  --wa-color-brand-fill-quiet: var(--sk-accent-soft);
+  --wa-color-brand-fill-normal: color-mix(in oklab, var(--sk-accent) 20%, var(--sk-surface));
+  --wa-color-brand-fill-loud: var(--sk-accent);
+  --wa-color-brand-border-quiet: var(--sk-accent-line);
+  --wa-color-brand-border-normal: var(--sk-accent-line);
+  --wa-color-brand-border-loud: var(--sk-accent);
+  --wa-color-brand-on-quiet: var(--sk-accent);
+  --wa-color-brand-on-normal: var(--sk-accent);
+  --wa-color-brand-on-loud: var(--sk-on-primary);
+
+  --wa-color-neutral-fill-quiet: var(--sk-fill);
+  --wa-color-neutral-fill-normal: var(--sk-fill-2);
+  --wa-color-neutral-fill-loud: var(--sk-primary);
+  --wa-color-neutral-border-quiet: var(--sk-line);
+  --wa-color-neutral-border-normal: var(--sk-line);
+  --wa-color-neutral-border-loud: var(--sk-line-strong);
+  --wa-color-neutral-on-quiet: var(--sk-text-2);
+  --wa-color-neutral-on-normal: var(--sk-text);
+  --wa-color-neutral-on-loud: var(--sk-on-primary);
+
+  --wa-color-success-fill-quiet: var(--sk-ok-soft);
+  --wa-color-success-fill-normal: color-mix(in oklab, var(--sk-ok) 20%, var(--sk-surface));
+  --wa-color-success-fill-loud: var(--sk-ok);
+  --wa-color-success-border-quiet: color-mix(in oklab, var(--sk-ok) 40%, var(--sk-surface));
+  --wa-color-success-border-normal: color-mix(in oklab, var(--sk-ok) 40%, var(--sk-surface));
+  --wa-color-success-border-loud: var(--sk-ok);
+  --wa-color-success-on-quiet: var(--sk-ok);
+  --wa-color-success-on-normal: var(--sk-ok);
+  --wa-color-success-on-loud: var(--sk-on-primary);
+
+  --wa-color-warning-fill-quiet: var(--sk-warn-soft);
+  --wa-color-warning-fill-normal: color-mix(in oklab, var(--sk-warn) 20%, var(--sk-surface));
+  --wa-color-warning-fill-loud: var(--sk-warn);
+  --wa-color-warning-border-quiet: color-mix(in oklab, var(--sk-warn) 40%, var(--sk-surface));
+  --wa-color-warning-border-normal: color-mix(in oklab, var(--sk-warn) 40%, var(--sk-surface));
+  --wa-color-warning-border-loud: var(--sk-warn);
+  --wa-color-warning-on-quiet: var(--sk-warn);
+  --wa-color-warning-on-normal: var(--sk-warn);
+  --wa-color-warning-on-loud: var(--sk-on-primary);
+
+  --wa-color-danger-fill-quiet: var(--sk-bad-soft);
+  --wa-color-danger-fill-normal: color-mix(in oklab, var(--sk-bad) 20%, var(--sk-surface));
+  --wa-color-danger-fill-loud: var(--sk-bad);
+  --wa-color-danger-border-quiet: color-mix(in oklab, var(--sk-bad) 40%, var(--sk-surface));
+  --wa-color-danger-border-normal: color-mix(in oklab, var(--sk-bad) 40%, var(--sk-surface));
+  --wa-color-danger-border-loud: var(--sk-bad);
+  --wa-color-danger-on-quiet: var(--sk-bad);
+  --wa-color-danger-on-normal: var(--sk-bad);
+  --wa-color-danger-on-loud: var(--sk-on-danger);
+
+  --wa-form-control-activated-color: var(--sk-accent);
+  --wa-form-control-height: var(--sk-h-md);
+  --wa-transition-fast: var(--sk-dur-micro);
+}

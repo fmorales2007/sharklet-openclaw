@@ -44,12 +44,12 @@ describe("renderAbout", () => {
     render(renderAbout(createProps({ onPokeClawd })), container);
 
     const hero = container.querySelector(".about-hero");
-    expect(hero?.querySelector(".about-hero__name")?.textContent).toBe("OpenClaw");
+    expect(hero?.querySelector(".about-hero__name")?.textContent).toBe("Sharklet");
     expect(hero?.querySelector(".about-hero__version")?.textContent).toBe("v2026.7.10");
     expect(hero?.querySelector(".about-hero__clawd svg")).not.toBeNull();
 
     const clawd = hero?.querySelector<HTMLButtonElement>(".about-hero__clawd");
-    expect(clawd?.getAttribute("aria-label")).toBe("Wave hello to Clawd");
+    expect(clawd?.getAttribute("aria-label")).toBe("Wave hello");
     clawd?.click();
     expect(onPokeClawd).toHaveBeenCalledOnce();
 

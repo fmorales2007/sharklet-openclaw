@@ -1,0 +1,41 @@
+/* <openclaw-mascot>, as Sharklet draws it (see custom/mascot.ts).
+ *
+ * The same box upstream's element gives itself — a square sized by
+ * --openclaw-mascot-size, inert to the pointer — so the six places that mount
+ * it keep their layout. The shark is wider than tall, so it sits centered in
+ * that square at full width.
+ *
+ * Ink when still; ink-2 while swimming, which is the thinking indicator's color
+ * in motion.md.
+ */
+openclaw-mascot {
+  display: inline-grid;
+  place-items: center;
+  width: var(--openclaw-mascot-size, 120px);
+  height: var(--openclaw-mascot-size, 120px);
+  overflow: visible;
+  contain: layout style;
+  pointer-events: none;
+  line-height: 0;
+  color: var(--sk-text);
+}
+
+openclaw-mascot[mood="thinking"],
+openclaw-mascot[mood="working"] {
+  color: var(--sk-text-2);
+}
+
+openclaw-mascot > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The shark standing in for upstream's claw glyph. Upstream sizes and animates
+   the glyph's <svg> (.chat-reading-indicator svg: 18x18, a flex keyframe);
+   (0,1,2) outranks that, so the shark keeps its own shape and its own swim. */
+openclaw-mascot[data-glyph] > svg {
+  width: 100%;
+  height: auto;
+  animation: none;
+}

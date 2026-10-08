@@ -1,0 +1,423 @@
+/* Sharklet skin for the board. Spec: sharklet/docs/design-system/board.md
+ *
+ * A skin, not a frame. Upstream's grid (12 columns, 56px rows, 12px gap),
+ * drag, resize, collision, keyboard reorder, sandboxed widget frames and ticket
+ * refresh all stay. This only restyles what they draw, plus one addition:
+ * sk-widget__head, the name inside the body.
+ *
+ * Why the addition. With a fine pointer, board.css lifts .board-widget__bar out
+ * of the flow and turns it into a pill that is hidden until 350ms of hover
+ * intent, and upstream's own container query drops its title under 376px of
+ * card width. With the 264px sidebar, a 4-column widget is 368px at a 1440px
+ * viewport, already under that cut. Without a name in the body, a Sharklet
+ * board is a set of unlabeled rectangles.
+ *
+ * Everything below rides on --sk-* through bridge.css, so both modes and both
+ * densities follow without a second copy.
+ */
+
+.board-view {
+  --board-line: var(--sk-line);
+  --board-surface: var(--sk-surface);
+}
+
+.board-widget {
+  border-radius: var(--sk-r-card);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+  transition:
+    border-color var(--sk-dur-micro) var(--sk-ease-out),
+    box-shadow var(--sk-dur-micro) var(--sk-ease-out);
+}
+
+.board-widget:hover {
+  border-color: var(--sk-line-strong);
+}
+
+/* The system ring is an outline. A box-shadow ring loses to any later rule that
+   also sets box-shadow, which is exactly how the phase D audit found six
+   controls with no visible focus. */
+.board-widget:focus-visible {
+  outline: var(--sk-focus-w) solid var(--sk-accent);
+  outline-offset: var(--sk-focus-offset);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+.board-widget--dragging {
+  border-color: var(--sk-accent-line);
+  box-shadow: var(--sk-shadow-float);
+  opacity: 0.92;
+  transform: none;
+}
+
+.board-widget__bar {
+  background: var(--sk-fill);
+  border-bottom-color: var(--sk-line);
+  border-radius: calc(var(--sk-r-card) - 1px) calc(var(--sk-r-card) - 1px) 0 0;
+}
+
+.board-widget__title {
+  color: var(--sk-text);
+  font-size: var(--sk-fs-sm);
+  font-weight: 590;
+}
+
+.board-widget__kind {
+  border-color: transparent;
+  background: var(--sk-fill-2);
+  /* On fill-2 the faint text is 4.25:1 in light, under AA, so status and quiet
+     text step up to text-2 there (tokens.md). */
+  color: var(--sk-text-2);
+  font-size: var(--sk-fs-xs);
+  letter-spacing: 0.04em;
+}
+
+.board-widget__drag-handle,
+.board-widget__resize-handle {
+  color: var(--sk-text-3);
+  border-radius: var(--sk-r-xs);
+}
+
+.board-widget__drag-handle:hover {
+  background: var(--sk-fill-2);
+  color: var(--sk-text);
+}
+
+.board-widget__body--scrollable {
+  scrollbar-color: var(--sk-line-strong) transparent;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  /* The floating pill. Upstream's geometry and its 350ms hover intent stay:
+     both are already tested, and the delay is what keeps a quick click into
+     widget content from racing the overlay. */
+  .board-widget__bar {
+    background: var(--sk-glass);
+    -webkit-backdrop-filter: var(--sk-glass-filter);
+    backdrop-filter: var(--sk-glass-filter);
+    border-color: var(--sk-line);
+    border-radius: var(--sk-r-pill);
+    box-shadow: var(--sk-shadow-pop);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * The name in the body, and the three generic states.
+ * ------------------------------------------------------------------------- */
+
+.board-widget__body--card > .sk-widget__head:first-child {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-s2);
+  flex: none;
+  margin-bottom: var(--sk-s2);
+}
+
+.sk-widget__head > b {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--sk-fs-sm);
+  font-weight: 590;
+}
+
+/* One name, one place. Widgets we do not control (MCP apps, plugin widgets)
+   have no head, so :has() leaves upstream's title alone for them. */
+.board-widget:has(.sk-widget__head) .board-widget__title {
+  display: none;
+}
+
+/* Loading. Upstream renders its own skeleton here; this only recolors it and
+   keeps it from being mistaken for a spinner. */
+.board-widget__plugin-loading,
+.board-widget__app-loading {
+  color: var(--sk-text-2);
+  font-size: var(--sk-fs-sm);
+  gap: var(--sk-s2);
+}
+
+/* Stale: a refresh keeps the last values and says so. It never blanks content
+   that is already on screen, which is what "no screen opens empty" means. */
+.board-widget__stale {
+  color: var(--sk-text-3);
+  font-size: var(--sk-fs-xs);
+}
+
+.board-widget__stale strong {
+  color: var(--sk-text);
+  font-size: var(--sk-fs-sm);
+}
+
+/* Error, with a way out. The sentence stays --sk-text rather than --sk-bad:
+   status color on a status fill is under AA (tokens.md). */
+.board-widget__error {
+  background: var(--sk-bad-soft);
+  border-radius: var(--sk-r-control);
+  color: var(--sk-text);
+}
+
+.board-widget__error strong {
+  color: var(--sk-text);
+  font-size: var(--sk-fs-ui);
+  font-weight: 590;
+}
+
+.board-widget__error > span {
+  color: var(--sk-text-2);
+  font-size: var(--sk-fs-sm);
+}
+
+.board-widget__error details {
+  color: var(--sk-text-3);
+  font-size: var(--sk-fs-xs);
+}
+
+.board-widget__error code {
+  font-family: var(--sk-mono);
+}
+
+/* Off. A decision someone made, not an alarm, so it is neutral. This is also
+   where the page kill switch renders. */
+.board-widget__disabled-plugin {
+  background: var(--sk-fill);
+  border-radius: var(--sk-r-control);
+  color: var(--sk-text-2);
+  font-size: var(--sk-fs-sm);
+}
+
+.page-off {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  padding: var(--sk-space-4, 16px);
+}
+
+.page-off .board-widget__disabled-plugin {
+  border-radius: var(--sk-r-card);
+}
+
+.board-widget__disabled-plugin strong {
+  color: var(--sk-text);
+  font-size: var(--sk-fs-ui);
+  font-weight: 590;
+}
+
+.board-empty {
+  border-color: var(--sk-line);
+  border-radius: var(--sk-r-card);
+  color: var(--sk-text-2);
+}
+
+.board-empty strong {
+  color: var(--sk-text);
+  font-size: var(--sk-fs-title);
+}
+
+.board-empty__mark {
+  color: var(--sk-accent);
+}
+
+/* Mission Control: the board in the main area, the composer below it. */
+.sk-mc {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.sk-mc__board {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 24px;
+}
+/* The new-session page is a full-height page: give it a definite box and drop its
+   welcome hero, which would push the composer off a board-first screen. */
+.sk-mc__composer {
+  flex: 0 0 clamp(260px, 40%, 400px);
+  min-height: 0;
+  position: relative;
+}
+.sk-mc__composer > openclaw-new-session-page {
+  display: block;
+  height: 100%;
+}
+.sk-mc__composer .new-session-page {
+  height: 100%;
+}
+
+/* A Sharklet widget fills its body: head at its own size, state or content after it. */
+.sk-mc-widget {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  font: inherit;
+  color: var(--sk-text);
+}
+.sk-mc-widget .sk-widget__head {
+  margin-bottom: 8px;
+  font-size: var(--sk-fs-sm);
+  font-weight: 500;
+}
+.sk-mc-rows {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--sk-fs-sm);
+}
+.sk-mc-rows li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.sk-mc-rows li > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sk-mc-rows small {
+  flex: none;
+  color: var(--sk-text-2);
+}
+/* States shed parts by widget size (board.md): Stat shows icon, one line and
+   retry in a row; Card drops the raw detail; Panel and up keep everything. */
+.sk-mc-widget[data-size="stat"] .sk-state--error {
+  grid-auto-flow: column;
+  justify-content: center;
+}
+.sk-mc-widget[data-size="stat"] .sk-state p,
+.sk-mc-widget[data-size="stat"] .sk-state details,
+.sk-mc-widget[data-size="card"] .sk-state details {
+  display: none;
+}
+
+/* Upstream icons carry no size of their own. */
+.sk-mc-widget .sk-state > svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.sk-mc-widget .sk-state .sk-btn svg,
+.sk-mc-widget .sk-stale svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+/* Instrument strip: Mission Control's fixed band above the board. The base
+   (sk-strip, sk-working, sk-job, sk-usage-btn, sk-upnext) is in components.css. */
+sharklet-mission-strip {
+  display: block;
+  flex: none;
+}
+.sk-strip-cell {
+  min-width: 0;
+}
+.sk-strip-cell--working {
+  flex: 1 1 auto;
+}
+.sk-strip-cell .sk-working {
+  width: 100%;
+}
+.sk-strip-usage {
+  width: min(320px, calc(100vw - 32px));
+  margin: 0;
+  inset: 56px 16px auto auto;
+  padding: 16px;
+  border: 0;
+  color: var(--sk-text);
+}
+.sk-strip-usage p {
+  margin: 4px 0 0;
+}
+.sk-strip-usage .sk-btn {
+  margin-top: 12px;
+}
+/* A state inside the strip is one line, not a card: sections must stay one row tall. */
+.sk-strip .sk-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 8px;
+}
+/* The loading shape (board.md, Loading): a head bar, then two text lines. */
+.sk-state--loading .sk-skeleton {
+  display: block;
+  height: 12px;
+}
+.sk-state--loading .sk-skeleton:first-child {
+  height: 28px;
+}
+.sk-state--loading .sk-skeleton:nth-child(2) {
+  width: 70%;
+}
+.sk-state--loading .sk-skeleton:nth-child(3) {
+  width: 52%;
+}
+.sk-strip .sk-state--loading .sk-skeleton {
+  display: none;
+}
+/* A loading cell has nothing else to size it: without a floor the bar is 0 px wide. */
+.sk-strip .sk-state--loading .sk-skeleton:first-child {
+  display: block;
+  flex: 1;
+  min-width: 96px;
+  height: 16px;
+}
+.sk-strip .sk-state p,
+.sk-strip .sk-state details {
+  display: none;
+}
+.sk-strip .sk-state > svg,
+.sk-strip .sk-stale svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.sk-strip .sk-state .sk-btn svg {
+  width: 14px;
+  height: 14px;
+}
+.sk-strip .sk-working:disabled {
+  cursor: default;
+}
+.sk-strip .sk-working-chevron svg,
+.sk-strip .sk-upnext > svg {
+  width: 16px;
+  height: 16px;
+}
+/* A long job list scrolls inside the strip instead of pushing the board away. */
+.sk-strip .sk-working-list > div {
+  max-height: min(40vh, 320px);
+  overflow-y: auto;
+}
+
+/* Compact strip: one row in the header of every other page. Working now shows
+   its count (it opens Home); the item list and chevron stay on Home. */
+sharklet-mission-bar {
+  display: block;
+  margin-bottom: 12px;
+}
+sharklet-mission-strip[compact] .sk-working-items,
+sharklet-mission-strip[compact] .sk-working-chevron {
+  display: none;
+}
+sharklet-mission-strip[compact] .sk-strip-cell--working {
+  flex: 0 0 auto;
+}
+sharklet-mission-strip[compact] .sk-strip-cell--upnext {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+@container (max-width: 560px) {
+  sharklet-mission-strip[compact] .sk-strip-cell--upnext {
+    display: none;
+  }
+}

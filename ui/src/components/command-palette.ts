@@ -4,6 +4,9 @@ import { normalizeOptionalString } from "@openclaw/normalization-core/string-coe
 import { html, nothing } from "lit";
 import { property, state } from "lit/decorators.js";
 import { ref } from "lit/directives/ref.js";
+// The palette is drawn with the design system (sk-pop, sk-palette, sk-menu-item),
+// so it brings the sheet itself instead of relying on Home having loaded it.
+import "../custom/theme/components.css";
 import { pathForAgentPanel, type RouteId } from "../app-route-paths.ts";
 import { applicationContext, type ApplicationContext } from "../app/context.ts";
 import { hasOperatorAdminAccess } from "../app/operator-access.ts";
@@ -65,6 +68,7 @@ type CommandPaletteProps = {
   onQueryChange: (query: string) => void;
   onActiveIdChange: (id: string) => void;
   onNavigate?: ApplicationContext<RouteId>["navigate"];
+  offPageIds: ReadonlySet<string>;
   onSelectSession?: (sessionKey: string) => void;
   onSlashCommand?: (command: string) => void;
   desktopAvailable: boolean;
@@ -85,6 +89,10 @@ function groupItems(items: PaletteItem[]): Array<[string, PaletteItem[]]> {
 const paletteDialogLabelId = "cmd-palette-label";
 const paletteInputId = "cmd-palette-input";
 const paletteListboxId = "cmd-palette-listbox";
+
+function isOff(item: PaletteItem, props: CommandPaletteProps): boolean {
+  return item.action.startsWith("nav:") && props.offPageIds.has(item.action.slice(4));
+}
 
 function selectItem(item: PaletteItem, props: CommandPaletteProps) {
   if (item.action.startsWith("nav:")) {
@@ -116,7 +124,7 @@ function closePalette(props: CommandPaletteProps) {
 
 function scrollActiveIntoView() {
   requestAnimationFrame(() => {
-    const el = document.querySelector(".cmd-palette__item--active");
+    const el = document.querySelector('.sk-palette-list [aria-selected="true"]');
     el?.scrollIntoView({ block: "nearest" });
   });
 }
@@ -197,36 +205,38 @@ function renderCommandPalette(props: CommandPaletteProps) {
       @modal-cancel=${() => closePalette(props)}
     >
       <div
-        class="cmd-palette"
+        class="sk-pop sk-palette"
         @click=${(e: Event) => e.stopPropagation()}
         @keydown=${(e: KeyboardEvent) => handleKeydown(e, props, items, activeIndex)}
       >
-        <label id=${paletteDialogLabelId} class="cmd-palette__label" for=${paletteInputId}
+        <label id=${paletteDialogLabelId} class="sr-only" for=${paletteInputId}
           >${paletteLabel}</label
         >
-        <input
-          ${ref(props.onInputRef)}
-          autofocus
-          id=${paletteInputId}
-          class="cmd-palette__input"
-          role="combobox"
-          aria-autocomplete="list"
-          aria-controls=${paletteListboxId}
-          aria-activedescendant=${activeOptionId}
-          aria-expanded="true"
-          placeholder=${paletteLabel}
-          .value=${props.query}
-          @input=${(e: Event) => props.onQueryChange((e.target as HTMLInputElement).value)}
-        />
-        <div id=${paletteListboxId} class="cmd-palette__results" role="listbox">
+        <div class="sk-palette-input">
+          ${icons.search}
+          <input
+            ${ref(props.onInputRef)}
+            autofocus
+            id=${paletteInputId}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-controls=${paletteListboxId}
+            aria-activedescendant=${activeOptionId}
+            aria-expanded="true"
+            placeholder=${paletteLabel}
+            .value=${props.query}
+            @input=${(e: Event) => props.onQueryChange((e.target as HTMLInputElement).value)}
+          />
+        </div>
+        <div id=${paletteListboxId} class="sk-palette-list" role="listbox">
           ${
             props.modelSearchError
-              ? html`<div class="cmd-palette__empty" role="status">${props.modelSearchError}</div>`
+              ? html`<div class="sk-menu-head" role="status">${props.modelSearchError}</div>`
               : nothing
           }
           ${
             props.sessionSearchFailed || props.sessionSearchPartial || props.sessionSearchIncomplete
-              ? html`<div class="cmd-palette__empty" role="status">
+              ? html`<div class="sk-menu-head" role="status">
                   ${t(
                     props.sessionSearchFailed
                       ? "palette.searchFailed"
@@ -239,24 +249,17 @@ function renderCommandPalette(props: CommandPaletteProps) {
           }
           ${
             grouped.length === 0 && !props.sessionSearchFailed
-              ? html`<div class="cmd-palette__empty">
-                  <span class="nav-item__icon" style="opacity:0.3;width:20px;height:20px"
-                    >${icons.search}</span
-                  >
-                  <span>${t("palette.noResults")}</span>
-                </div>`
+              ? html`<div class="sk-menu-head">${t("palette.noResults")}</div>`
               : grouped.map(
                   ([category, groupedItems]) => html`
-                    <div class="cmd-palette__group-label">
-                      ${commandPaletteCategoryLabel(category)}
-                    </div>
+                    <div class="sk-menu-head">${commandPaletteCategoryLabel(category)}</div>
                     ${groupedItems.map((item) => {
                       const globalIndex = items.indexOf(item);
                       const isActive = globalIndex === activeIndex;
                       return html`
                         <div
                           id=${getOptionId(globalIndex)}
-                          class="cmd-palette__item ${isActive ? "cmd-palette__item--active" : ""}"
+                          class="sk-menu-item"
                           role="option"
                           aria-selected=${isActive ? "true" : "false"}
                           @click=${(e: Event) => {
@@ -265,12 +268,16 @@ function renderCommandPalette(props: CommandPaletteProps) {
                           }}
                           @mouseenter=${() => props.onActiveIdChange(item.id)}
                         >
-                          <span class="nav-item__icon">${icons[item.icon]}</span>
+                          ${icons[item.icon]}
                           <span>${item.label}</span>
                           ${
-                            item.description
-                              ? html`<span class="cmd-palette__item-desc muted"
-                                  >${item.description}</span
+                            isOff(item, props) || item.description
+                              ? html`<span class="sk-end"
+                                  >${
+                                    isOff(item, props)
+                                      ? html`<span class="sk-badge">${t("palette.off")}</span>`
+                                      : item.description
+                                  }</span
                                 >`
                               : nothing
                           }
@@ -281,10 +288,10 @@ function renderCommandPalette(props: CommandPaletteProps) {
                 )
           }
         </div>
-        <div class="cmd-palette__footer">
-          <span><kbd>↑↓</kbd> ${t("palette.footer.navigate")}</span>
-          <span><kbd>↵</kbd> ${t("palette.footer.select")}</span>
-          <span><kbd>esc</kbd> ${t("palette.footer.close")}</span>
+        <div class="sk-palette-foot">
+          <span><span class="sk-kbd">↑↓</span> ${t("palette.footer.navigate")}</span>
+          <span><span class="sk-kbd">Enter</span> ${t("palette.footer.select")}</span>
+          <span><span class="sk-kbd">Esc</span> ${t("palette.footer.close")}</span>
         </div>
       </div>
     </openclaw-modal-dialog>
@@ -295,6 +302,7 @@ export class CommandPalette extends OpenClawLightDomContentsElement {
   @property({ attribute: false }) onNavigate?: ApplicationContext<RouteId>["navigate"];
   @property({ attribute: false }) onSelectSession?: (sessionKey: string) => void;
   @property({ attribute: false }) onSlashCommand?: (command: string) => void;
+  @property({ attribute: false }) offPageIds: ReadonlySet<string> = new Set();
   @property({ attribute: false }) desktopAvailable = false;
   @property({ attribute: false }) custodianAvailable = false;
   @consume({ context: applicationContext, subscribe: true })
@@ -633,6 +641,7 @@ export class CommandPalette extends OpenClawLightDomContentsElement {
       sessionSearchIncomplete: this.sessionSearchIncomplete,
       desktopAvailable: this.desktopAvailable,
       custodianAvailable: this.custodianAvailable,
+      offPageIds: this.offPageIds,
       onToggle: this.togglePalette,
       onQueryChange: (query) => {
         this.query = query;

@@ -2,13 +2,10 @@ import {
   CONTROL_UI_ENVIRONMENT_ATTRIBUTE,
   type ControlUiEnvironment,
 } from "../../../src/gateway/control-ui-bootstrap-contract.js";
-import { applyControlUiOperatorSeamColor } from "./control-ui-presentation.ts";
 
 export function applyControlUiPresentation(params: {
   environment: ControlUiEnvironment | null;
-  seamColor?: string;
 }): void {
-  applyControlUiOperatorSeamColor(params.seamColor);
   const root = document.documentElement;
   const environment = params.environment;
   if (!environment) {

@@ -539,6 +539,9 @@ suite.define(() => {
           },
         });
 
+        // Sharklet opens in English whatever the browser says; German is an
+        // explicit choice, stored the way Settings stores it.
+        await page.addInitScript(() => localStorage.setItem("openclaw.i18n.locale", "de"));
         await page.goto(`${suite.server.baseUrl}cron`);
         await expect.poll(() => page.evaluate(() => document.documentElement.lang)).toBe("de");
         await page.getByRole("tab", { name: "Ausführungsverlauf", exact: true }).click();

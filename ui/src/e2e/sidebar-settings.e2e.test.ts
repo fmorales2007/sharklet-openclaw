@@ -256,43 +256,6 @@ suite.define(() => {
     }
   });
 
-  it("dismisses an open font picker before exiting Settings with Escape", async () => {
-    const context = await suite.newBrowserContext({
-      locale: "en-US",
-      serviceWorkers: "block",
-      viewport: { height: 900, width: 1440 },
-    });
-    const page = await context.newPage();
-    await installMockGateway(page);
-    try {
-      await page.goto(`${suite.server.baseUrl}new`);
-      await page.locator(".new-session-page__message").waitFor({ state: "visible" });
-      await page.keyboard.press("Control+Shift+,");
-      await waitForControlUiSettingsTakeover(page);
-      const picker = page.locator("openclaw-select-picker:has(#settings-font-chat)");
-      await picker.locator(".picker-select__trigger").click();
-      const selected = picker.locator('[role="option"][aria-selected="true"]');
-      await selected.waitFor({ state: "visible" });
-      const selectedValue = await selected.getAttribute("data-value");
-      await page.keyboard.press("ArrowDown");
-      await page.keyboard.press("Escape");
-      await expect.poll(() => new URL(page.url()).pathname).toBe("/settings/appearance");
-      await expect
-        .poll(() => picker.locator(".picker-select__trigger").getAttribute("aria-expanded"))
-        .toBe("false");
-      expect(await selected.getAttribute("data-value")).toBe(selectedValue);
-      expect(
-        await picker
-          .locator(".picker-select__trigger")
-          .evaluate((input) => input.matches(":focus")),
-      ).toBe(true);
-      await page.keyboard.press("Escape");
-      await expect.poll(() => new URL(page.url()).pathname).toBe("/new");
-    } finally {
-      await suite.closeBrowserContext(context);
-    }
-  });
-
   it.each([
     { state: "open sidebar", collapseSidebar: false, nativeWebChrome: false },
     { state: "closed sidebar", collapseSidebar: true, nativeWebChrome: false },

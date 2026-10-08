@@ -100,7 +100,6 @@ export class ShellGatewayOwner {
     applyServerUiPrefs(snapshot.config, {
       scope,
       profileId: context.gateway.snapshot?.selfUser?.id,
-      onThemeChanged: (theme) => context.theme.recordServerSelection(theme, scope),
       onApplied: (patch) => {
         if (patch.sidebarEntries !== undefined) {
           context.navigation.update({ sidebarEntries: patch.sidebarEntries });
@@ -404,11 +403,6 @@ export class ShellGatewayOwner {
       onApplied: () => {
         if (remainsCurrent()) {
           context.theme.refresh();
-        }
-      },
-      onThemeChanged: (theme) => {
-        if (remainsCurrent()) {
-          context.theme.recordServerSelection(theme, scope);
         }
       },
     })

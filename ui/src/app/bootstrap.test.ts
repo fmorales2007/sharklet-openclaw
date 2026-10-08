@@ -842,18 +842,20 @@ describe("bootstrapApplication", () => {
     }
   });
 
-  it("applies and refreshes the saved accent before the gateway connects", () => {
+  // Sharklet's accent comes from its tokens (F1-10): a stored accent is kept
+  // as data but never painted inline, before or after the gateway connects.
+  it("keeps the saved accent as data without painting it inline", () => {
     const previousSettings = loadSettings();
     saveSettings({ ...previousSettings, accent: "#48D6C2" });
     const runtime = bootstrapApplication();
 
     try {
       expect(runtime.context.gateway.snapshot.phase).toBe("stopped");
-      expect(document.documentElement.style.getPropertyValue("--accent")).toBe("#48d6c2");
+      expect(document.documentElement.style.getPropertyValue("--accent")).toBe("");
       expect(runtime.context.theme.settings.accent).toBe("#48d6c2");
 
       saveSettings({ ...loadSettings(), accent: "#f4b740" });
-      expect(document.documentElement.style.getPropertyValue("--accent")).toBe("#f4b740");
+      expect(document.documentElement.style.getPropertyValue("--accent")).toBe("");
       expect(runtime.context.theme.settings.accent).toBe("#f4b740");
     } finally {
       saveSettings(previousSettings);

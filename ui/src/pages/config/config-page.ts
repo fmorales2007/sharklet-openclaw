@@ -28,8 +28,7 @@ import {
   type UiSettings,
 } from "../../app/settings.ts";
 import { startThemeTransition } from "../../app/theme-transition.ts";
-import { resolveTheme, type ThemeMode, type ThemeName } from "../../app/theme.ts";
-import type { TypefaceId } from "../../app/typography.ts";
+import { resolveTheme, type ThemeMode } from "../../app/theme.ts";
 import {
   confirmAndStartUpdate,
   createUpdateProgressWatcher,
@@ -75,8 +74,6 @@ import {
   SCOPED_CONFIG_SECTION_KEYS,
   type ConfigPageId,
 } from "./config-sections.ts";
-import * as themeImport from "./custom-theme-import-owner.ts";
-import { importCustomThemeFromUrl } from "./custom-theme-import.ts";
 import { renderMcp } from "./mcp.ts";
 import { renderMeetingCapture } from "./meeting-capture.ts";
 import { renderMemoryPage } from "./memory-page.ts";
@@ -314,10 +311,6 @@ export class ConfigPage extends OpenClawLightDomElement {
     "ai-agents": defaultConfigSelection("ai-agents"),
     advanced: defaultConfigSelection("advanced"),
   };
-  @state() private customThemeImport = themeImport.INITIAL_CUSTOM_THEME_IMPORT_STATE;
-  private readonly customThemeImportOwner = new themeImport.CustomThemeImportOwner((next) => {
-    this.customThemeImport = next;
-  });
   private configViewState: ConfigViewState = createConfigViewState();
   private runtimeConfigSource: ApplicationContext["runtimeConfig"] | null = null;
   private updateStatusClient: GatewayBrowserClient | null = null;
@@ -471,11 +464,7 @@ export class ConfigPage extends OpenClawLightDomElement {
       () => this.context?.theme,
       (theme, notify) => theme.subscribe(notify),
       () => {
-        this.settings = this.customThemeImportOwner.adoptSettings(
-          this.settings,
-          loadSettings(),
-          this.context.theme.serverSelection,
-        );
+        this.settings = loadSettings();
       },
     );
   private readonly hiddenSessionCatalogsChanged = () => {
@@ -494,10 +483,6 @@ export class ConfigPage extends OpenClawLightDomElement {
       SIDEBAR_HIDDEN_SESSION_CATALOGS_CHANGED_EVENT,
       this.hiddenSessionCatalogsChanged,
     );
-    this.customThemeImportOwner.connect(
-      this.context.gateway.connection.gatewayUrl,
-      this.context.theme.serverSelection,
-    );
     this.settings = loadSettings();
     // Passive refresh only: the media rows already own the permission prompt
     // behind their own controls, and a hardware change must never turn into an
@@ -514,7 +499,6 @@ export class ConfigPage extends OpenClawLightDomElement {
       SIDEBAR_HIDDEN_SESSION_CATALOGS_CHANGED_EVENT,
       this.hiddenSessionCatalogsChanged,
     );
-    this.customThemeImportOwner.retireImport();
     this.retireMediaPermissionRequests();
     this.mediaDeviceWatch?.();
     this.mediaDeviceWatch = null;
@@ -529,7 +513,6 @@ export class ConfigPage extends OpenClawLightDomElement {
 
   override willUpdate(changed: PropertyValues) {
     if (changed.get("pageId") === "appearance" && this.pageId !== "appearance") {
-      this.customThemeImportOwner.retireImport();
       this.retireMediaPermissionRequests();
     }
     if (changed.has("pageId") || changed.has("routeData")) {
@@ -689,9 +672,6 @@ export class ConfigPage extends OpenClawLightDomElement {
 
   private synchronizeRuntimeConfig(runtimeConfig: ApplicationContext["runtimeConfig"]) {
     if (runtimeConfig !== this.runtimeConfigSource) {
-      if (this.runtimeConfigSource) {
-        this.customThemeImportOwner.retireImport();
-      }
       this.runtimeConfigSource = runtimeConfig;
       this.resetConfigViewState();
     }
@@ -723,10 +703,6 @@ export class ConfigPage extends OpenClawLightDomElement {
     sourceChanged,
     clientChanged,
   }: GatewayPageChange) {
-    this.customThemeImportOwner.synchronizeScope(
-      this.context.gateway.connection.gatewayUrl,
-      this.context.theme.serverSelection,
-    );
     if (initial || sourceChanged) {
       this.systemInfoPolling.stop();
       this.resetConfigViewState();
@@ -847,15 +823,6 @@ export class ConfigPage extends OpenClawLightDomElement {
     );
   }
 
-  private setFont(key: "fontUi" | "fontChat", font: TypefaceId | undefined) {
-    const preference = this.currentSyncedPref(key);
-    if (preference.overridden && font === preference.resetValue) {
-      this.resetSyncedAppearancePref(key);
-    } else {
-      this.applySettings({ [key]: font });
-    }
-  }
-
   private serverUiPrefsCanSync(
     key?: "theme" | "themeMode" | "accent" | "fontUi" | "fontChat",
   ): boolean | null {
@@ -894,33 +861,15 @@ export class ConfigPage extends OpenClawLightDomElement {
     this.context.theme.refresh();
   }
 
-  private setTheme(
-    theme: ThemeName,
-    context?: Parameters<typeof startThemeTransition>[0]["context"],
-  ) {
-    const preference = this.currentSyncedPref("theme");
-    const reset = preference.overridden && theme === preference.resetValue;
-    this.customThemeImportOwner.recordActivation(reset ? null : theme);
-    const currentTheme = resolveTheme(this.settings.theme, this.settings.themeMode);
-    startThemeTransition({
-      currentTheme,
-      nextTheme: resolveTheme(theme, this.settings.themeMode),
-      context,
-      applyTheme: () =>
-        reset ? this.resetSyncedAppearancePref("theme") : this.applySettings({ theme }),
-    });
-  }
-
   private setThemeMode(
     mode: ThemeMode,
     context?: Parameters<typeof startThemeTransition>[0]["context"],
   ) {
     const preference = this.currentSyncedPref("themeMode");
     const reset = preference.overridden && mode === preference.resetValue;
-    const currentTheme = resolveTheme(this.settings.theme, this.settings.themeMode);
     startThemeTransition({
-      currentTheme,
-      nextTheme: resolveTheme(this.settings.theme, mode),
+      currentTheme: resolveTheme(this.settings.themeMode),
+      nextTheme: resolveTheme(mode),
       context,
       applyTheme: () =>
         reset
@@ -958,34 +907,6 @@ export class ConfigPage extends OpenClawLightDomElement {
         this.cameraError = formatUiError(error);
       }
     }
-  }
-
-  private async importCustomTheme() {
-    await this.customThemeImportOwner.import({
-      config: this.context.runtimeConfig.state,
-      hasCustomTheme: Boolean(this.settings.customTheme),
-      load: importCustomThemeFromUrl,
-      apply: (customTheme, activate) =>
-        this.applySettings({
-          customTheme,
-          theme: activate ? "custom" : this.settings.theme,
-        }),
-      messages: {
-        blocked: (reason) => t(reason === "loading" ? "common.loading" : "common.unsavedChanges"),
-        imported: (label) => t("configPage.themeImported", { name: label }),
-      },
-    });
-  }
-
-  private clearCustomTheme() {
-    this.customThemeImportOwner.clear({
-      apply: () =>
-        this.applySettings({
-          theme: this.settings.theme === "custom" ? "claw" : this.settings.theme,
-          customTheme: undefined,
-        }),
-      message: t("configPage.themeRemoved"),
-    });
   }
 
   private includeSections(): readonly string[] | undefined {
@@ -1087,9 +1008,7 @@ export class ConfigPage extends OpenClawLightDomElement {
     const gatewayConfig = asConfigRecord(configObject.gateway);
     const controlUiConfig = asConfigRecord(gatewayConfig?.controlUi);
     const agentsDefaults = asConfigRecord(asConfigRecord(configObject.agents)?.defaults);
-    const themePref = this.currentSyncedPref("theme");
     const themeModePref = this.currentSyncedPref("themeMode");
-    const accentPref = this.currentSyncedPref("accent");
     const localePref = this.currentSyncedPref("locale");
     const chatSendShortcutPref = this.currentSyncedPref("chatSendShortcut");
     const chatFollowUpModePref = this.currentSyncedPref("chatFollowUpMode");
@@ -1126,17 +1045,14 @@ export class ConfigPage extends OpenClawLightDomElement {
       activeSection,
       activeSubsection,
       onRawChange: (next) => {
-        this.customThemeImportOwner.retireForConfigMutation(t("common.unsavedChanges"));
         runtimeConfig.setRaw(next);
       },
       onFormModeChange: (mode) => this.setFormMode(mode),
       onViewStateChange: () => this.requestUpdate(),
       onFormPatch: (path, value) => {
-        this.customThemeImportOwner.retireForConfigMutation(t("common.unsavedChanges"));
         runtimeConfig.patchForm(path, value);
       },
       onFormRemove: (path) => {
-        this.customThemeImportOwner.retireForConfigMutation(t("common.unsavedChanges"));
         runtimeConfig.removeFormValue(path);
       },
       onSectionChange: (section) => this.setActiveSection(section),
@@ -1148,23 +1064,10 @@ export class ConfigPage extends OpenClawLightDomElement {
         this.context.config.current.serverVersion ??
         this.context.gateway.snapshot.hello?.server?.version ??
         "",
-      theme: this.settings.theme,
-      themeOverridden: themePref.overridden,
-      themeProvenance: themePref.provenance,
-      themeResetValue: themePref.resetValue ?? UI_APPEARANCE_DEFAULTS.theme,
       themeMode: this.settings.themeMode,
       themeModeOverridden: themeModePref.overridden,
       themeModeProvenance: themeModePref.provenance,
       themeModeResetValue: themeModePref.resetValue ?? UI_APPEARANCE_DEFAULTS.themeMode,
-      accent: this.settings.accent,
-      accentProvenance: accentPref.provenance,
-      accentResetValue: accentPref.resetValue,
-      fontUi: this.settings.fontUi,
-      fontChat: this.settings.fontChat,
-      fontUiProvenance: this.currentSyncedPref("fontUi").provenance,
-      fontChatProvenance: this.currentSyncedPref("fontChat").provenance,
-      setFontUi: (font) => this.setFont("fontUi", font),
-      setFontChat: (font) => this.setFont("fontChat", font),
       systemLocale: i18n.getSystemLocale(),
       localeOverride: isSupportedLocale(localePref.value) ? localePref.value : undefined,
       localeOverridden: localePref.overridden,
@@ -1173,24 +1076,7 @@ export class ConfigPage extends OpenClawLightDomElement {
         ? localePref.resetValue
         : undefined,
       onLocaleChange: (locale) => this.setLocale(locale),
-      setTheme: (theme, transitionContext) => this.setTheme(theme, transitionContext),
       setThemeMode: (mode, transitionContext) => this.setThemeMode(mode, transitionContext),
-      setAccent: (accent) =>
-        accent === undefined
-          ? this.resetSyncedAppearancePref("accent")
-          : this.applySettings({ accent }),
-      hasCustomTheme: Boolean(this.settings.customTheme),
-      customThemeLabel: this.settings.customTheme?.label ?? null,
-      customThemeSourceUrl: this.settings.customTheme?.sourceUrl ?? null,
-      customThemeImportUrl: this.customThemeImport.url,
-      customThemeImportBusy: this.customThemeImport.busy,
-      customThemeImportMessage: this.customThemeImport.message,
-      customThemeImportExpanded: this.customThemeImport.expanded,
-      customThemeImportFocusToken: this.customThemeImport.focusToken,
-      onCustomThemeImportUrlChange: (next) => this.customThemeImportOwner.setUrl(next),
-      onImportCustomTheme: () => void this.importCustomTheme(),
-      onClearCustomTheme: () => this.clearCustomTheme(),
-      onOpenCustomThemeImport: () => this.customThemeImportOwner.open(),
       textScale: this.settings.textScale ?? UI_APPEARANCE_DEFAULTS.textScale,
       textScaleOverridden: this.settings.textScale !== undefined,
       setTextScale: (value) =>

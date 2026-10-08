@@ -263,7 +263,7 @@ suite.define(() => {
       );
       await expect
         .poll(() => trimmedTextContents(pinnedItems))
-        .toEqual(["Dashboards", "Automations", "Plugins"]);
+        .toEqual(["Home", "Dashboards", "Automations", "Plugins"]);
       // Desktop renders no topbar row: the sidebar owns navigation.
       await expect.poll(() => page.locator(".topbar").isVisible()).toBe(false);
       const shellNav = page.locator(".shell-nav");
@@ -376,7 +376,7 @@ suite.define(() => {
       await expect
         .poll(() => trimmedTextContents(settingsLinks))
         .toEqual([
-          "Ask OpenClaw",
+          "Help",
           "Approvals",
           "Infrastructure",
           "Advanced",
@@ -509,12 +509,12 @@ suite.define(() => {
       await expect.poll(() => settingsSearch.inputValue()).toBe("");
       await captureSettingsSidebarProof(settingsSidebar, "01g-settings-search-reset.png");
       await holdUiProof(page);
-      await settingsSidebar.getByRole("link", { name: "Ask OpenClaw" }).click();
+      await settingsSidebar.getByRole("link", { name: "Help" }).click();
       await expect.poll(() => new URL(page.url()).pathname).toBe("/custodian");
       await expect
         .poll(() => page.locator(".shell").getAttribute("class"))
         .not.toContain("shell--onboarding");
-      // Ask OpenClaw is a settings-takeover page (#111686): the settings
+      // Help is a settings-takeover page (#111686): the settings
       // sidebar owns navigation there, not the app sidebar.
       await expect.poll(() => settingsSidebar.isVisible()).toBe(true);
       await expect.poll(() => sidebar.isVisible()).toBe(false);
@@ -554,7 +554,7 @@ suite.define(() => {
         .not.toContain("Workboard");
       const tasksItem = menu.getByRole("menuitemcheckbox", { name: "Tasks" });
       await expect.poll(() => tasksItem.getAttribute("aria-checked")).toBe("false");
-      // Ask OpenClaw moved to Settings (#111686): custodian is not a sidebar
+      // Help moved to Settings (#111686): custodian is not a sidebar
       // nav route anymore, so the pin editor does not offer it.
       await expect
         .poll(() => menu.getByRole("menuitemcheckbox", { name: "OpenClaw" }).count())
@@ -564,11 +564,11 @@ suite.define(() => {
       await tasksItem.click();
       await expect
         .poll(() => trimmedTextContents(pinnedItems))
-        .toEqual(["Dashboards", "Automations", "Plugins", "Tasks"]);
+        .toEqual(["Home", "Dashboards", "Automations", "Plugins", "Tasks"]);
       await page.reload();
       await expect
         .poll(() => trimmedTextContents(pinnedItems))
-        .toEqual(["Dashboards", "Automations", "Plugins", "Tasks"]);
+        .toEqual(["Home", "Dashboards", "Automations", "Plugins", "Tasks"]);
       // The More menu is transient: closed after reload, unpinned routes inside.
       await expect.poll(() => moreButton.getAttribute("aria-expanded")).toBe("false");
       await moreButton.click();
@@ -590,7 +590,7 @@ suite.define(() => {
       await menu.getByRole("menuitem", { name: "Reset pinned items" }).click();
       await expect
         .poll(() => trimmedTextContents(pinnedItems))
-        .toEqual(["Dashboards", "Automations", "Plugins"]);
+        .toEqual(["Home", "Dashboards", "Automations", "Plugins"]);
 
       // The sidebar header search button is the command palette entry point.
       const searchButton = page.locator(".sidebar-brand__search");
@@ -979,7 +979,8 @@ suite.define(() => {
     );
   });
 
-  it("keeps the lobster on the community invite ledge across desktop and drawer layouts", async () => {
+  // Hidden in Sharklet with the invite card (SHARKLET.md, E7) until phase 7.
+  it.skip("keeps the lobster on the community invite ledge across desktop and drawer layouts", async () => {
     const { context, page } = await openSidebarTestPage();
 
     try {

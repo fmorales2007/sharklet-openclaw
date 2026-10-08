@@ -659,6 +659,7 @@ const CORE_GATEWAY_METHOD_SPECS = [
   ["plugins.catalog.categories", "plugins", "operator.read", "2026.9"],
   ["plugins.catalog.get", "plugins", "operator.read", "2026.9"],
   ["tasks.history", "tasks", "operator.read", "2026.9"],
+  ["pages.state", "config", "operator.read", "2026.9"],
   [
     "environments.prepare",
     "environments",

@@ -1,0 +1,18 @@
+/* Icon stroke weight.
+ *
+ * Sharklet draws Lucide at 1.5. Upstream already ships Lucide inline — 89 icons
+ * in components/icons.ts plus the tool set — but every one goes through the
+ * single shell in components/icons-tools.ts:8, which writes stroke-width="2"
+ * as a presentation attribute and adds no class. So the .lucide / .sk-icon rule
+ * in components.css never reaches them, and without this the app shows two
+ * stroke weights side by side: 1.5 on ours, 2 on theirs.
+ *
+ * The selector matches that shell exactly. A presentation attribute loses to
+ * any CSS declaration, so no !important is needed.
+ *
+ * Web Awesome components draw their own icons inside shadow roots, where this
+ * does not reach. That stays as it is and is recorded in ADR-004.
+ */
+svg[viewBox="0 0 24 24"][stroke="currentColor"] {
+  stroke-width: 1.5;
+}

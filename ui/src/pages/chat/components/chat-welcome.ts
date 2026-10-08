@@ -29,6 +29,8 @@ type ChatWelcomeProps = {
   composer?: unknown;
   /** Hide recents and suggestions when the surrounding flow must stay ephemeral. */
   hideSecondaryContent?: boolean;
+  /** Drop the identity hero when a page shows only the composer (Mission Control). */
+  hideHero?: boolean;
   /** Visually retire secondary content while the new-session draft is active. */
   fadeSecondaryContent?: boolean;
   sessions?: SessionsListResult | null;
@@ -240,16 +242,20 @@ export function renderWelcomeState(props: ChatWelcomeProps) {
         }
       }}
     >
-      ${renderWelcomeHero({
-        assistantName: props.assistantName,
-        assistantAvatar: props.assistantAvatar,
-        assistantAvatarUrl: props.assistantAvatarUrl,
-        hint:
-          props.hint ??
-          html`${t("chat.welcome.hintBeforeShortcut")} <kbd>/</kbd> ${t(
-              "chat.welcome.hintAfterShortcut",
-            )}`,
-      })}
+      ${
+        props.hideHero
+          ? nothing
+          : renderWelcomeHero({
+              assistantName: props.assistantName,
+              assistantAvatar: props.assistantAvatar,
+              assistantAvatarUrl: props.assistantAvatarUrl,
+              hint:
+                props.hint ??
+                html`${t("chat.welcome.hintBeforeShortcut")} <kbd>/</kbd> ${t(
+                    "chat.welcome.hintAfterShortcut",
+                  )}`,
+            })
+      }
       ${props.composer ?? nothing}
       ${
         props.hideSecondaryContent

@@ -3,7 +3,6 @@
 // local user identity. Split from settings.node.test.ts to keep each file under
 // the lint size budget.
 import { describe, expect, it, vi } from "vitest";
-import { createImportedCustomThemeFixture } from "../test-helpers/custom-theme.ts";
 import {
   expectedGatewayUrl,
   installSettingsStorageLifecycle,
@@ -580,37 +579,7 @@ describe("settings preference persistence", () => {
     expect(JSON.parse(localStorage.getItem(scopedKey) ?? "{}")).not.toHaveProperty("textScale");
   });
 
-  it("persists the browser-local custom theme payload when present", () => {
-    setTestLocation({
-      protocol: "https:",
-      host: "gateway.example:8443",
-      pathname: "/",
-    });
-
-    const gwUrl = expectedGatewayUrl("");
-    const customTheme = createImportedCustomThemeFixture();
-    saveSettings({
-      gatewayUrl: gwUrl,
-      token: "",
-      sessionKey: "main",
-      lastActiveSessionKey: "main",
-      theme: "custom",
-      themeMode: "system",
-      chatShowThinking: true,
-      chatShowToolCalls: true,
-      navCollapsed: false,
-      navWidth: 258,
-      sidebarEntries: [],
-      customTheme,
-    });
-
-    const settings = loadSettings();
-    expect(settings.theme).toBe("custom");
-    expect(settings.customTheme?.label).toBe("Light Green");
-    expect(settings.customTheme?.themeId).toBe("cmlhfpjhw000004l4f4ax3m7z");
-  });
-
-  it("falls back to claw when persisted custom theme data is invalid", () => {
+  it("falls back to claw for a stored tweakcn custom theme", () => {
     setTestLocation({
       protocol: "https:",
       host: "gateway.example:8443",

@@ -6,6 +6,10 @@
 @import "./styles/chat/progress-card.css";
 @import "./styles/approval-boot.css";
 @import "./styles/settings-controls.css";
+/* Sharklet, last so it follows every upstream sheet. Here rather than imported
+   from main.ts: only an @import joins this module, and upstream's startup
+   budget allows one startup CSS request (scripts/check-control-ui-performance.mts). */
+@import "./custom/theme/index.css";
 
 /* Contract read by stale-chunk-reload.ts to detect a failed entry stylesheet load.
  * Removing it leaves a fully unstyled page undetected. */

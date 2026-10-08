@@ -58,8 +58,8 @@ suite.define(() => {
             .poll(() => picker.locator('[role="option"][data-value="fixture/old"]').count())
             .toBe(1);
           await page.keyboard.press("Control+K");
-          const palette = page.locator(".cmd-palette");
-          await page.locator(".cmd-palette__input").fill("needle");
+          const palette = page.locator(".sk-palette");
+          await page.locator(".sk-palette-input input").fill("needle");
           await palette.getByText("Needle old", { exact: true }).waitFor();
           const readView = async () => ({
             automations: await automations.textContent(),
@@ -100,7 +100,7 @@ suite.define(() => {
             path: path.join(suite.artifactDir, `internal-catalog-automations-${hasRows}.png`),
           });
           await page.keyboard.press("Control+K");
-          await page.locator(".cmd-palette__input").fill("needle");
+          await page.locator(".sk-palette-input input").fill("needle");
           await palette.getByRole("status").filter({ hasText: warning }).waitFor();
 
           await gateway.setMethodResponse("models.list", { models: [] });

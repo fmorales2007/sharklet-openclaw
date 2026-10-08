@@ -6,6 +6,8 @@ import type { BoardWidget } from "../types.ts";
 type CoreBoardWidgetElement = OptionalCustomElement & {
   kind: string;
   previewSafe: boolean;
+  /** Part of the app itself: mounts without a gateway plugin advertising the kind. */
+  builtIn?: true;
 };
 
 /**
@@ -31,6 +33,16 @@ export const CORE_BOARD_WIDGET_ELEMENTS: readonly CoreBoardWidgetElement[] = [
     loadModule: () => import("./report.ts"),
     previewSafe: true,
   },
+  {
+    kind: "sharklet:agents",
+    tagName: "sharklet-agents-widget",
+    get label() {
+      return t("missionControl.agents.title");
+    },
+    loadModule: () => import("./mission-control.ts"),
+    previewSafe: false,
+    builtIn: true,
+  },
 ];
 
 export function pluginIdForWidgetKind(kind: string | undefined): string {
@@ -49,7 +61,8 @@ export function getPluginWidgetKindContribution(
     return null;
   }
   const pluginId = pluginIdForWidgetKind(kind);
-  return activeKinds.some((entry) => entry.kind === kind && entry.pluginId === pluginId)
+  return contribution.builtIn ||
+    activeKinds.some((entry) => entry.kind === kind && entry.pluginId === pluginId)
     ? contribution
     : null;
 }

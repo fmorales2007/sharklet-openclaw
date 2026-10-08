@@ -309,13 +309,6 @@ describe("CI changed Node test plan", () => {
       ],
     },
     {
-      source: "ui/public/themes/tide.css",
-      targets: [
-        "ui/src/styles/base-theme-tokens.node.test.ts",
-        "ui/src/styles/base-theme-contrast.node.test.ts",
-      ],
-    },
-    {
       source: "extensions/anthropic/openclaw.plugin.json",
       targets: ["src/agents/model-ref-shared.test.ts"],
     },

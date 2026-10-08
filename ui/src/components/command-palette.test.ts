@@ -107,7 +107,7 @@ describe("CommandPalette lifecycle", () => {
     expect(palette.querySelector("dialog")).toBeNull();
     palette.openPalette();
     await palette.updateComplete;
-    expect(palette.querySelector<HTMLInputElement>(".cmd-palette__input")?.value).toBe("");
+    expect(palette.querySelector<HTMLInputElement>(".sk-palette-input input")?.value).toBe("");
     expect(palette.textContent).not.toContain("Old chat");
   });
 
@@ -213,12 +213,14 @@ describe("CommandPalette lifecycle", () => {
         query: "needle",
         limit: 25,
       });
-      const chatItems = [...palette.querySelectorAll<HTMLElement>(".cmd-palette__item")];
+      const chatItems = [
+        ...palette.querySelectorAll<HTMLElement>(".sk-palette-list [role=option]"),
+      ];
       expect(chatItems).toHaveLength(2);
       expect(chatItems[0]?.textContent).toContain("needle");
       expect(chatItems[1]?.textContent).toContain("Unrelated title");
       expect(chatItems[1]?.textContent).toContain("needle appears only in the conversation body");
-      expect(palette.querySelectorAll(".cmd-palette__input")).toHaveLength(1);
+      expect(palette.querySelectorAll(".sk-palette-input input")).toHaveLength(1);
     },
   );
 
@@ -1006,24 +1008,21 @@ describe("CommandPalette lifecycle", () => {
   it.each([
     { available: true, expectedCount: 1 },
     { available: false, expectedCount: 0 },
-  ])(
-    "shows Ask OpenClaw only when availability is $available",
-    async ({ available, expectedCount }) => {
-      const { gateway } = createGateway(true);
-      const { palette } = await mountPalette(
-        createContext(
-          gateway,
-          vi.fn(async () => createSessionResult("agent:main:test", "Test")),
-        ),
-      );
-      palette.custodianAvailable = available;
-      await enterQuery(palette, "openclaw");
+  ])("shows Help only when availability is $available", async ({ available, expectedCount }) => {
+    const { gateway } = createGateway(true);
+    const { palette } = await mountPalette(
+      createContext(
+        gateway,
+        vi.fn(async () => createSessionResult("agent:main:test", "Test")),
+      ),
+    );
+    palette.custodianAvailable = available;
+    await enterQuery(palette, "help");
 
-      expect(findPaletteOption(palette, "Ask OpenClaw", true) ? 1 : 0).toBe(expectedCount);
-    },
-  );
+    expect(findPaletteOption(palette, "Help", true) ? 1 : 0).toBe(expectedCount);
+  });
 
-  it("opens Ask OpenClaw from its palette action", async () => {
+  it("opens Help from its palette action", async () => {
     const { gateway } = createGateway(true);
     const { palette } = await mountPalette(
       createContext(
@@ -1032,13 +1031,13 @@ describe("CommandPalette lifecycle", () => {
       ),
     );
     palette.custodianAvailable = true;
-    await enterQuery(palette, "openclaw");
+    await enterQuery(palette, "help");
     const events: CustomEvent<CustodianPanelToggleDetail>[] = [];
     const listener = (event: Event) =>
       events.push(event as CustomEvent<CustodianPanelToggleDetail>);
     window.addEventListener(CUSTODIAN_PANEL_TOGGLE_EVENT, listener);
     try {
-      findPaletteOption(palette, "Ask OpenClaw", true)?.click();
+      findPaletteOption(palette, "Help", true)?.click();
     } finally {
       window.removeEventListener(CUSTODIAN_PANEL_TOGGLE_EVENT, listener);
     }

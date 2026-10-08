@@ -7,6 +7,7 @@ import { SIDEBAR_SESSION_ROSTER_LIMIT } from "../../../src/shared/session-list-l
 import { takeControlUiViewportScreenshot } from "../test-helpers/control-ui-e2e-screenshot.ts";
 import { installMockGateway } from "../test-helpers/control-ui-e2e.ts";
 import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts";
+import { isMissionControlRequest } from "./mission-control-fixtures.test-support.ts";
 
 const suite = createControlUiE2eSuite({
   name: "Control UI session-list event scope",
@@ -84,7 +85,11 @@ suite.define(() => {
       )
       .toContainEqual(allAgentsQuery);
     await gateway.deferNext("sessions.list", allAgentsQuery);
-    const requestsBeforeEvent = await gateway.getRequests("sessions.list");
+    const listRequests = async () =>
+      (await gateway.getRequests("sessions.list")).filter(
+        (request) => !isMissionControlRequest(request),
+      );
+    const requestsBeforeEvent = await listRequests();
 
     await gateway.emitGatewayEvent("sessions.changed", {
       sessionKey: "agent:local:hidden",
@@ -97,9 +102,9 @@ suite.define(() => {
     });
 
     await expect
-      .poll(async () => (await gateway.getRequests("sessions.list")).length)
+      .poll(async () => (await listRequests()).length)
       .toBeGreaterThan(requestsBeforeEvent.length);
-    expect((await gateway.getRequests("sessions.list")).at(-1)?.params).toEqual(allAgentsQuery);
+    expect((await listRequests()).at(-1)?.params).toEqual(allAgentsQuery);
     expect(await currentPage.getByText(hiddenLabel, { exact: true }).count()).toBe(0);
     await gateway.resolveDeferred("sessions.list", {
       count: 1,

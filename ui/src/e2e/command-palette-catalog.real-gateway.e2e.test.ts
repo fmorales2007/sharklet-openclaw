@@ -365,7 +365,7 @@ suite.define(() => {
         expect(JSON.stringify(failed)).not.toContain("private upstream error body");
         await automations.getByText(warning, { exact: true }).waitFor({ state: "visible" });
         await page.keyboard.press("Control+K");
-        await page.locator(".cmd-palette__input").fill("refresh-fixture");
+        await page.locator(".sk-palette-input input").fill("refresh-fixture");
         const model = page.getByRole("option", {
           name: "refresh-fixture:latest ollama",
           exact: true,
@@ -373,7 +373,7 @@ suite.define(() => {
         await model.waitFor({ state: "visible" });
         expect(await model.count()).toBe(1);
         await page
-          .locator(".cmd-palette")
+          .locator(".sk-palette")
           .getByText(warning, { exact: true })
           .waitFor({ state: "visible" });
         await page.screenshot({ path: path.join(suite.artifactDir, "acquisition-failed.png") });
@@ -386,7 +386,7 @@ suite.define(() => {
         await model.waitFor({ state: "hidden" });
         await automations.getByText(warning, { exact: true }).waitFor({ state: "hidden" });
         await page
-          .locator(".cmd-palette")
+          .locator(".sk-palette")
           .getByText(warning, { exact: true })
           .waitFor({ state: "hidden" });
         await page.screenshot({ path: path.join(suite.artifactDir, "acquisition-empty.png") });
@@ -484,7 +484,7 @@ suite.define(() => {
           await page.goto(browserUrl);
           await waitForControlUiGatewayReady(page);
           await page.keyboard.press("Control+K");
-          const input = page.locator(".cmd-palette__input");
+          const input = page.locator(".sk-palette-input input");
           await input.fill("palette-");
           const retiring = page.getByRole("option", {
             name: "palette-retiring fixture",
@@ -504,7 +504,7 @@ suite.define(() => {
           rejectCatalogReplies = true;
           await publish("palette-held");
           const status = page
-            .locator(".cmd-palette [role=status]")
+            .locator(".sk-palette [role=status]")
             .filter({ hasText: "Model search unavailable" });
           await status.waitFor({ state: "visible" });
           expect(await published.count()).toBe(1);

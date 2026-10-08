@@ -264,7 +264,7 @@ describe("AppSidebar session indicators", () => {
   });
 
   it.each(["running", "queued"] as const)(
-    "rings Home for %s activity while keeping its draft and outbox badges trailing",
+    "rings Main chat for %s activity while keeping its draft and outbox badges trailing",
     async (status) => {
       const mainKey = "agent:main:main";
       const workingKey = "agent:main:working";
@@ -300,7 +300,7 @@ describe("AppSidebar session indicators", () => {
       const activityLabel = status === "queued" ? "Queued" : "Active run";
       expect(homeRing?.getAttribute("aria-label")).toBe(activityLabel);
       expect(homeRing?.classList.contains("session-glyph__ring--queued")).toBe(status === "queued");
-      expect(home?.getAttribute("aria-label")).toBe(`Home · ${activityLabel} · Unread`);
+      expect(home?.getAttribute("aria-label")).toBe(`Main chat · ${activityLabel} · Unread`);
       expect(
         home?.querySelector(".nav-item__state .session-row-badge--attention")?.textContent,
       ).toContain("2");

@@ -51,6 +51,11 @@ export function canRunChromiumExecutable(
   executablePath: string,
   spawnSync: SpawnSyncLike = spawnSyncImpl,
 ) {
+  // chrome.exe ignores --version on Windows: it opens a browser and blocks.
+  // A caller-supplied spawnSync (tests) is still honored.
+  if (process.platform === "win32" && spawnSync === spawnSyncImpl) {
+    return true;
+  }
   const result = spawnSync(executablePath, ["--version"], {
     stdio: "ignore",
   });

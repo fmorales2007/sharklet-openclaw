@@ -223,7 +223,10 @@ suite.define(() => {
       expect(result.closeWidth).toBe(36);
       expect(result.closeHeight).toBe(36);
       expect(result.closeBorderWidth).toBe("1px");
-      expect(result.closeBorderRadius).toBe("9999px");
+      // A pill: Sharklet's radius token is 999px where upstream's is 9999px.
+      expect(Number.parseFloat(result.closeBorderRadius)).toBeGreaterThanOrEqual(
+        result.closeHeight / 2,
+      );
       expect(result.closeBackground).not.toBe("rgba(0, 0, 0, 0)");
       expect(result.tabs.map((tab) => tab.panel)).toEqual([
         "all",

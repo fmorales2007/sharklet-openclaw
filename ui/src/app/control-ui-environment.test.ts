@@ -73,7 +73,8 @@ describe("Control UI environment presentation", () => {
     expect(document.documentElement.style.getPropertyValue("--control-ui-environment-color")).toBe(
       "var(--control-ui-environment-amber)",
     );
-    expect(document.documentElement.style.getPropertyValue("--ring")).toBe("#123456");
+    // The seam color is ignored: Sharklet's accent comes from its tokens.
+    expect(document.documentElement.style.getPropertyValue("--ring")).toBe("");
     expect(sidebar.querySelector(".control-ui-environment-pill")?.textContent).toBe("edge");
     expect(sidebar.querySelector(".sidebar-agent-card__avatar--environment")).not.toBeNull();
     expect(topbar.querySelector(".control-ui-environment-pill")?.textContent).toBe("edge");
@@ -141,42 +142,26 @@ describe("Control UI environment presentation", () => {
     expect(document.documentElement.hasAttribute("data-openclaw-environment")).toBe(false);
   });
 
-  it("clears seam-color presentation when a seam-only bootstrap refresh becomes unset", async () => {
-    const bootstrap: ControlUiBootstrapConfig = {
-      basePath: "",
-      assistantName: "OpenClaw",
-      assistantAvatar: "O",
-    };
+  it("ignores the gateway seam color: Sharklet's accent is fixed by its tokens", async () => {
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn<typeof fetch>()
-        .mockResolvedValueOnce(new Response(JSON.stringify({ ...bootstrap, seamColor: "#123456" })))
-        .mockResolvedValueOnce(new Response(JSON.stringify(bootstrap))),
+      vi.fn<typeof fetch>().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            basePath: "",
+            assistantName: "OpenClaw",
+            assistantAvatar: "O",
+            seamColor: "#123456",
+          } satisfies ControlUiBootstrapConfig),
+        ),
+      ),
     );
     const config = createApplicationConfigCapability({ resourceBasePath: "" });
 
     await config.refresh();
     await vi.dynamicImportSettled();
 
-    expect(document.documentElement.style.getPropertyValue("--ring")).toBe("#123456");
-    expect(document.documentElement.style.getPropertyValue("--accent")).toBe("#123456");
-
-    await config.refresh();
-    await vi.dynamicImportSettled();
-
-    for (const property of [
-      "--ring",
-      "--accent",
-      "--accent-hover",
-      "--accent-muted",
-      "--accent-subtle",
-      "--accent-glow",
-      "--primary",
-      "--focus",
-      "--focus-ring",
-      "--focus-glow",
-    ]) {
+    for (const property of ["--ring", "--accent", "--primary", "--focus"]) {
       expect(document.documentElement.style.getPropertyValue(property)).toBe("");
     }
   });

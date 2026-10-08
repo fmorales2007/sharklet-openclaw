@@ -1,0 +1,206 @@
+/* GENERATED COPY - do not edit here.
+ * Source: sharklet/docs/design-system/tokens.css (sha256 e4c7f9bbbb6a)
+ * Remake it with: node docs/design-system/sync-to-fork.mjs
+ * Editing this file instead of the source is how Adrift drifted. */
+
+/* Sharklet design tokens (approved 2026-09-17).
+   Phase 1 loads this from ui/src/custom/theme/ and maps it onto the upstream
+   palette; the --sk-* names never collide with upstream's unprefixed tokens.
+   Light is the base. The theme axis is data-theme-mode="light|dark" on <html>,
+   which upstream stamps before the first paint; the media query only covers
+   the moment before it is stamped and standalone pages such as the kitchen
+   sink. data-theme carries the theme NAME upstream (tide-light, crt, ...) and
+   must never be used to pick a mode. */
+
+:root {
+  color-scheme: light;
+
+  /* Neutrals: cool grays */
+  --sk-canvas: #f5f7f9; /* app background behind content */
+  --sk-sidebar: #eef1f5; /* second neutral layer: sidebar, rails */
+  --sk-surface: #fdfeff; /* content, cards, composer */
+  --sk-fill: #eceff3; /* hover, secondary fills, chips */
+  --sk-fill-2: #e3e7ec; /* pressed, selected neutral */
+  --sk-line: #dadee3; /* hairlines */
+  --sk-line-strong: #c2c8cf; /* input borders, dividers that must read */
+
+  --sk-text: #171b21;
+  --sk-text-2: #4e535c;
+  --sk-text-3: #676c75; /* faint text, still AA on every neutral */
+
+  /* Actions are monochrome */
+  --sk-primary: #171b21;
+  --sk-primary-hover: #2c313a;
+  --sk-on-primary: #ffffff;
+
+  /* Ocean: focus, links, selection, usage, working agents */
+  --sk-accent: #006e98;
+  --sk-accent-soft: #def4ff;
+  --sk-accent-line: #96cdea;
+
+  /* Status (with an icon and a label, never color alone) */
+  --sk-ok: #12773d;
+  --sk-warn: #9b5708;
+  --sk-bad: #c93029;
+  --sk-on-danger: #ffffff;
+  --sk-ok-soft: color-mix(in oklab, var(--sk-ok) 11%, var(--sk-surface));
+  --sk-warn-soft: color-mix(in oklab, var(--sk-warn) 11%, var(--sk-surface));
+  --sk-bad-soft: color-mix(in oklab, var(--sk-bad) 10%, var(--sk-surface));
+
+  /* Agent identity: seven hues + graphite (neutral by design) */
+  --sk-agent-indigo: #4c5ca7;
+  --sk-agent-olive: #808f36;
+  --sk-agent-plum: #874785;
+  --sk-agent-teal: #00a19d;
+  --sk-agent-rose: #964265;
+  --sk-agent-sand: #ab862a;
+  --sk-agent-violet: #6b4a95;
+  --sk-agent-graphite: #7c8088;
+  --sk-agent-tint: 13%;
+
+  /* Material and depth */
+  --sk-glass: rgb(253 254 255 / 0.74);
+  --sk-glass-filter: saturate(180%) blur(20px);
+  --sk-shadow-float: 0 1px 2px rgb(23 27 33 / 0.06), 0 10px 28px -8px rgb(23 27 33 / 0.16);
+  --sk-shadow-pop: 0 2px 6px rgb(23 27 33 / 0.06), 0 24px 48px -12px rgb(23 27 33 / 0.22);
+  --sk-focus-w: 2px;
+  --sk-focus-offset: 2px;
+  /* Only for controls that draw the ring on a sibling (the switch track):
+     everything else focuses with an outline, which no later rule can clobber. */
+  --sk-focus-ring: 0 0 0 2px var(--sk-surface), 0 0 0 4px var(--sk-accent);
+
+  /* Type */
+  --sk-font: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --sk-mono: "Geist Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --sk-fs-xs: 11px;
+  --sk-fs-sm: 12px;
+  --sk-fs-ui: 14px;
+  --sk-fs-chat: 16px;
+  --sk-fs-title: 18px;
+  --sk-fs-h2: 22px;
+  --sk-fs-h1: 28px;
+  --sk-lh-ui: 1.45;
+  --sk-lh-chat: 1.62;
+  --sk-tracking-tight: -0.012em;
+
+  /* Space: 4 px grid */
+  --sk-s1: 4px;
+  --sk-s2: 8px;
+  --sk-s3: 12px;
+  --sk-s4: 16px;
+  --sk-s5: 20px;
+  --sk-s6: 24px;
+  --sk-s8: 32px;
+  --sk-s10: 40px;
+  --sk-s12: 48px;
+
+  /* Shape: continuous corners where supported */
+  --sk-r-xs: 6px;
+  --sk-r-control: 10px;
+  --sk-r-card: 16px;
+  --sk-r-pop: 20px;
+  --sk-r-composer: 24px;
+  --sk-r-pill: 999px;
+
+  /* Control sizes */
+  --sk-h-sm: 28px;
+  --sk-h-md: 34px;
+  --sk-h-lg: 40px;
+
+  /* Cursor on controls: the arrow, as in a native app. The pointing hand is
+     for links only (Apple HIG; upstream's --cursor-action says the same). */
+  --sk-cursor-action: default;
+
+  /* Motion */
+  --sk-dur-micro: 140ms;
+  --sk-dur-panel: 280ms;
+  --sk-ease: cubic-bezier(0.4, 0, 0.6, 1);
+  --sk-ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --sk-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Layout */
+  --sk-sidebar-w: 264px;
+  --sk-chat-w: 720px;
+}
+
+[data-density="compact"] {
+  --sk-fs-ui: 13px;
+  --sk-fs-chat: 14px;
+  --sk-h-md: 30px;
+  --sk-h-lg: 36px;
+  --sk-lh-chat: 1.55;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme-mode="light"]) {
+    color-scheme: dark;
+    --sk-canvas: #0c0f16;
+    --sk-sidebar: #080b11;
+    --sk-surface: #12161e;
+    --sk-fill: #1b1f28;
+    --sk-fill-2: #242933;
+    --sk-line: #272b35;
+    --sk-line-strong: #3a404c;
+    --sk-text: #eef0f4;
+    --sk-text-2: #b3b7c1;
+    --sk-text-3: #8e929c;
+    --sk-primary: #eef0f4;
+    --sk-primary-hover: #d6d9e0;
+    --sk-on-primary: #0c0f16;
+    --sk-accent: #58bfe6;
+    --sk-accent-soft: #053042;
+    --sk-accent-line: #185d79;
+    --sk-ok: #63ca84;
+    --sk-warn: #f1af57;
+    --sk-bad: #f47c6e;
+    --sk-on-danger: #1a0d0b;
+    --sk-agent-indigo: #5c6eba;
+    --sk-agent-olive: #8c9c43;
+    --sk-agent-plum: #965695;
+    --sk-agent-teal: #1daaa7;
+    --sk-agent-rose: #aa5377;
+    --sk-agent-sand: #b08b30;
+    --sk-agent-violet: #7f5fab;
+    --sk-agent-graphite: #8e929a;
+    --sk-agent-tint: 20%;
+    --sk-glass: rgb(18 22 30 / 0.72);
+    --sk-shadow-float: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -8px rgb(0 0 0 / 0.6);
+    --sk-shadow-pop: 0 2px 8px rgb(0 0 0 / 0.45), 0 28px 56px -12px rgb(0 0 0 / 0.7);
+  }
+}
+
+:root[data-theme-mode="dark"] {
+  color-scheme: dark;
+  --sk-canvas: #0c0f16;
+  --sk-sidebar: #080b11;
+  --sk-surface: #12161e;
+  --sk-fill: #1b1f28;
+  --sk-fill-2: #242933;
+  --sk-line: #272b35;
+  --sk-line-strong: #3a404c;
+  --sk-text: #eef0f4;
+  --sk-text-2: #b3b7c1;
+  --sk-text-3: #8e929c;
+  --sk-primary: #eef0f4;
+  --sk-primary-hover: #d6d9e0;
+  --sk-on-primary: #0c0f16;
+  --sk-accent: #58bfe6;
+  --sk-accent-soft: #053042;
+  --sk-accent-line: #185d79;
+  --sk-ok: #63ca84;
+  --sk-warn: #f1af57;
+  --sk-bad: #f47c6e;
+  --sk-on-danger: #1a0d0b;
+  --sk-agent-indigo: #5c6eba;
+  --sk-agent-olive: #8c9c43;
+  --sk-agent-plum: #965695;
+  --sk-agent-teal: #1daaa7;
+  --sk-agent-rose: #aa5377;
+  --sk-agent-sand: #b08b30;
+  --sk-agent-violet: #7f5fab;
+  --sk-agent-graphite: #8e929a;
+  --sk-agent-tint: 20%;
+  --sk-glass: rgb(18 22 30 / 0.72);
+  --sk-shadow-float: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -8px rgb(0 0 0 / 0.6);
+  --sk-shadow-pop: 0 2px 8px rgb(0 0 0 / 0.45), 0 28px 56px -12px rgb(0 0 0 / 0.7);
+}

@@ -40,7 +40,7 @@ async function mount(client: GatewayBrowserClient) {
     gateway: source.gateway,
     agentSelection: { state: { selectedId: "main" }, subscribe },
     runtimeConfig: { state: { configSnapshot: {}, configSchema: {} }, subscribe },
-    theme: { serverSelection: null, subscribe },
+    theme: { subscribe },
     overlays: { snapshot: {}, subscribe },
     config: { subscribe },
     webPush: { subscribe },

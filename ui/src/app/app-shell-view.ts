@@ -17,6 +17,7 @@ import {
   formatKeyboardShortcutCombo,
   KEYBOARD_SHORTCUT_COMBOS,
 } from "../lib/keyboard-shortcut-contract.ts";
+import type { PagesOffStore } from "../lib/pages-off.ts";
 import { readSessionMethodAccess } from "../lib/session-method-access.ts";
 import { normalizeAgentId, resolveUiSelectedSessionAgentId } from "../lib/sessions/session-key.ts";
 import { isTerminalAvailable } from "../lib/terminal-availability.ts";
@@ -35,7 +36,6 @@ import type { ApplicationRuntime } from "./bootstrap.ts";
 import { canGoBackInNativeEmbed } from "./browser.ts";
 import type { ApplicationContext, ApplicationNavigationOptions } from "./context.ts";
 import { resolveControlUiAuthToken } from "./control-ui-auth.ts";
-import { gatewayPresentationScope } from "./gateway-presentation-scope.ts";
 import {
   DEBUG_OVERLAY_ELEMENT,
   isOptionalElementDefined,
@@ -67,15 +67,18 @@ import {
   normalizeChatSendShortcut,
 } from "./settings.ts";
 import { renderCollapsedAssistantToggles } from "./shell-assistant-toggles.ts";
+import { renderShellPageSlot } from "./shell-page-slot.ts";
 import { createUpdateProgressWatcher } from "./update-confirmation.ts";
 
 const EMPTY_SESSION_HAS_DRAFT = () => false;
+const NO_OFF_PAGES: ReadonlySet<string> = new Set();
 
 export interface ShellViewHost extends DevicePairSetupHost {
   readonly context: ApplicationContext<RouteId> | undefined;
   readonly runtime: ApplicationRuntime | undefined;
   readonly activeSessionKey: string;
   readonly commandPaletteElement: OptionalCustomElement;
+  readonly pagesOff: PagesOffStore | undefined;
   readonly custodianMinimizeRequestId: number;
   readonly desktopNavigationExpanded: boolean;
   readonly execApprovalElement: OptionalCustomElement;
@@ -150,15 +153,17 @@ export function renderApplicationShell(host: ShellViewHost) {
   const lazyElementState = host.lazyCustomElements.visibleState;
   const activeRoute = host.routeState.routeId ?? "chat";
   const sessionRoute = isSessionRouteId(activeRoute);
-  // Session routes have an offline outbox, New Session keeps a local draft, and
-  // Appearance persists local preference intent for replay. Their server actions
-  // are independently gated; other pages cannot submit useful disconnected work.
+  // Session routes have an offline outbox, New Session keeps a local draft (Home
+  // embeds the same composer), and Appearance persists local preference intent
+  // for replay. Their server actions are independently gated; other pages cannot
+  // submit useful disconnected work.
   const reloadRequired = gatewaySnapshot.phase === "reload-required";
   const pageActionsBlocked =
     !reloadRequired &&
     !gatewayConnected &&
     !sessionRoute &&
     activeRoute !== "new-session" &&
+    activeRoute !== "home" &&
     activeRoute !== "appearance";
   // Plugin tabs share one route; the URL picks the active item.
   const activePluginRef =
@@ -256,6 +261,12 @@ export function renderApplicationShell(host: ShellViewHost) {
   // The new-session draft shares the chat layout: full-height pane that owns
   // its scrolling and pins the composer dock to the bottom.
   const chatLikeRoute = sessionRoute || activeRoute === "new-session";
+  // Mission Control's compact bar heads every ordinary page; chat, settings and
+  // onboarding keep their own chrome, Home carries the full strip, and Usage
+  // already shows the month's spend (the bar would only ask for it twice).
+  const missionBar =
+    !(nativeEmbed || onboarding || settingsTakeover || chatLikeRoute) &&
+    !["home", "custodian", "usage"].includes(activeRoute);
   if (!settingsTakeover && !nativeEmbed) {
     Object.assign(host.navigationSidebar, {
       basePath: context.basePath,
@@ -389,6 +400,7 @@ export function renderApplicationShell(host: ShellViewHost) {
         ? html`<openclaw-command-palette
             .desktopAvailable=${desktopPanelAvailable}
             .custodianAvailable=${custodianPanelAvailable}
+            .offPageIds=${host.pagesOff?.ids() ?? NO_OFF_PAGES}
             .onNavigate=${(routeId: RouteId, options?: ApplicationNavigationOptions) =>
               host.navigate(routeId, options)}
             .onSelectSession=${(sessionKey: string) => host.selectChatSession(sessionKey)}
@@ -592,15 +604,13 @@ export function renderApplicationShell(host: ShellViewHost) {
           onOpenApprovals: () => host.openApprovals(),
         })}
         ${nativeEmbed ? navigationContent : nothing}
-        <openclaw-router-outlet
-          ?inert=${pageActionsBlocked || reloadRequired}
-          aria-disabled=${pageActionsBlocked || reloadRequired ? "true" : nothing}
-          .router=${runtime.router}
-          .retryContext=${context}
-          .retentionScope=${gatewayPresentationScope(context.gateway)}
-          .onNotFound=${() => host.recoverNotFoundRoute()}
-          .notFoundRecoveryReady=${gatewayConnected}
-        ></openclaw-router-outlet>
+        ${renderShellPageSlot(host, runtime, {
+          activeRoute,
+          context,
+          missionBar,
+          blocked: pageActionsBlocked || reloadRequired,
+          gatewayConnected,
+        })}
       </main>
       <openclaw-terminal-panel
         ?inert=${navDrawerOpen}

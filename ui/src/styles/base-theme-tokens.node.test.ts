@@ -93,12 +93,9 @@ describe("Control UI base theme tokens", () => {
 });
 
 /*
- * --bg is mirrored by hand in two places outside base.css, because both must
- * paint before the app stylesheet is parsed or the picker would advertise a
- * colour the theme no longer uses:
- *   - index.html's pre-paint block, which fills the page during first paint
- *   - the Appearance preview chips in config.css, which are theme-invariant and
- *     so cannot read the live token
+ * --bg is mirrored by hand in index.html's pre-paint block, which fills the
+ * page during first paint before the app stylesheet is parsed. (The Appearance
+ * preview chips that mirrored it too left with the theme picker in Sharklet.)
  * Nothing tied those copies to the palette, and every review pass on the theme
  * work turned up another hand-maintained list that had drifted. Darkening
  * Absolutely moved --bg and silently left both copies behind until a pre-paint
@@ -122,17 +119,7 @@ describe("Control UI theme --bg mirrors", () => {
 
   /** Every theme's canonical --bg, keyed by the resolved data-theme value. */
   function readCanonicalBackgrounds(): Map<string, string> {
-    // Palettes other than the default now live in public/themes; the mirrors
-    // must track them there too.
-    const themesDir = path.join(stylesDir, "..", "..", "public", "themes");
-    const baseCss = [
-      fs.readFileSync(path.join(stylesDir, "base.css"), "utf8"),
-      ...fs
-        .readdirSync(themesDir)
-        .filter((entry) => entry.endsWith(".css"))
-        .toSorted()
-        .map((entry) => fs.readFileSync(path.join(themesDir, entry), "utf8")),
-    ].join("\n");
+    const baseCss = fs.readFileSync(path.join(stylesDir, "base.css"), "utf8");
     const backgrounds = new Map<string, string>();
     for (const [resolved, selector] of RESOLVED_THEME_BG_SELECTOR) {
       const value = readBlockToken(baseCss, selector, "--bg");
@@ -181,50 +168,4 @@ describe("Control UI theme --bg mirrors", () => {
     expect(mismatches).toEqual([]);
     expect(checked).toBeGreaterThanOrEqual(RESOLVED_THEME_BG_SELECTOR.size);
   });
-
-  it("keeps the Appearance preview chips on every theme's --bg", () => {
-    const configCss = fs.readFileSync(path.join(stylesDir, "config.css"), "utf8");
-    const canonical = readCanonicalBackgrounds();
-    const mismatches: string[] = [];
-    let checked = 0;
-
-    for (const match of configCss.matchAll(/\.settings-theme-card--([\w-]+)[^{]*\{([^}]*)\}/gu)) {
-      const family = match[1] ?? "";
-      const body = match[2] ?? "";
-      const chip = body.match(/--theme-chip-bg:\s*([^;]+);/u)?.[1]?.trim();
-      if (!chip || chip.startsWith("var(")) {
-        continue;
-      }
-      // Light chip rules are nested under the light-mode selector, so the
-      // preceding text decides which resolved palette this chip mirrors.
-      const isLight = configCss
-        .slice(0, match.index ?? 0)
-        .split(".settings-theme-card--")
-        .at(-1)
-        ?.includes('data-theme-mode="light"');
-      const resolved = resolveFamily(family, isLight === true);
-      const background = canonical.get(resolved);
-      if (!background) {
-        continue;
-      }
-      checked += 1;
-      if (chip.toLowerCase() !== background.toLowerCase()) {
-        mismatches.push(`${resolved}: chip ${chip} != --bg ${background}`);
-      }
-    }
-
-    expect(mismatches).toEqual([]);
-    expect(checked).toBeGreaterThan(0);
-  });
-
-  /** Appearance uses theme family names; base.css keys off resolved values. */
-  function resolveFamily(family: string, light: boolean): string {
-    if (family === "claw") {
-      return light ? "light" : "dark";
-    }
-    if (family === "knot") {
-      return light ? "openknot-light" : "openknot";
-    }
-    return light ? `${family}-light` : family;
-  }
 });

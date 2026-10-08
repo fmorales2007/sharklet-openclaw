@@ -184,6 +184,7 @@ describe("listGatewayMethods", () => {
       "claws.monitors",
       ...pluginDiscoveryMethods,
       "tasks.history",
+      "pages.state",
       "environments.prepare",
     ];
     expect(listGatewayMethods().slice(-expectedSuffix.length)).toEqual(expectedSuffix);
@@ -209,6 +210,7 @@ describe("listGatewayMethods", () => {
       "claws.monitors",
       ...pluginDiscoveryMethods,
       "tasks.history",
+      "pages.state",
       "environments.prepare",
     ]);
   });
@@ -361,6 +363,7 @@ describe("listGatewayMethods", () => {
       "claws.monitors",
       ...pluginDiscoveryMethods,
       "tasks.history",
+      "pages.state",
       "environments.prepare",
     ];
     expect(coreMethods.slice(-expectedCoreSuffix.length)).toEqual(expectedCoreSuffix);

@@ -188,7 +188,7 @@ if (( PATHS_PASSED == 0 )); then
     RULEPACK_CHANGED=0
     while IFS= read -r -d '' path; do
       case "$path" in
-        src/*|extensions/*|apps/*|packages/*|scripts/*)
+        src/*|extensions/*|apps/*|packages/*|scripts/*|ui/*)
           # OpenGrep errors when an explicit changed path is a symlink; scan the
           # real target content, not duplicate guide aliases such as CLAUDE.md.
           if [[ ! -L "$path" && ( -f "$path" || -d "$path" ) ]]; then
@@ -216,7 +216,7 @@ if (( PATHS_PASSED == 0 )); then
       exit 0
     fi
   else
-    SCAN_PATHS=( "src/" "extensions/" "apps/" "packages/" "scripts/" )
+    SCAN_PATHS=( "src/" "extensions/" "apps/" "packages/" "scripts/" "ui/" )
   fi
 else
   SCAN_PATHS=()

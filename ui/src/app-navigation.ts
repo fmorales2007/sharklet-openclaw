@@ -20,6 +20,7 @@ type NavigationPresentation = readonly [icon: IconName, titleKey: string, subtit
 // Worktrees is a tab of the Sessions hub, so it is not listed either.
 // Workboard is plugin-owned and enters the zone through its Control UI descriptor.
 export const SIDEBAR_NAV_ROUTES = [
+  "home",
   "dashboards",
   "usage",
   "cron",
@@ -66,7 +67,7 @@ export type SidebarZoneEntry =
 
 // Keep the highest-value operational destinations visible on first use. Users
 // can still replace this route set through the customize menu.
-export const DEFAULT_SIDEBAR_ENTRIES = ["dashboards", "cron", "plugins"].map((route) =>
+export const DEFAULT_SIDEBAR_ENTRIES = ["home", "dashboards", "cron", "plugins"].map((route) =>
   serializeSidebarEntry({ type: "route", route: route as SidebarNavRoute }),
 );
 
@@ -345,10 +346,11 @@ const NAVIGATION_PRESENTATION: Record<NavigationRouteId, NavigationPresentation>
   "device-permissions": ["shieldCheck", "tabs.devicePermissions", "subtitles.devicePermissions"],
   devices: ["monitorSmartphone", "tabs.devices", "subtitles.devices"],
   "cloud-workers": ["server", "tabs.cloudWorkers", "subtitles.cloudWorkers"],
+  home: ["layoutDashboard", "tabs.home", "subtitles.home"],
   chat: ["messageSquare", "tabs.chat", "subtitles.chat"],
   dashboard: ["layoutDashboard", "tabs.chat", "subtitles.chat"],
   dashboards: ["layoutDashboard", "tabs.dashboards", "subtitles.dashboards"],
-  custodian: ["lobster", "tabs.custodian", "subtitles.custodian"],
+  custodian: ["circleQuestionMark", "tabs.custodian", "subtitles.custodian"],
   config: ["settings", "nav.settings", "subtitles.config"],
   profile: ["circleUser", "tabs.profile", "subtitles.profile"],
   communications: ["send", "tabs.communications", "subtitles.communications"],
@@ -455,9 +457,13 @@ export function formatDocumentTitle(options: {
   gatewayDisconnected?: boolean;
   queuedCount?: number;
 }): string {
-  const base = options.context.endsWith("OpenClaw")
+  // Sharklet: the product name in the tab. index.html's <title> says the same
+  // before boot, so the tab does not flip names once the app renders. A label
+  // that already ends in a product name still takes no suffix: English says
+  // "Help" since custom/shell.ts, but the other locales still ask OpenClaw.
+  const base = /(?:Sharklet|OpenClaw)$/u.test(options.context)
     ? options.context
-    : `${options.context} — OpenClaw`;
+    : `${options.context} — Sharklet`;
   if (options.gatewayDisconnected) {
     const queued =
       options.queuedCount && options.queuedCount > 0

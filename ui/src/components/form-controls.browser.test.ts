@@ -50,7 +50,6 @@ function controlsHtml() {
       <label class="field checkbox"><input type="checkbox" /><span>field checkbox</span></label>
       <label class="field checkbox"><input type="radio" /><span>field radio</span></label>
       <input class="settings-sidebar__search-input" value="settings search" />
-      <input class="settings-theme-import__input" value="theme" />
       <label class="config-raw-field"><textarea>raw config</textarea></label>
       <input class="settings-input" value="config input" />
       <div class="settings-row__control"><textarea class="settings-input">config textarea</textarea></div>
@@ -320,7 +319,6 @@ describeBrowserLayout("touch-primary form controls", () => {
           ".field textarea",
           ".field select",
           ".settings-sidebar__search-input",
-          ".settings-theme-import__input",
           ".config-raw-field textarea",
           "input.settings-input",
           ".settings-row__control > textarea.settings-input",

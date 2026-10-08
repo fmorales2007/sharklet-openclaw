@@ -1,33 +1,17 @@
 // @vitest-environment node
 // Control UI tests cover theme behavior.
 import { describe, expect, it, vi } from "vitest";
-import { parseThemeSelection, resolveTheme, type ThemeName } from "./theme.ts";
+import { parseThemeSelection, resolveTheme } from "./theme.ts";
 
 describe("resolveTheme", () => {
-  it.each([
-    ["claw", "dark", "light"],
-    ["knot", "openknot", "openknot-light"],
-    ["dash", "dash", "dash-light"],
-    ["absolutely", "absolutely", "absolutely-light"],
-    ["tide", "tide", "tide-light"],
-    ["beacon", "beacon", "beacon-light"],
-    ["phosphor", "phosphor", "phosphor-light"],
-    ["crt", "crt", "crt-light"],
-    ["manuscript", "manuscript", "manuscript-light"],
-    ["rose", "rose", "rose-light"],
-    ["miami", "miami", "miami-light"],
-    ["custom", "custom", "custom-light"],
-  ] satisfies [ThemeName, string, string][])(
-    "resolves %s in both explicit modes",
-    (theme, dark, light) => {
-      expect(resolveTheme(theme, "dark")).toBe(dark);
-      expect(resolveTheme(theme, "light")).toBe(light);
-    },
-  );
+  it("resolves explicit modes to themselves", () => {
+    expect(resolveTheme("dark")).toBe("dark");
+    expect(resolveTheme("light")).toBe("light");
+  });
 
   it("uses system preference when mode is system", () => {
     vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: true }));
-    expect(resolveTheme("knot", "system")).toBe("openknot-light");
+    expect(resolveTheme("system")).toBe("light");
     vi.unstubAllGlobals();
   });
 });
@@ -37,6 +21,10 @@ describe("parseThemeSelection", () => {
     expect(parseThemeSelection("fieldmanual", "invalid-mode")).toEqual({
       theme: "claw",
       mode: "system",
+    });
+    expect(parseThemeSelection("custom", "light")).toEqual({
+      theme: "claw",
+      mode: "light",
     });
     expect(parseThemeSelection("dash", "light")).toEqual({
       theme: "dash",

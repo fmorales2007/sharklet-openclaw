@@ -124,32 +124,6 @@ describe("server pref extraction", () => {
       value: "enter",
     });
   });
-
-  it("preserves a server custom-theme override when this device lacks its palette", () => {
-    const state = resolveServerUiPrefState(configWithPrefs({ theme: "custom" }), "theme");
-
-    expect(state).toEqual({
-      overridden: true,
-      provenance: "synced",
-      resetValue: "claw",
-      value: "claw",
-    });
-    patchSettings({ theme: "knot" });
-    expect(
-      resolveServerUiPrefState(configWithPrefs({ theme: "custom" }), "theme", "", loadSettings(), {
-        canSync: false,
-      }),
-    ).toEqual({
-      overridden: true,
-      provenance: "device-local",
-      resetValue: "claw",
-      value: "knot",
-    });
-
-    const beforeReset = loadSettings();
-    const afterReset = resetServerUiPref("theme", state);
-    expect(changedServerUiPrefs(beforeReset, afterReset)).toEqual({ theme: null });
-  });
 });
 
 describe("applyServerUiPrefs", () => {
@@ -276,19 +250,10 @@ describe("applyServerUiPrefs", () => {
     expect(onApplied).toHaveBeenLastCalledWith({ themeMode: "light" });
   });
 
-  it("ignores a server custom theme until this browser imported one", () => {
+  it("ignores a server custom theme: tweakcn import is not part of Sharklet", () => {
     const onApplied = vi.fn();
-    const onThemeChanged = vi.fn();
-    expect(
-      applyServerUiPrefs(configWithPrefs({ theme: "custom" }), { onApplied, onThemeChanged }),
-    ).toBe(false);
+    expect(applyServerUiPrefs(configWithPrefs({ theme: "custom" }), { onApplied })).toBe(false);
     expect(loadSettings().theme).toBe("claw");
-    expect(onThemeChanged).toHaveBeenLastCalledWith("custom");
-
-    expect(
-      applyServerUiPrefs(configWithPrefs({ theme: "claw" }), { onApplied, onThemeChanged }),
-    ).toBe(false);
-    expect(onThemeChanged).toHaveBeenLastCalledWith("claw");
     expect(onApplied).not.toHaveBeenCalled();
   });
 });
@@ -472,24 +437,15 @@ describe("pushServerUiPrefs", () => {
     );
     const client = createClient(request, scope);
     const onApplied = vi.fn();
-    const onThemeChanged = vi.fn();
-    applyServerUiPrefs(configWithPrefs({ theme: "claw" }), {
-      scope,
-      onApplied,
-      onThemeChanged,
-    });
-    onThemeChanged.mockClear();
+    applyServerUiPrefs(configWithPrefs({ theme: "claw" }), { scope, onApplied });
+    onApplied.mockClear();
 
     pushServerUiPrefs(client, { theme: "knot" });
     await vi.waitFor(() => expect(request).toHaveBeenCalledOnce());
-    expect(
-      applyServerUiPrefs(configWithPrefs({ theme: "knot" }), {
-        scope,
-        onApplied,
-        onThemeChanged,
-      }),
-    ).toBe(false);
-    expect(onThemeChanged).not.toHaveBeenCalled();
+    expect(applyServerUiPrefs(configWithPrefs({ theme: "knot" }), { scope, onApplied })).toBe(
+      false,
+    );
+    expect(onApplied).not.toHaveBeenCalled();
 
     requestGate.resolve({});
     await waitForFast(() => expect(localStorage.getItem(pendingKey(scope))).toBeNull());

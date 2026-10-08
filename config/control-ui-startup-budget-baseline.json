@@ -1,5 +1,5 @@
 {
-  "startupJsGzipBytes": 352531,
-  "reason": "Plugin discovery shell adds the canonical /plugins workspace route and navigation metadata; measured 352531 B startup gzip on Linux-equivalent local build. Fixed 358400 B cap retained.",
-  "updatedAt": "2026-09-09"
+  "startupJsGzipBytes": 354411,
+  "reason": "Sharklet at startup, ratcheted down by F1-X to the measured 354411 B (Windows build) after F1-10 removed upstream's theme families: shell, brand, mascot override, fonts, Mission Control route and strings, page kill switch strings, the typed RPC layer's messages. The history of each earlier bump is in the Sharklet docs (plan-ui-fases.fase-1.tasks.json, tasks F1-01 to F1-10).",
+  "updatedAt": "2026-10-07"
 }

@@ -4188,12 +4188,14 @@ wa-dropdown.sidebar-identity-menu::part(menu) {
   margin-left: 2px;
 }
 
-.sidebar-identity-menu .theme-mode-toggle {
+.sidebar-identity-menu .theme-mode-toggle,
+.sidebar-identity-menu .density-toggle {
   justify-content: center;
   border: 0;
 }
 
-.theme-mode-toggle {
+.theme-mode-toggle,
+.density-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -4210,17 +4212,20 @@ wa-dropdown.sidebar-identity-menu::part(menu) {
     border-color var(--duration-fast) ease;
 }
 
-.theme-mode-toggle:hover {
+.theme-mode-toggle:hover,
+.density-toggle:hover {
   color: var(--text);
   background: color-mix(in srgb, var(--bg-hover) 84%, transparent);
 }
 
-.theme-mode-toggle:focus-visible {
+.theme-mode-toggle:focus-visible,
+.density-toggle:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
 
-.theme-mode-toggle svg {
+.theme-mode-toggle svg,
+.density-toggle svg {
   width: 16px;
   height: 16px;
   stroke: currentColor;

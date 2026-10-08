@@ -433,26 +433,26 @@ describe("Dynamic route startup bridge", () => {
       listen: () => () => undefined,
     };
     const router = createApplicationRouter();
-    const route = router.getRoute("chat");
+    const route = router.getRoute("home");
     if (!route) {
-      throw new Error("Chat route missing");
+      throw new Error("Home route missing");
     }
     const originalLoader = route.loader;
     const originalComponent = route.component;
     try {
-      route.loader = () => notFound({ routeId: "chat" });
+      route.loader = () => notFound({ routeId: "home" });
       route.component = async () => ({ render: () => null });
 
       await expect(
         startApplicationRouter(router, history, "", createStartupContext()),
       ).resolves.toBeUndefined();
 
-      expect(location.pathname).toBe("/chat");
+      expect(location.pathname).toBe("/home");
       expect(router.getState().status).toBe("notFound");
       expect(router.getState().matches[0]).toMatchObject({
-        routeId: "chat",
+        routeId: "home",
         status: "notFound",
-        error: { type: "notFound", data: { routeId: "chat" } },
+        error: { type: "notFound", data: { routeId: "home" } },
       });
     } finally {
       router.stop();

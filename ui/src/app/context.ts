@@ -23,7 +23,7 @@ import type { ApplicationOverlays } from "./overlays-types.ts";
 import type { ApplicationPlacementStartup } from "./session-placement-startup.ts";
 import type { UiPreferences } from "./settings.ts";
 import type { SidebarAttentionStore } from "./sidebar-attention-store.ts";
-import type { ThemeMode, ThemeName } from "./theme.ts";
+import type { ThemeMode } from "./theme.ts";
 import type { WebPushCapability } from "./web-push.ts";
 
 export type {
@@ -33,18 +33,10 @@ export type {
   ApplicationGatewaySnapshot,
 } from "./gateway.ts";
 
-export type ApplicationThemeServerSelection = {
-  readonly revision: number;
-  readonly scope: string;
-  readonly theme: ThemeName | null;
-};
-
 export type ApplicationTheme = {
   readonly settings: UiPreferences;
   readonly mode: ThemeMode;
   readonly resolvedMode: "dark" | "light";
-  readonly serverSelection: ApplicationThemeServerSelection | null;
-  recordServerSelection: (theme: ThemeName | null, scope: string) => void;
   setMode: (mode: ThemeMode, element?: HTMLElement | null) => void;
   refresh: () => void;
   subscribe: (listener: () => void) => () => void;

@@ -184,7 +184,7 @@ function routeContext(): ApplicationContext {
       ensureSchemaLoaded: async () => undefined,
       subscribe,
     },
-    theme: { serverSelection: null, subscribe },
+    theme: { subscribe },
     overlays: { snapshot: {}, subscribe },
     webPush: { snapshot: undefined, subscribe },
   } as unknown as ApplicationContext;

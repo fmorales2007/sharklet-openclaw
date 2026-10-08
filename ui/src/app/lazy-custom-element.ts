@@ -247,6 +247,14 @@ export const KEYBOARD_SHORTCUTS_ELEMENT = {
   loadModule: () => import("../components/keyboard-shortcuts-dialog.ts"),
 } satisfies OptionalCustomElement;
 
+const MISSION_CONTROL_BAR_TAG = "sharklet-mission-bar";
+
+export const MISSION_CONTROL_BAR_ELEMENT = {
+  tagName: MISSION_CONTROL_BAR_TAG,
+  label: MISSION_CONTROL_BAR_TAG,
+  loadModule: () => import("../pages/mission-control/mission-control-bar.ts"),
+} satisfies OptionalCustomElement;
+
 const MACOS_TITLEBAR_TAG = "openclaw-macos-titlebar-controls";
 
 export const MACOS_TITLEBAR_ELEMENT = {

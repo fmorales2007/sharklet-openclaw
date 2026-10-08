@@ -601,7 +601,7 @@ suite.define(() => {
         .toBe(true);
 
       await page.getByRole("button", { name: "Open command palette" }).click();
-      const paletteInput = page.locator(".cmd-palette__input");
+      const paletteInput = page.locator(".sk-palette-input input");
       await paletteInput.waitFor({ state: "visible", timeout: 10_000 });
       await expect
         .poll(() => paletteInput.evaluate((element) => element === document.activeElement))

@@ -147,7 +147,8 @@ suite.define(() => {
       ...options.scenario,
     });
     await options.beforeNavigate?.(page);
-    const response = await page.goto(`${suite.server.baseUrl}${options.pathname ?? ""}`, {
+    // The app root opens Home (Mission Control); these cases default to chat.
+    const response = await page.goto(`${suite.server.baseUrl}${options.pathname ?? "chat"}`, {
       waitUntil: options.beforeNavigate ? "domcontentloaded" : "load",
     });
     expect(response?.status()).toBe(200);
@@ -663,9 +664,9 @@ suite.define(() => {
     const page = await openPage({ nativeNav: false });
 
     await page.keyboard.press("ControlOrMeta+K");
-    const palette = page.locator(".cmd-palette");
+    const palette = page.locator(".sk-palette");
     const paletteDialog = page.locator("openclaw-modal-dialog.palette");
-    await page.locator(".cmd-palette__input:not([disabled])").waitFor({ state: "visible" });
+    await page.locator(".sk-palette-input input:not([disabled])").waitFor({ state: "visible" });
     const paletteAnimationName = await palette.evaluate(
       (element) => getComputedStyle(element).animationName,
     );

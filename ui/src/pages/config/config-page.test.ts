@@ -169,53 +169,10 @@ describe("ConfigPage synced preference provenance", () => {
     expect(changedServerUiPrefs(beforeReset, page.settings)).toEqual({ theme: null });
   });
 
-  it.each(["fontUi", "fontChat"] as const)(
-    "resets the %s profile override when its picker sentinel is selected",
-    async (key) => {
-      const gatewayUrl = "ws://font-profile.test";
-      const configObject = {};
-      const client = {
-        request: vi.fn(async () => ({ status: "ok", entries: { [`ui.${key}`]: "lora" } })),
-      } as unknown as GatewayBrowserClient;
-      await refreshProfileAppearancePrefs({
-        client,
-        profileId: "font-owner",
-        configObject,
-        scope: gatewayUrl,
-        onApplied: vi.fn(),
-      });
-      const page = new ConfigPage() as unknown as {
-        context: ApplicationContext;
-        settings: ReturnType<typeof loadSettings>;
-        setFont: (key: "fontUi" | "fontChat", font: undefined) => void;
-      };
-      page.context = {
-        gateway: {
-          connection: { gatewayUrl },
-          snapshot: {
-            selfUser: { id: "font-owner" },
-            hello: { auth: { role: "operator", scopes: ["operator.write"] } },
-          },
-        },
-        runtimeConfig: {
-          state: { connected: true, configSnapshot: { config: configObject } },
-          canPatch: false,
-        },
-        theme: { refresh: vi.fn() },
-      } as unknown as ApplicationContext;
-      const previous = loadSettings();
-      page.settings = previous;
-      page.setFont(key, undefined);
-      expect(page.settings[key]).toBeUndefined();
-      expect(changedServerUiPrefs(previous, page.settings)).toEqual({ [key]: null });
-      expect(page.context.theme.refresh).toHaveBeenCalledOnce();
-    },
-  );
-
   it("uses the committed snapshot for both display and reset while the form draft differs", () => {
     const page = new ConfigPage();
-    const committedConfig = { ui: { prefs: { theme: "claw" } } };
-    const draftConfig = { ui: { prefs: { theme: "knot" } } };
+    const committedConfig = { ui: { prefs: { themeMode: "system" } } };
+    const draftConfig = { ui: { prefs: { themeMode: "dark" } } };
     const runtimeConfig = {
       state: {
         client: null,
@@ -290,14 +247,14 @@ describe("ConfigPage synced preference provenance", () => {
     render(page.render(), container);
 
     const themeSection = container.querySelector<HTMLElement>("#settings-appearance-theme");
-    expect(themeSection?.textContent).toContain("Default: Claw");
+    expect(themeSection?.textContent).toContain("Default: System");
     expect(themeSection?.textContent).toContain("Synced across your devices");
-    expect(themeSection?.textContent).not.toContain("Default: Knot");
+    expect(themeSection?.textContent).not.toContain("Default: Dark");
     expect(themeSection?.textContent).not.toContain("Stored in this browser only");
 
-    themeSection?.querySelector<HTMLButtonElement>(".settings-theme-card--claw")?.click();
+    (page as unknown as { setThemeMode: (mode: "system") => void }).setThemeMode("system");
 
-    expect(changedServerUiPrefs(beforeReset, state.settings)).toEqual({ theme: null });
+    expect(changedServerUiPrefs(beforeReset, state.settings)).toEqual({ themeMode: null });
   });
 });
 
