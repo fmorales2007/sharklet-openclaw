@@ -86,7 +86,7 @@ export async function withOwnedManagedUpdateEnv<T>(
   for (const [key, value] of Object.entries(phaseEnv)) {
     // Node stringifies undefined on assignment; unset selectors must remain absent.
     if (value !== undefined) {
-      process.env[key] = value;
+      process.env[key] = value; // nosemgrep: security.opengrep.ghsa-82g8-464f-2mv7.openclaw-skill-env-host-injection -- `env` is the managed Gateway's own environment handed to the update CLI, not skill-provided overrides; Sharklet does not run `openclaw update`.
     }
   }
   try {
