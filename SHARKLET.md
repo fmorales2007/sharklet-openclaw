@@ -186,6 +186,25 @@ The scan has three parts: production dependency advisories (`scripts/pre-commit/
 
 Budget: 2,000 Actions minutes a month. Every push to an open pull request runs the UI tests and the checks, so measured minutes per run are recorded in the F1-08 task evidence.
 
+## Loops
+
+Since 2026-10-13 the roadmap tasks run unattended, after Karpathy's autoresearch: a fresh session per attempt, machine gates, an independent Codex audit, and git as a ratchet. The sessions are Claude Desktop scheduled routines ("Sharklet · Loop A", "Loop B", "Planes"); the method, the autonomy levels (L0 to L3), the task fields and daily use live in the docs repo, `docs/loops/README.md`.
+
+- `scripts/sharklet-loop.mjs`: the runner. It picks the work, prepares the worktree and judges the result; the routine's session does the work in between. Loop A is `next` → work → `check`, which keeps, asks for a fix (twice at most) or discards. Loop B is `metric-next` → one experiment → `metric-check`, then `metric-deliver`. L1 plans are `plan-next` → plan → `plan-save`. `status`, `approve` and `retry` manage tasks, and `wait` waits for a backgrounded command. Every command ends with `[loop] result: …`. Worktrees go to `C:/dev/sharklet-loops` (outside OneDrive). `SHARKLET_LOOP_DRY=1` rehearses without pushing, opening PRs, running CI or committing docs.
+- `scripts/sharklet-audit.sh`: Codex CLI in a read-only sandbox reviews a diff (`--base`, `--commit` or `--uncommitted`) and writes findings shaped by `scripts/sharklet-audit.schema.json`. Exit 1 means critical or high findings, 2 that it did not run. Codex reads `AGENTS.md` but not `CLAUDE.md`, so the script passes `CLAUDE.md` and `SHARKLET-SECURITY.md` in the prompt. The phase closing audits (`-X`) use it too. Its quota is the operator's ChatGPT plan; `docs/loops/settings.json` (`audit`: `codex`, `when-available` or `off`) decides what a loop does without it.
+- `scripts/sharklet-metric.mjs`: the numbers the metric programs lower (`startup-bytes`, `openclaw-residual`).
+
+What the runner enforces:
+
+- `next`, `plan-next` and `metric-next` refuse to start work while the server key logs in unattended (`ssh -o BatchMode=yes … true` succeeds): give it a passphrase and empty ssh-agent before a loop.
+- A commit touching `.github/`, `scripts/sharklet-*`, `CLAUDE.md`, `SHARKLET-SECURITY.md`, `AGENTS.md`, `.claude/`, `.mcp.json` or `.agents/` never reaches CI: it stays in a local `loop-review/<branch>` and the task is blocked for a person.
+- `check` judges with the task settings `next` snapshotted, and keeps only the session's report fields of its own task in `tasks.json`.
+- Gate and metric commands must be repo scripts (`node scripts/…` or `corepack pnpm <script>`, joined with `&&`). Prompts, templates, programs and settings are read as committed in the docs repo.
+- The runner pushes only after the gates, to the task's branch or to `loop-candidate/*`, never to `custom`. It merges without a person only a metric PR into a `phase-*` branch, which the phase's `-X` audits again.
+- CI runs once per kept task, against the 2,000-minute budget above; `ci: off` in `docs/loops/settings.json` stops that.
+
+Accepted residual risk: a Desktop session runs as the operator, with the operator's git and `gh` credentials, so a session that ignored its routine could push around the gates. Auto permission mode and the routine's rules stand in the way; a separate Windows user or a VM is the hard boundary if that ever matters. The server stays out of reach while its key needs a passphrase.
+
 ## Graphify mirrors
 
 Graphify Cloud's Free plan caps a graph at 25,000 nodes per repository, and this fork is several times that. Graphify indexes slim private mirrors instead, one commit each with no history, rebuilt by `sharklet-graphify-mirror.yml` on every push to `custom` or a `phase-*` branch. The last push wins: a phase branch carries `custom` merged in, and holds the work in progress until it lands. A branch only triggers it once it has the workflow file, that is, once it has merged a `custom` that includes it.
