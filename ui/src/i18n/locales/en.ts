@@ -2518,7 +2518,7 @@ export const en: TranslationMap & {
     missingAuth: "No provider credential is configured for this model. Set it up in Model Setup.",
     heading: "Connect a verified AI model",
     intro:
-      "OpenClaw discovers AI access on this Gateway. Choose a provider to begin; nothing is selected, tested, installed, or saved automatically.",
+      "Sharklet discovers AI access on this Gateway. Choose a provider to begin; nothing is selected, tested, installed, or saved automatically.",
     required: {
       title: "No AI provider configured",
       body: "We couldn't find a provider and model configured for this agent. Choose a supported connection; OpenClaw will test it before enabling chat.",
@@ -2547,7 +2547,7 @@ export const en: TranslationMap & {
     },
     access: {
       adminRequired: "Model setup requires operator.admin access.",
-      gatewayTooOld: "The Gateway is running an older OpenClaw version",
+      gatewayTooOld: "The Gateway is running an older Sharklet version",
     },
     candidates: {
       title: "Found on this Gateway",
@@ -2602,12 +2602,12 @@ export const en: TranslationMap & {
       accessValueFor: "{provider} API key or token",
       accessValuePlaceholder: "Paste an API key or token",
       connectAndVerify: "Connect & verify",
-      verifyHint: "OpenClaw verifies a real model reply before marking the connection ready.",
+      verifyHint: "Sharklet verifies a real model reply before marking the connection ready.",
       required: "Choose a provider and enter an API key or token.",
     },
     success: {
       title: "Connection verified",
-      body: "OpenClaw received a real reply from {modelRef}. You can start chatting now.",
+      body: "Sharklet received a real reply from {modelRef}. You can start chatting now.",
       activeModel: "Active model",
       latency: "Verified in {latencyMs} ms",
       openChat: "Start chatting",
