@@ -2794,7 +2794,7 @@ export const en: TranslationMap & {
     working: "Working…",
   },
   mcpPage: {
-    intro: "Connect and manage MCP servers that provide tools to OpenClaw.",
+    intro: "Connect and manage MCP servers that provide tools to Sharklet.",
     servers: "Servers",
     oauth: "OAuth",
     filtered: "Filtered",
@@ -2852,7 +2852,7 @@ export const en: TranslationMap & {
     },
   },
   memoryPage: {
-    intro: "Choose how OpenClaw stores, searches, and maintains agent memory.",
+    intro: "Choose how Sharklet stores, searches, and maintains agent memory.",
     tablistLabel: "Memory sections",
     tabs: {
       overview: "Overview",
