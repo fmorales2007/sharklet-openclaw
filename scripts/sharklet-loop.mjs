@@ -400,6 +400,13 @@ function worktree(branch, base, { resetToRemote = true } = {}) {
     } else {
       git(wt, "merge", "--ff-only", `origin/${branch}`);
     }
+  } else if (
+    refExists(`refs/remotes/origin/${base}`) &&
+    run("git", ["merge-base", "--is-ancestor", "HEAD", `origin/${base}`], { cwd: wt }).status === 0
+  ) {
+    // A local-only branch with no commits of its own follows its base, so an
+    // attempt never starts from an old base that lacks merged CI fixes.
+    git(wt, "merge", "--ff-only", `origin/${base}`);
   }
   if (!fs.existsSync(path.join(wt, "node_modules"))) {
     console.log(`[loop] installing dependencies in ${wt} (first run only)`);
@@ -423,6 +430,18 @@ function readState(file) {
 
 function writeState(file, state) {
   fs.writeFileSync(file, `${JSON.stringify(state, null, 2)}\n`);
+}
+
+// The checks job of sharklet-checks.yml, run before CI: a lint or type error
+// costs minutes here and a whole CI round plus a fix there (F2-01, 2026-10-16).
+const CI_MIRROR = [
+  "corepack pnpm lint:sharklet",
+  "corepack pnpm tsgo:ui",
+  "corepack pnpm tsgo:core",
+];
+function fastGateOf(task) {
+  const own = task.fastGate ?? "";
+  return [own, ...CI_MIRROR.filter((step) => !own.includes(step))].filter(Boolean).join(" && ");
 }
 
 function gate(wt, command, start, logFile) {
@@ -526,8 +545,21 @@ function ci(wt, branch, workflows, logFile) {
     if (
       run("gh", ["run", "watch", id, "--exit-status", "--interval", "30"], { cwd: wt }).status !== 0
     ) {
+      // Only a failed step is the task's to fix. A run cancelled (job timeout,
+      // a newer dispatch) or failed without a step log is the CI's problem: a
+      // fix session would have nothing to go on and would guess at workflows.
+      const view = run("gh", ["run", "view", id, "--json", "conclusion"], { cwd: wt });
+      const conclusion = view.status === 0 ? JSON.parse(view.stdout).conclusion : "unknown";
       const failed = run("gh", ["run", "view", id, "--log-failed"], { cwd: wt });
-      fs.writeFileSync(logFile, failed.stdout.split("\n").slice(-300).join("\n"));
+      const tail = failed.stdout.split("\n").slice(-300).join("\n");
+      if (conclusion !== "failure" || !tail.trim()) {
+        return {
+          kind: "ci-error",
+          log: `${workflow} run ${id} ended "${conclusion}" with no failed-step log: a CI problem, not the task's code`,
+          fatal: true,
+        };
+      }
+      fs.writeFileSync(logFile, tail);
       return { kind: "ci", log: logFile, workflow };
     }
   }
@@ -623,6 +655,12 @@ function finishTask(phase, task, wt, st, status, description) {
   if (status === "keep") {
     push(wt, task.branch);
   } else {
+    // Never lose an attempt's commits: a crash or discard can be an outside
+    // fault (CI, quota), and the next attempt or a person can reuse them.
+    if (git(wt, "rev-parse", "HEAD") !== st.start) {
+      git(wt, "branch", "--force", `loop-attempt/${task.prompt}`, "HEAD");
+      console.log(`[loop] ${task.prompt} commits kept in local branch loop-attempt/${task.prompt}`);
+    }
     resetTo(wt, st.start);
     if (status !== "blocked") {
       updateTask(phase, task.prompt, {
@@ -751,23 +789,26 @@ function check(phase, id) {
 
   const state = stateDir(wt);
   const failure =
-    gate(wt, task.fastGate, st.start, path.join(state, `gate-${id}.log`)) ??
+    gate(wt, fastGateOf(task), st.start, path.join(state, `gate-${id}.log`)) ??
     audit(wt, st.start, task.focus, path.join(state, `audit-${id}.json`)) ??
     ci(wt, task.branch, task.slowGate ?? DEFAULT_WORKFLOWS, path.join(state, `ci-${id}.log`));
   if (!failure) {
     return done("keep", `${oneLine(findTask(phase, id).evidence, 160)}${auditNote}`);
   }
-  if (failure.kind === "audit-limit") {
-    // The work is kept for later, not discarded: Codex comes back on its own.
+  if (failure.fatal) {
+    // An outside fault (Codex quota or error, a CI that could not run or was
+    // cancelled): another attempt would hit it again, so the task waits for a
+    // person with its work kept, instead of crashing into a rerun.
     git(wt, "branch", "--force", `loop-review/${task.branch}`, "HEAD");
+    const next =
+      failure.kind === "audit-limit"
+        ? "retry after that date or set SHARKLET_LOOP_AUDIT=when-available"
+        : "fix the cause outside the loop, then retry";
     updateTask(phase, id, {
       status: "blocked",
-      loopNote: `${failure.log}. The work is in the local branch loop-review/${task.branch}; retry after that date or set SHARKLET_LOOP_AUDIT=when-available`,
+      loopNote: `${failure.kind}: ${failure.log}. The work is in the local branch loop-review/${task.branch}; ${next}`,
     });
-    return done("blocked", failure.log);
-  }
-  if (failure.fatal) {
-    return done("crash", `${failure.kind}: ${failure.log}`);
+    return done("blocked", `${failure.kind}: ${failure.log}`);
   }
   if (st.fixes >= MAX_FIXES) {
     return done("discard", `${failure.kind} still failing after ${MAX_FIXES} fixes`);
@@ -784,7 +825,7 @@ function check(phase, id) {
   const fixFile = path.join(state, `fix-${id}-${st.fixes + 1}.md`);
   fs.writeFileSync(
     fixFile,
-    `Falló ${what}. Arregla solo eso en ${wt}, con un commit nuevo, y deja ${id} en "completed" en ${tasksFile(phase)}. Si un hallazgo de Codex es incorrecto, no cambies código por él: explícalo en "evidence". Después vuelve a correr check.\n\n${asData(evidence)}\n`,
+    `Falló ${what}. Arregla solo eso en ${wt}, con un commit nuevo, y deja ${id} en "completed" en ${tasksFile(phase)}. Si un hallazgo de Codex es incorrecto, no cambies código por él: explícalo en "evidence". No toques ${PROTECTED.join(", ")}: si el arreglo los necesita, deja ${id} en "blocked" con un "loopNote" que lo explique, sin commit. Después vuelve a correr check.\n\n${asData(evidence)}\n`,
   );
   return new Result(
     10,
