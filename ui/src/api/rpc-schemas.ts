@@ -12,6 +12,7 @@ import {
 import { CronListParamsSchema } from "../../../packages/gateway-protocol/src/schema/cron.js";
 import { SessionsListParamsSchema } from "../../../packages/gateway-protocol/src/schema/sessions-list.js";
 import { SessionRowSchema } from "../../../packages/gateway-protocol/src/schema/sessions-row.js";
+import { SessionsCreateResultSchema } from "../../../packages/gateway-protocol/src/schema/sessions.js";
 import type { RpcMethod, RpcResultOf } from "./rpc.ts";
 
 // Hard ceilings on top of the schemas, so a field nobody bounded still cannot
@@ -264,11 +265,36 @@ function projectSessionsList(value: unknown): unknown {
   };
 }
 
+// The composer creates the session bare (F2-01): the first message and any
+// attachment go through chat.send, because PARAMS_LIMITS.maxString would
+// reject them here and a retried create must not carry a turn.
+const ChatSessionsCreateParamsSchema = closed({
+  idempotencyKey: str(128),
+  agentId: str(128),
+  model: Type.Optional(str()),
+  thinkingLevel: Type.Optional(str(32)),
+  memoryless: Type.Optional(Type.Literal(true)),
+});
+
+function projectSessionsCreate(value: unknown): unknown {
+  const created = value as { entry?: Record<string, unknown> };
+  const out = pick(created as Record<string, unknown>, ["key", "sessionId"]);
+  if (created.entry) {
+    out.entry = pick(created.entry, ["memoryless"]);
+  }
+  return out;
+}
+
 const PagesStateResultSchema = closed({
   off: Type.Array(closed({ id: str(40), reason: Type.Optional(str(200)) }), { maxItems: 256 }),
 });
 
 const METHOD_SCHEMAS = {
+  "sessions.create": {
+    params: ChatSessionsCreateParamsSchema,
+    result: SessionsCreateResultSchema,
+    project: projectSessionsCreate,
+  },
   "sessions.list": {
     params: SessionsListParamsSchema,
     result: SessionsListEnvelopeSchema,

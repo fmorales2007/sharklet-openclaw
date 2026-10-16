@@ -323,6 +323,8 @@ type SessionEntryCore = SessionRestartRecoveryState &
     updatedAt: number;
     /** Process-lifetime session whose entry and transcript stay in the in-memory agent database. */
     incognito?: true;
+    /** Sharklet Memory-less (ADR-006 §7): set only when the entry is created; never patched. Transcript is kept; memory read/write and style learning are off. */
+    memoryless?: true;
     /** Opaque owner revision used to reject stale lifecycle mutations. */
     lifecycleRevision?: string;
     // archivedAt/pinnedAt mirror the Codex thread-management shape (state DB

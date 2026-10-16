@@ -38,8 +38,38 @@ export type UpNextJob = {
   state?: { nextRunAtMs?: number; runningAtMs?: number };
 };
 
+/** `sessions.create` as the composer sends it (F2-01): no message, attachments or worktree. */
+export type ChatSessionsCreateParams = {
+  idempotencyKey: string; // required here, optional on the wire: a retried create must not fork a chat
+  agentId: string;
+  model?: string;
+  thinkingLevel?: string;
+  memoryless?: true;
+};
+
+/** `sessions.create` result reduced to what the composer and chat read. */
+export type ChatSessionsCreateResult = {
+  key: string;
+  sessionId?: string;
+  entry?: { memoryless?: true };
+};
+
+// Methods used by the Phase 2 tracks (chat contract, F2-01). Track A = composer
+// and chat; track B = You and Memory-less.
+//
+// - A: create a chat (agent, model, effort, Memory-less): sessions.create.
+//   Reuse; `memoryless` is new; the gateway stub fails until F2-09.
+// - A: first turn and the rest: chat.send. Reuse; outside rpcCall (streaming), as today.
+// - A and chat: read the Memory-less mark: sessions.list, row `memoryless`. Reuse.
+// - A: read Defaults: agents.list + sessions.list `defaults.model`. Reuse.
+// - B: save Defaults: config.patch. Reuse; `saveYouDefaults` is a stub until F2-07.
+// - B: USER.md, AGENTS.md, MEMORY.md: agents.files.get / agents.files.set (expectedHash).
+//   Reuse; F2-07 adds them here with their own params ceiling.
+// - B: size limits: defined by F2-08, outside this contract.
+
 /** Gateway methods the typed layer knows. Later phases add rows here. */
 export type RpcMethodMap = {
+  "sessions.create": { params: ChatSessionsCreateParams; result: ChatSessionsCreateResult };
   "sessions.list": { params: SessionsListParams; result: SessionsListResult };
   "cron.list": { params: CronListParams; result: { jobs: UpNextJob[]; total: number } };
   "usage.cost": { params: UsageCostParams; result: CostUsageSummary };

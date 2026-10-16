@@ -372,6 +372,7 @@ export function buildGatewaySessionRow(params: {
     ...(rowContext ? { swarm } : {}),
     visibility: entry ? (entry.visibility ?? "shared") : undefined,
     incognito: entry?.incognito,
+    memoryless: entry?.memoryless,
     spawnedBy: subagentOwner || entry?.spawnedBy,
     // The live registry controller takes precedence over the persisted spawner.
     controlOwnerSessionKey: subagentOwner || entry?.spawnedBy,
