@@ -132,3 +132,11 @@ describe("SessionRowSchema", () => {
     ).toBe(false);
   });
 });
+
+describe("SessionRowSchema memoryless", () => {
+  it("accepts memoryless true only", () => {
+    const row = { key: "agent:main:main", kind: "global" };
+    expect(Value.Check(SessionRowSchema, { ...row, memoryless: true })).toBe(true);
+    expect(Value.Check(SessionRowSchema, { ...row, memoryless: false })).toBe(false);
+  });
+});

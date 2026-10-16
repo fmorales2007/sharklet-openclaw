@@ -482,6 +482,7 @@ describe("session placement recovery", () => {
     { name: "a null Fast Mode", value: { fastMode: null } },
     { name: "malformed tool overrides", value: { toolOverrides: { webSearch: "yes" } } },
     { name: "an unknown field", value: { unknown: true } },
+    { name: "memoryless false", value: { memoryless: false } },
   ])("rejects $name in creating parameters", ({ value }) => {
     expect(
       parseSessionPlacementCreateParams(
@@ -530,5 +531,20 @@ describe("session placement recovery", () => {
       second,
       { ...recovery, message: "retry" },
     ]);
+  });
+});
+
+describe("placement recovery memoryless", () => {
+  it("keeps memoryless true in creating parameters", () => {
+    const createParams = {
+      key: "agent:cloud:fresh",
+      agentId: "cloud",
+      message: "",
+      worktree: true,
+      memoryless: true,
+    };
+    expect(parseSessionPlacementCreateParams(createParams, "agent:cloud:fresh", "cloud")).toEqual(
+      createParams,
+    );
   });
 });

@@ -96,3 +96,10 @@ describe("sessions.create schema", () => {
     },
   );
 });
+
+describe("sessions.create memoryless", () => {
+  it("accepts a boolean flag and rejects anything else", () => {
+    expect(validateSessionsCreateParams({ agentId: "main", memoryless: true })).toBe(true);
+    expect(validateSessionsCreateParams({ agentId: "main", memoryless: "yes" })).toBe(false);
+  });
+});

@@ -1318,6 +1318,14 @@ test("concurrent sessions.create requests adopt one canonical keyed session", as
   ).toBe(canonicalSessionId);
 });
 
+test("sessions.create rejects memoryless until F2-09", async () => {
+  await createSessionStoreDir();
+  const created = await directSessionReq("sessions.create", { agentId: "main", memoryless: true });
+  expect(created.ok).toBe(false);
+  expect(created.error?.message).toContain("not implemented");
+  expect(created.error?.message).toContain("F2-09");
+});
+
 test("sessions.create keeps incognito rows process-local through list, spawn, reset, and delete", async () => {
   const { storePath } = await createSessionStoreDir();
   try {

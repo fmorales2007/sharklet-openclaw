@@ -6644,6 +6644,7 @@ public struct SessionRow: Codable, Sendable {
     public let key: String
     public let sessionid: String?
     public let incognito: Bool?
+    public let memoryless: Bool?
     public let kind: AnyCodable
     public let label: String?
     public let autolabel: String?
@@ -6727,6 +6728,7 @@ public struct SessionRow: Codable, Sendable {
         key: String,
         sessionid: String? = nil,
         incognito: Bool? = nil,
+        memoryless: Bool? = nil,
         kind: AnyCodable,
         label: String? = nil,
         autolabel: String? = nil,
@@ -6809,6 +6811,7 @@ public struct SessionRow: Codable, Sendable {
         self.key = key
         self.sessionid = sessionid
         self.incognito = incognito
+        self.memoryless = memoryless
         self.kind = kind
         self.label = label
         self.autolabel = autolabel
@@ -6893,6 +6896,7 @@ public struct SessionRow: Codable, Sendable {
         case key
         case sessionid = "sessionId"
         case incognito
+        case memoryless
         case kind
         case label
         case autolabel = "autoLabel"
@@ -10107,6 +10111,7 @@ public struct SessionsCreateParams: Codable, Sendable {
     public let permissionmode: SessionPermissionMode?
     public let tooloverrides: [String: AnyCodable]?
     public let incognito: Bool?
+    public let memoryless: Bool?
     public let visibility: SessionVisibility?
     public let catalogid: String?
     public let parentsessionkey: String?
@@ -10144,6 +10149,7 @@ public struct SessionsCreateParams: Codable, Sendable {
         permissionmode: SessionPermissionMode? = nil,
         tooloverrides: [String: AnyCodable]? = nil,
         incognito: Bool? = nil,
+        memoryless: Bool? = nil,
         visibility: SessionVisibility? = nil,
         catalogid: String? = nil,
         parentsessionkey: String? = nil,
@@ -10180,6 +10186,7 @@ public struct SessionsCreateParams: Codable, Sendable {
         self.permissionmode = permissionmode
         self.tooloverrides = tooloverrides
         self.incognito = incognito
+        self.memoryless = memoryless
         self.visibility = visibility
         self.catalogid = catalogid
         self.parentsessionkey = parentsessionkey
@@ -10218,6 +10225,7 @@ public struct SessionsCreateParams: Codable, Sendable {
         case permissionmode = "permissionMode"
         case tooloverrides = "toolOverrides"
         case incognito
+        case memoryless
         case visibility
         case catalogid = "catalogId"
         case parentsessionkey = "parentSessionKey"

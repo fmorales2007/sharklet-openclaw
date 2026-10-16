@@ -82,6 +82,7 @@ const PLACEMENT_CREATE_FIELDS = new Set<string>([
   "worktree",
   "repository",
   "incognito",
+  "memoryless",
   "visibility",
   "permissionMode",
   "fastMode",
@@ -113,6 +114,7 @@ export function parseSessionPlacementCreateParams(
         record.worktreeName !== undefined ||
         record.catalogId !== undefined) ||
     (record.incognito !== undefined && record.incognito !== true) ||
+    (record.memoryless !== undefined && record.memoryless !== true) ||
     (record.visibility !== undefined && record.visibility !== "draft") ||
     (record.fastMode !== undefined &&
       !Value.Check(SessionsCreateParamsSchema.properties.fastMode, record.fastMode)) ||
