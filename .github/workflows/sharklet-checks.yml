@@ -29,9 +29,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # The PR scan diffs against the base branch.
-          # A quoted '0' is truthy; a bare 0 would make the && || pick fall through to 1.
-          fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }}
+          # The scan diffs against the base branch, so it needs history.
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Node
@@ -39,15 +38,13 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Scan dependencies and code (pull request diff)
-        if: github.event_name == 'pull_request'
+      # A dispatch (the loop runner's candidate branches) diffs against custom,
+      # as a PR does: the whole tree (36k files) runs past the 30-minute job
+      # limit. The gateway package build still scans the whole tree.
+      - name: Scan dependencies and code (diff against the base branch)
         env:
-          OPENCLAW_OPENGREP_BASE_REF: origin/${{ github.base_ref }}...HEAD
+          OPENCLAW_OPENGREP_BASE_REF: origin/${{ github.base_ref || 'custom' }}...HEAD
         run: scripts/sharklet-scan.sh --changed
-
-      - name: Scan dependencies and code (whole tree)
-        if: github.event_name != 'pull_request'
-        run: scripts/sharklet-scan.sh
 
       # The pnpm store cache, node_modules and the full PR history together fill
       # the runner's disk; these preinstalled SDKs are not used here.
