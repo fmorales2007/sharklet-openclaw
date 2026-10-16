@@ -85,14 +85,11 @@ export function chatYouScenario(kind: ChatYouScenarioKind): Record<string, unkno
     "agents.list": CHAT_YOU_AGENTS_LIST,
     "sessions.list": CHAT_YOU_SESSIONS_LIST,
   };
-  switch (kind) {
-    case "normal":
-      return { ...base, "sessions.create": CHAT_YOU_CREATE_NORMAL };
-    case "memoryless":
-      return { ...base, "sessions.create": CHAT_YOU_CREATE_MEMORYLESS };
-    case "defaults":
-      return base;
-    case "error":
-      return { ...base, "sessions.create": CHAT_YOU_CREATE_MEMORYLESS_NOT_READY };
-  }
+  const create = {
+    normal: { "sessions.create": CHAT_YOU_CREATE_NORMAL },
+    memoryless: { "sessions.create": CHAT_YOU_CREATE_MEMORYLESS },
+    defaults: {},
+    error: { "sessions.create": CHAT_YOU_CREATE_MEMORYLESS_NOT_READY },
+  } satisfies Record<ChatYouScenarioKind, Record<string, unknown>>;
+  return { ...base, ...create[kind] };
 }
