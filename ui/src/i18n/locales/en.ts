@@ -2561,7 +2561,7 @@ export const en: TranslationMap & {
     },
     nativeDiscovery: {
       title: "Discover existing conversations",
-      body: "Show native assistant conversations from this Gateway host in OpenClaw. This is discovery, not an import or copy.",
+      body: "Show native assistant conversations from this Gateway host in Sharklet. This is discovery, not an import or copy.",
       enable: "Show existing native conversations",
       decline:
         "Leave unchecked to keep native session catalogs off when you connect your AI provider. Existing installations are not changed.",
@@ -2664,7 +2664,7 @@ export const en: TranslationMap & {
   onboarding: {
     memoryImport: {
       title: "Bring your assistant memory with you",
-      body: "OpenClaw found memory from other coding assistants. Import it into your agent workspace?",
+      body: "Sharklet found memory from other coding assistants. Import it into your agent workspace?",
       plannedCount: "{count} ready to import",
       alreadyImported: "Already imported: {count}",
       sourceUnavailable: "Source path unavailable",
@@ -2679,7 +2679,7 @@ export const en: TranslationMap & {
       connectionChanged: "Skipped: the Gateway connection changed during the import",
       unknownError: "Request failed",
       doneTitle: "Memory import finished",
-      doneBody: "Migrated {migrated}, skipped {skipped}. You can continue setting up OpenClaw.",
+      doneBody: "Migrated {migrated}, skipped {skipped}. You can continue setting up Sharklet.",
     },
   },
   assistantPanel: {
@@ -2731,7 +2731,7 @@ export const en: TranslationMap & {
       description: "What changed on this system, newest first.",
       loading: "Loading recent changes…",
       empty: "No recorded changes yet.",
-      requestFailed: "OpenClaw could not load change history.",
+      requestFailed: "Sharklet could not load change history.",
       loadMore: "Load more",
       loadingMore: "Loading more…",
       changedPaths: "Changed paths ({count})",
@@ -3845,7 +3845,7 @@ export const en: TranslationMap & {
     selfLearning: {
       pitchTitle: "Turn on self-learning",
       pitchBody:
-        "OpenClaw learns from completed work and improves reusable skills in the background. Reviews use your configured model.",
+        "Sharklet learns from completed work and improves reusable skills in the background. Reviews use your configured model.",
       enable: "Enable self-learning",
       enabling: "Enabling\u2026",
       updateError: "Could not update the self-learning setting.",
