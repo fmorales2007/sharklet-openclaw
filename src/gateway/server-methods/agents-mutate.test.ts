@@ -1033,6 +1033,31 @@ describe("agents.update", () => {
     expect(agent).not.toHaveProperty("model");
   });
 
+  it("passes a supported thinkingDefault, and null to clear it", async () => {
+    const set = makeCall("agents.update", { agentId: "test-agent", thinkingDefault: "high" });
+    await set.promise;
+    expectRespondOk(set.respond, { ok: true, agentId: "test-agent" });
+    expectRecordFields(mockCallArg(mocks.applyAgentConfig, 0, 1), { thinkingDefault: "high" });
+
+    mocks.applyAgentConfig.mockClear();
+    const cleared = makeCall("agents.update", { agentId: "test-agent", thinkingDefault: null });
+    await cleared.promise;
+    expectRespondOk(cleared.respond, { ok: true, agentId: "test-agent" });
+    expectRecordFields(mockCallArg(mocks.applyAgentConfig, 0, 1), { thinkingDefault: null });
+  });
+
+  it("rejects an unsupported thinkingDefault before any write", async () => {
+    mocks.writeConfigFile.mockClear();
+    const { respond, promise } = makeCall("agents.update", {
+      agentId: "test-agent",
+      thinkingDefault: "loudly",
+    });
+    await promise;
+
+    expect(respond).toHaveBeenCalledWith(false, undefined, expect.anything());
+    expect(mocks.writeConfigFile).not.toHaveBeenCalled();
+  });
+
   it("ensures workspace when workspace changes", async () => {
     const { promise } = makeCall("agents.update", {
       agentId: "test-agent",

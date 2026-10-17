@@ -60,6 +60,7 @@ import {
   resolveSharedAuthStorePath,
 } from "../../agents/auth-profiles/path-resolve.js";
 import { resolveAuthProfileDatabasePath } from "../../agents/auth-profiles/sqlite.js";
+import { USER_BOOTSTRAP_MAX_CHARS } from "../../agents/embedded-agent-helpers/bootstrap.js";
 import {
   createAgentIdentityConfig,
   mergeIdentityMarkdownContent,
@@ -78,11 +79,13 @@ import {
 import {
   DEFAULT_BOOTSTRAP_FILENAME,
   DEFAULT_IDENTITY_FILENAME,
+  DEFAULT_USER_FILENAME,
   ensureAgentWorkspace,
   isExpectedAbsentBootstrapFile,
   isWorkspaceSetupCompleted,
   WORKSPACE_BOOTSTRAP_FILENAMES,
 } from "../../agents/workspace.js";
+import { normalizeThinkLevel } from "../../auto-reply/thinking.shared.js";
 import { applyAgentConfig } from "../../commands/agents.config.js";
 import { trashAllowedRoots } from "../../commands/cleanup-utils.js";
 import {
@@ -926,6 +929,22 @@ export const agentsHandlers: GatewayRequestHandlers = {
 
     const model = params.model === null ? null : resolveOptionalStringParam(params.model);
 
+    // Tri-state like model: null restores the inherited level. The config schema
+    // owns the accepted set, so reject here instead of writing a level it would refuse.
+    const thinkingDefault =
+      params.thinkingDefault === null ? null : normalizeThinkLevel(params.thinkingDefault);
+    if (typeof params.thinkingDefault === "string" && thinkingDefault === undefined) {
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          `unsupported thinkingDefault "${params.thinkingDefault}"`,
+        ),
+      );
+      return;
+    }
+
     const safeName =
       typeof params.name === "string" && params.name.trim()
         ? sanitizeAgentIdentityLine(params.name.trim())
@@ -943,6 +962,7 @@ export const agentsHandlers: GatewayRequestHandlers = {
       ...(safeName ? { name: safeName } : {}),
       ...(workspaceDir ? { workspace: workspaceDir } : {}),
       ...(model !== undefined ? { model } : {}),
+      ...(thinkingDefault !== undefined ? { thinkingDefault } : {}),
       ...(identity ? { identity } : {}),
     };
     const nextConfig = applyAgentConfig(cfg, agentConfigUpdate);
@@ -1601,9 +1621,22 @@ export const agentsHandlers: GatewayRequestHandlers = {
       return;
     }
     const { agentId, workspaceDir, name } = resolved;
+    const content = params.content;
+    // The runtime truncates USER.md at this size, so a longer write would be
+    // silently cut from the agent's prompt. Refuse it where the owner can fix it.
+    if (name === DEFAULT_USER_FILENAME && content.length > USER_BOOTSTRAP_MAX_CHARS) {
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          `${name} is limited to ${USER_BOOTSTRAP_MAX_CHARS} characters`,
+        ),
+      );
+      return;
+    }
     await fs.mkdir(workspaceDir, { recursive: true });
     const filePath = path.join(workspaceDir, name);
-    const content = params.content;
     let workspaceRoot: WorkspaceRoot;
     let conflict: { currentHash: string | undefined } | undefined;
     try {

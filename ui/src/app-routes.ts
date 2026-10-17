@@ -75,6 +75,7 @@ import { page as usagePage } from "./pages/usage/route.ts";
 import { resolveWorkboardRouteLocation } from "./pages/workboard/route-location.ts";
 import { page as workboardPage } from "./pages/workboard/route.ts";
 import { page as worktreesPage } from "./pages/worktrees/route.ts";
+import { page as youPage } from "./pages/you/route.ts";
 
 type AppRouteModule = {
   render: (data: unknown, loaderPending: boolean, presented?: boolean) => unknown;
@@ -116,6 +117,7 @@ const APP_ROUTE_TREE = [
   modelProvidersPage,
   memoryImportPage,
   profilePage,
+  youPage,
   workboardPage,
   worktreesPage,
   sessionsPage,

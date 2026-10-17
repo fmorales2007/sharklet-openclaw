@@ -22,6 +22,19 @@ const RESULT_LIMITS = { maxString: 65_536, maxArray: 2000, maxDepth: 16 };
 
 type Limits = typeof PARAMS_LIMITS;
 
+// Agent files carry whole documents, so their calls get their own ceilings. They
+// stay finite: AGENTS.md and MEMORY.md are capped at the runtime's per-file
+// bootstrap size (20,000 characters) and the slack covers a file edited by hand.
+const AGENT_FILE_PARAMS_LIMITS: Limits = { ...PARAMS_LIMITS, maxString: 24_000 };
+const AGENT_FILE_RESULT_LIMITS: Limits = { ...RESULT_LIMITS, maxString: 262_144 };
+const PARAMS_LIMITS_BY_METHOD: Partial<Record<RpcMethod, Limits>> = {
+  "agents.files.set": AGENT_FILE_PARAMS_LIMITS,
+};
+const RESULT_LIMITS_BY_METHOD: Partial<Record<RpcMethod, Limits>> = {
+  "agents.files.get": AGENT_FILE_RESULT_LIMITS,
+  "agents.files.set": AGENT_FILE_RESULT_LIMITS,
+};
+
 /** Path and rule of the first value over a ceiling, or null. */
 function findOverLimit(value: unknown, limits: Limits, path = "", depth = 0): string | null {
   if (typeof value === "string") {
@@ -289,6 +302,51 @@ const PagesStateResultSchema = closed({
   off: Type.Array(closed({ id: str(40), reason: Type.Optional(str(200)) }), { maxItems: 256 }),
 });
 
+// The files You writes. Anything else in the workspace stays out of this layer.
+export const YOU_FILE_NAMES = ["USER.md", "AGENTS.md", "MEMORY.md"] as const;
+const YouFileNameSchema = Type.Union(YOU_FILE_NAMES.map((name) => Type.Literal(name)));
+const agentId = () => Type.String({ minLength: 1, maxLength: 128 });
+
+const AgentFilesGetParamsSchema = closed({ agentId: agentId(), name: YouFileNameSchema });
+const AgentFilesSetParamsSchema = closed({
+  agentId: agentId(),
+  name: YouFileNameSchema,
+  content: Type.String({ maxLength: 20_000 }),
+  expectedHash: Type.Optional(Type.String({ pattern: "^[0-9a-fA-F]{64}$", maxLength: 64 })),
+});
+
+// The gateway entry also carries the workspace path and mtime; the page needs
+// neither, so they are checked loosely and dropped.
+const AgentFileEntrySchema = Type.Object(
+  {
+    name: YouFileNameSchema,
+    missing: Type.Boolean(),
+    size: Type.Optional(Type.Number()),
+    hash: Type.Optional(Type.String({ maxLength: 64 })),
+    content: Type.Optional(Type.String()),
+  },
+  { additionalProperties: true },
+);
+const AgentFileResultSchema = Type.Object(
+  { agentId: agentId(), file: AgentFileEntrySchema },
+  { additionalProperties: true },
+);
+
+function projectAgentFile(value: unknown): unknown {
+  const result = value as { agentId: string; file: Record<string, unknown> };
+  return {
+    agentId: result.agentId,
+    file: pick(result.file, ["name", "missing", "size", "hash", "content"]),
+  };
+}
+
+const AgentsUpdateParamsSchema = closed({
+  agentId: agentId(),
+  model: Type.Optional(Type.Union([str(), Type.Null()])),
+  thinkingDefault: Type.Optional(Type.Union([str(32), Type.Null()])),
+});
+const AgentsUpdateResultSchema = closed({ ok: Type.Literal(true), agentId: agentId() });
+
 const METHOD_SCHEMAS = {
   "sessions.create": {
     params: ChatSessionsCreateParamsSchema,
@@ -308,12 +366,23 @@ const METHOD_SCHEMAS = {
   "usage.cost": { params: UsageCostParamsSchema, result: UsageCostResultSchema },
   "agents.list": { params: AgentsListParamsSchema, result: AgentsListResultSchema },
   "pages.state": { params: closed({}), result: PagesStateResultSchema },
+  "agents.files.get": {
+    params: AgentFilesGetParamsSchema,
+    result: AgentFileResultSchema,
+    project: projectAgentFile,
+  },
+  "agents.files.set": {
+    params: AgentFilesSetParamsSchema,
+    result: AgentFileResultSchema,
+    project: projectAgentFile,
+  },
+  "agents.update": { params: AgentsUpdateParamsSchema, result: AgentsUpdateResultSchema },
 } satisfies Record<
   RpcMethod,
   { params: TSchema; result: TSchema; project?: (v: unknown) => unknown }
 >;
 
-function firstSchemaError(schema: TSchema, value: unknown): string {
+export function firstSchemaError(schema: TSchema, value: unknown): string {
   const [error] = Value.Errors(schema, value);
   if (!error) {
     return "/: invalid";
@@ -324,7 +393,7 @@ function firstSchemaError(schema: TSchema, value: unknown): string {
 
 /** Why `params` are not acceptable for `method`, or null. Never includes values. */
 export function validateParams(method: RpcMethod, params: unknown): string | null {
-  const over = findOverLimit(params, PARAMS_LIMITS);
+  const over = findOverLimit(params, PARAMS_LIMITS_BY_METHOD[method] ?? PARAMS_LIMITS);
   if (over) {
     return over;
   }
@@ -337,7 +406,7 @@ export function validateResult<M extends RpcMethod>(
   method: M,
   payload: unknown,
 ): { ok: true; value: RpcResultOf<M> } | { ok: false; detail: string } {
-  const over = findOverLimit(payload, RESULT_LIMITS);
+  const over = findOverLimit(payload, RESULT_LIMITS_BY_METHOD[method] ?? RESULT_LIMITS);
   if (over) {
     return { ok: false, detail: over };
   }

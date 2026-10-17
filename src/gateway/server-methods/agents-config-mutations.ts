@@ -9,6 +9,7 @@ import {
 } from "../../commands/agents.config.js";
 import { mutateConfigFileWithRetry } from "../../config/config.js";
 import { resolveSessionTranscriptsDirForAgent } from "../../config/sessions.js";
+import type { AgentThinkingLevel } from "../../config/types.agent-defaults.js";
 import type { AgentConfig } from "../../config/types.agents.js";
 import type { IdentityConfig } from "../../config/types.base.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
@@ -34,6 +35,7 @@ export async function updateAgentConfigEntry(params: {
   name?: string;
   workspace?: string;
   model?: string | null;
+  thinkingDefault?: AgentThinkingLevel | null;
   identity?: IdentityConfig;
 }): Promise<void> {
   await mutateConfigFileWithRetry({
@@ -49,6 +51,9 @@ export async function updateAgentConfigEntry(params: {
         ...(params.name ? { name: params.name } : {}),
         ...(params.workspace ? { workspace: params.workspace } : {}),
         ...(params.model !== undefined ? { model: params.model } : {}),
+        ...(params.thinkingDefault !== undefined
+          ? { thinkingDefault: params.thinkingDefault }
+          : {}),
         ...(params.identity ? { identity: params.identity } : {}),
       });
       Object.assign(draft, latestNextConfig);

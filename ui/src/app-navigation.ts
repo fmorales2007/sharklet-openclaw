@@ -31,6 +31,7 @@ export const SIDEBAR_NAV_ROUTES = [
   "plugins",
   "apps",
   "portals",
+  "you",
 ] as const satisfies readonly NavigationRouteId[];
 
 // Routes presented as tabs of the Plugins hub. The sidebar highlights the
@@ -353,6 +354,7 @@ const NAVIGATION_PRESENTATION: Record<NavigationRouteId, NavigationPresentation>
   custodian: ["circleQuestionMark", "tabs.custodian", "subtitles.custodian"],
   config: ["settings", "nav.settings", "subtitles.config"],
   profile: ["circleUser", "tabs.profile", "subtitles.profile"],
+  you: ["circleUser", "tabs.you", "subtitles.you"],
   communications: ["send", "tabs.communications", "subtitles.communications"],
   appearance: ["palette", "tabs.appearance", "subtitles.appearance"],
   lobsterdex: ["bug", "tabs.lobsterdex", "subtitles.lobsterdex"],

@@ -106,6 +106,16 @@ describe("agents helpers", () => {
     expect(work?.model).toBe("anthropic/claude");
   });
 
+  it("applyAgentConfig sets, keeps and clears thinkingDefault like model", () => {
+    const cfg: OpenClawConfig = { agents: { entries: { work: { workspace: "/ws" } } } };
+    const set = applyAgentConfig(cfg, { agentId: "work", thinkingDefault: "high" });
+    expect(set.agents?.entries?.work?.thinkingDefault).toBe("high");
+    const kept = applyAgentConfig(set, { agentId: "work", name: "Work" });
+    expect(kept.agents?.entries?.work?.thinkingDefault).toBe("high");
+    const cleared = applyAgentConfig(set, { agentId: "work", thinkingDefault: null });
+    expect(cleared.agents?.entries?.work).not.toHaveProperty("thinkingDefault");
+  });
+
   it("applyAgentConfig leaves a first roster entry trivially sole", () => {
     const next = applyAgentConfig({}, { agentId: "work", name: "Work" });
 

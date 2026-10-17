@@ -17,6 +17,7 @@ import { loadAgentIdentityFromWorkspace } from "../agents/identity-file.js";
 import { pinLegacyInheritedAuthOwnerForRosterTransition } from "../agents/legacy-inherited-auth-dir.js";
 import { pinSurvivorWorkspaceForRosterCollapse } from "../config/agent-workspace-roster-transition.js";
 import { listRouteBindings } from "../config/bindings.js";
+import type { AgentThinkingLevel } from "../config/types.agent-defaults.js";
 import type { IdentityConfig } from "../config/types.base.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { normalizeAgentId, normalizeAgentIdStrict } from "../routing/session-key.js";
@@ -110,6 +111,7 @@ export function applyAgentConfig(
     workspace?: string;
     agentDir?: string;
     model?: string | null;
+    thinkingDefault?: AgentThinkingLevel | null;
     identity?: IdentityConfig;
   },
 ): OpenClawConfig {
@@ -131,6 +133,12 @@ export function applyAgentConfig(
     delete nextEntry.model;
   } else if (params.model !== undefined) {
     nextEntry.model = params.model;
+  }
+  // Same tri-state as model: null restores the inherited agents.defaults level.
+  if (params.thinkingDefault === null) {
+    delete nextEntry.thinkingDefault;
+  } else if (params.thinkingDefault !== undefined) {
+    nextEntry.thinkingDefault = params.thinkingDefault;
   }
   const nextList = [...list];
   if (index >= 0) {

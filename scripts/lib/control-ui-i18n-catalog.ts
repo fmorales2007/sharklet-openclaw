@@ -18,6 +18,7 @@ import { registerSettingsEnglish } from "../../ui/src/i18n/locales/en-settings.t
 import { registerSkillLibraryEnglish } from "../../ui/src/i18n/locales/en-skill-library.ts";
 import { registerTranscriptsEnglish } from "../../ui/src/i18n/locales/en-transcripts.ts";
 import { registerUpdateActionsEnglish } from "../../ui/src/i18n/locales/en-update-actions.ts";
+import { registerYouEnglish } from "../../ui/src/i18n/locales/en-you.ts";
 import { en } from "../../ui/src/i18n/locales/en.ts";
 import {
   mergeControlUiTranslationMaps,
@@ -49,6 +50,7 @@ const sourceFiles = [
   "en-skill-library.ts",
   "en-update-actions.ts",
   "en-transcripts.ts",
+  "en-you.ts",
 ];
 
 export function loadControlUiSourceCatalog(): TranslationMap {
@@ -74,6 +76,7 @@ export function loadControlUiSourceCatalog(): TranslationMap {
     registerSettingsEnglish.catalog,
     registerUpdateActionsEnglish.catalog,
     registerTranscriptsEnglish.catalog,
+    registerYouEnglish.catalog,
     loadControlUiCoreHintCatalog(),
   );
 }

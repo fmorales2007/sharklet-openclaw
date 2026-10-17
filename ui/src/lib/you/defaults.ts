@@ -1,7 +1,7 @@
 // You → Defaults (F2-01 contract). The composer reads them through
-// selectComposerDefaults; F2-07 implements saveYouDefaults.
-import type { Result } from "@openclaw/normalization-core/result";
-import type { RpcClient, RpcError } from "../../api/rpc.ts";
+// selectComposerDefaults; saveYouDefaults (F2-07) writes them with agents.update.
+import { err, ok, type Result } from "@openclaw/normalization-core/result";
+import { rpcCall, type RpcClient, type RpcError } from "../../api/rpc.ts";
 import type { AgentsListResult } from "../../api/types.ts";
 
 /** You → Defaults, as the composer reads them for one agent. */
@@ -13,9 +13,9 @@ export type ComposerDefaults = {
   effort: string | null;
 };
 
-/** What You → Defaults saves. Omitted = unchanged; null = clear the override. */
+/** What You → Defaults saves for one agent. Omitted = unchanged; null = clear the override. */
 export type YouDefaultsPatch = {
-  agentId?: string;
+  agentId: string;
   model?: string | null;
   effort?: string | null;
 };
@@ -44,7 +44,17 @@ export async function saveYouDefaults(
   client: RpcClient,
   patch: YouDefaultsPatch,
 ): Promise<Result<void, RpcError>> {
-  void client;
-  void patch;
-  throw new Error("saveYouDefaults: not implemented (F2-07)");
+  const { agentId, model, effort } = patch;
+  // A write is never retried: it is idempotent, but a lost reply would hide a real conflict.
+  const saved = await rpcCall(
+    client,
+    "agents.update",
+    {
+      agentId,
+      ...(model !== undefined ? { model } : {}),
+      ...(effort !== undefined ? { thinkingDefault: effort } : {}),
+    },
+    { retry: { maxRetries: 0 } },
+  );
+  return saved.ok ? ok(undefined) : err(saved.error);
 }

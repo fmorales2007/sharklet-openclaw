@@ -62,10 +62,31 @@ export type ChatSessionsCreateResult = {
 // - A: first turn and the rest: chat.send. Reuse; outside rpcCall (streaming), as today.
 // - A and chat: read the Memory-less mark: sessions.list, row `memoryless`. Reuse.
 // - A: read Defaults: agents.list + sessions.list `defaults.model`. Reuse.
-// - B: save Defaults: config.patch. Reuse; `saveYouDefaults` is a stub until F2-07.
-// - B: USER.md, AGENTS.md, MEMORY.md: agents.files.get / agents.files.set (expectedHash).
-//   Reuse; F2-07 adds them here with their own params ceiling.
+// - B: save Defaults: agents.update (model, thinkingDefault; null clears). F2-07 added
+//   thinkingDefault to the method so one validated call owns both overrides.
+// - B: USER.md, AGENTS.md, MEMORY.md: agents.files.get / agents.files.set (expectedHash),
+//   with their own params ceiling in rpc-schemas.ts.
 // - B: size limits: defined by F2-08, outside this contract.
+
+/** The three agent files You reads and writes; `hash` is what `expectedHash` expects back. */
+export type AgentFileName = "USER.md" | "AGENTS.md" | "MEMORY.md";
+export type AgentFileResult = {
+  agentId: string;
+  file: { name: AgentFileName; missing: boolean; size?: number; hash?: string; content?: string };
+};
+export type AgentFilesSetParams = {
+  agentId: string;
+  name: AgentFileName;
+  content: string;
+  expectedHash?: string;
+};
+
+/** `agents.update` as You → Defaults sends it: model and thinking level, null clears the override. */
+export type AgentsUpdateOverridesParams = {
+  agentId: string;
+  model?: string | null;
+  thinkingDefault?: string | null;
+};
 
 /** Gateway methods the typed layer knows. Later phases add rows here. */
 export type RpcMethodMap = {
@@ -75,6 +96,15 @@ export type RpcMethodMap = {
   "usage.cost": { params: UsageCostParams; result: CostUsageSummary };
   "agents.list": { params: AgentsListParams; result: AgentsListResult };
   "pages.state": { params: Record<string, never>; result: PagesStateResult };
+  "agents.files.get": {
+    params: { agentId: string; name: AgentFileName };
+    result: AgentFileResult;
+  };
+  "agents.files.set": { params: AgentFilesSetParams; result: AgentFileResult };
+  "agents.update": {
+    params: AgentsUpdateOverridesParams;
+    result: { ok: true; agentId: string };
+  };
 };
 
 export type RpcMethod = keyof RpcMethodMap;

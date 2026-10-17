@@ -25,9 +25,33 @@ describe("selectComposerDefaults", () => {
     expect(selectComposerDefaults(CHAT_YOU_AGENTS_LIST, null).agentId).toBe("main");
   });
 
-  it("saveYouDefaults is a stub until F2-07", async () => {
-    await expect(saveYouDefaults({ request: async () => null }, { model: null })).rejects.toThrow(
-      /not implemented \(F2-07\)/,
+  it("saveYouDefaults sends only what changed, with null clearing an override", async () => {
+    const calls: { method: string; params: unknown }[] = [];
+    const client = {
+      request: async (method: string, params: unknown) => {
+        calls.push({ method, params });
+        return { ok: true, agentId: "main" };
+      },
+    } as never;
+    expect((await saveYouDefaults(client, { agentId: "main", effort: "high" })).ok).toBe(true);
+    expect((await saveYouDefaults(client, { agentId: "main", model: null, effort: null })).ok).toBe(
+      true,
     );
+    expect(calls.map((c) => c.params)).toEqual([
+      { agentId: "main", thinkingDefault: "high" },
+      { agentId: "main", model: null, thinkingDefault: null },
+    ]);
+  });
+
+  it("saveYouDefaults rejects an unexpected field before any call", async () => {
+    let called = false;
+    const client = {
+      request: async () => {
+        called = true;
+      },
+    } as never;
+    const result = await saveYouDefaults(client, { agentId: "main", model: 7 as never });
+    expect(result.ok).toBe(false);
+    expect(called).toBe(false);
   });
 });
