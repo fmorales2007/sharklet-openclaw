@@ -737,7 +737,7 @@ export const en: TranslationMap & {
       failed: "Could not create a setup code.",
       statusFailed: "Could not verify whether pairing completed.",
       loadFailed: "Could not load the pairing dialog. Check your connection and try again.",
-      qrAlt: "OpenClaw mobile pairing QR code",
+      qrAlt: "Sharklet mobile pairing QR code",
       qrUnavailable: "QR unavailable. Copy the setup code instead.",
       copySetupCode: "Copy setup code",
       nodeExpiresIn: "This setup link expires in {time}.",
@@ -746,7 +746,7 @@ export const en: TranslationMap & {
       showSetupCode: "Show setup code",
       pending: "Device requests waiting for review: {count}",
       review: "Review",
-      waiting: "Official OpenClaw mobile apps connect automatically after scanning.",
+      waiting: "Official Sharklet mobile apps connect automatically after scanning.",
       pairedTitle: "Device paired",
       deliveryUncertainTitle: "Pairing delivery could not be confirmed",
       deliveryUncertainHint:
