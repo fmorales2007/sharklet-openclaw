@@ -6884,7 +6884,7 @@ describe("chat welcome", () => {
       canSend: false,
       disabledBanner: {
         kind: "composer-replacement",
-        text: "We couldn't find a provider and model configured for this agent. Choose a supported connection; OpenClaw will test it before enabling chat.",
+        text: "We couldn't find a provider and model configured for this agent. Choose a supported connection; Sharklet will test it before enabling chat.",
         actionLabel: "Connect an AI provider",
         onAction: () => undefined,
       },

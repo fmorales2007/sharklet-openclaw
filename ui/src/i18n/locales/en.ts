@@ -1131,7 +1131,7 @@ export const en: TranslationMap & {
       "owner-mismatch": "owned elsewhere",
       busy: "live run or cleanup active",
       "foreign-lock": "foreign Git lock",
-      "snapshot-failed": "OpenClaw could not create a safety snapshot",
+      "snapshot-failed": "Sharklet could not create a safety snapshot",
       "cleanup-failed": "cleanup failed",
     },
     draftCleanupFailed: "Session deleted; browser draft remains. Clear site data.",
@@ -2521,7 +2521,7 @@ export const en: TranslationMap & {
       "Sharklet discovers AI access on this Gateway. Choose a provider to begin; nothing is selected, tested, installed, or saved automatically.",
     required: {
       title: "No AI provider configured",
-      body: "We couldn't find a provider and model configured for this agent. Choose a supported connection; OpenClaw will test it before enabling chat.",
+      body: "We couldn't find a provider and model configured for this agent. Choose a supported connection; Sharklet will test it before enabling chat.",
       action: "Connect an AI provider",
     },
     loading: "Checking this Gateway for available AI access…",
