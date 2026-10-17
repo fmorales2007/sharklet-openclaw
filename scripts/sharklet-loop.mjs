@@ -96,10 +96,22 @@ function serverPreflight() {
   }
 }
 
+// gh resolves a bare checkout to the upstream remote (openclaw/openclaw), where
+// the Sharklet workflows do not exist. Pin every gh call to origin, the fork.
+let ghRepo;
+function ghEnv(cwd) {
+  if (ghRepo === undefined) {
+    const url = spawnSync("git", ["remote", "get-url", "origin"], { cwd, encoding: "utf8" });
+    ghRepo = /github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?\s*$/u.exec(url.stdout ?? "")?.[1] ?? null;
+  }
+  return ghRepo ? { ...process.env, GH_REPO: ghRepo } : process.env;
+}
+
 function run(cmd, args, opts = {}) {
   const result = spawnSync(cmd, args, {
     encoding: "utf8",
     maxBuffer: 256 * 1024 * 1024,
+    ...(cmd === "gh" ? { env: ghEnv(opts.cwd) } : {}),
     ...opts,
   });
   // A timeout is an outcome (the attempt's budget ran out), not a crash.

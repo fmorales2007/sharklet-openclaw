@@ -55,3 +55,10 @@ describe("session patch schema", () => {
     ).toBe(false);
   });
 });
+
+describe("session patch memoryless", () => {
+  it("has no memoryless field: the mark is fixed at creation", () => {
+    expect(validateSessionsPatchParams({ key: "k", memoryless: false })).toBe(false);
+    expect(validateSessionsPatchParams({ key: "k", memoryless: true })).toBe(false);
+  });
+});

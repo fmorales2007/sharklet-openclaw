@@ -42,6 +42,12 @@ export const SessionsCreateParamsSchema = closedObject({
   permissionMode: Type.Optional(SessionPermissionModeSchema),
   toolOverrides: Type.Optional(SessionToolOverridesSchema),
   incognito: Type.Optional(Type.Boolean()),
+  memoryless: Type.Optional(
+    Type.Boolean({
+      description:
+        "Sharklet Memory-less (ADR-006 §7): fixed at creation; the session neither reads nor writes memory. Not patchable.",
+    }),
+  ),
   visibility: Type.Optional(SessionVisibilitySchema),
   catalogId: Type.Optional(NonEmptyString),
   parentSessionKey: Type.Optional(NonEmptyString),

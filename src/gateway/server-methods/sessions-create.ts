@@ -85,6 +85,15 @@ export const sessionCreateHandlers: GatewayRequestHandlers = {
       return;
     }
     const p = params;
+    // F2-01 contract stub: a chat marked Memory-less must never be created while it still reads memory.
+    if (p.memoryless === true) {
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, "memoryless sessions: not implemented (F2-09)"),
+      );
+      return;
+    }
     const parentSessionKey = normalizeOptionalString(p.parentSessionKey);
     const sessionCreation = prepareSkillLibrarySessionCreation(
       client,

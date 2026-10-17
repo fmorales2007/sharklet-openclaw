@@ -3,6 +3,7 @@ import {
   GatewayProtocolRequestError,
   GatewayProtocolRequestTimeoutError,
 } from "../../../packages/gateway-client/src/protocol-request.ts";
+import { chatYouScenario } from "../e2e/chat-you-fixtures.test-support.ts";
 import { createMissionControlMethodResponses } from "../e2e/mission-control-fixtures.test-support.ts";
 import { findKeyShapedField } from "./rpc-schemas.ts";
 import {
@@ -408,5 +409,26 @@ describe("rpcResource stale-while-refreshing", () => {
       setTimeout(r, 0);
     });
     expect(listener).not.toHaveBeenCalled();
+  });
+});
+
+describe("sessions.create contract (F2-01)", () => {
+  const base = { idempotencyKey: "key-1", agentId: "main" };
+
+  it("takes a bare create and rejects a message or a false flag", async () => {
+    const { client } = clientOf(async () => chatYouScenario("memoryless")["sessions.create"]);
+    const ok = await rpcCall(client, "sessions.create", { ...base, memoryless: true });
+    expect(ok).toEqual({
+      ok: true,
+      value: {
+        key: "agent:main:dashboard:fixture-memoryless",
+        sessionId: "fixture-session-memoryless",
+        entry: { memoryless: true },
+      },
+    });
+    for (const bad of [{ message: "x" }, { memoryless: false }]) {
+      const result = await rpcCall(client, "sessions.create", { ...base, ...bad } as never);
+      expect(result.ok).toBe(false);
+    }
   });
 });

@@ -932,6 +932,7 @@ enum class GatewayMethod(
   PluginsCatalogCategories("plugins.catalog.categories"),
   PluginsCatalogGet("plugins.catalog.get"),
   TasksHistory("tasks.history"),
+  PagesState("pages.state"),
   EnvironmentsPrepare("environments.prepare"),
 }
 
