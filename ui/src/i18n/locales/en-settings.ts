@@ -537,9 +537,9 @@ const enSettings = {
       showDockIcon: "Show Dock icon",
       iconStyle: "Dock icon",
       iconStyleHint:
-        "Original uses your Mac’s icon style. Other designs follow light/dark mode while OpenClaw runs.",
+        "Original uses your Mac’s icon style. Other designs follow light/dark mode while Sharklet runs.",
       showDockIconHint:
-        "Keep OpenClaw visible in the Dock. When off, windows still show the Dock icon while open.",
+        "Keep Sharklet visible in the Dock. When off, windows still show the Dock icon while open.",
       iconAnimations: "Icon animations",
       iconAnimationsHint: "Enable idle blinks and wiggles on the menu bar icon.",
       launchAtLogin: "Launch at login",
@@ -557,7 +557,7 @@ const enSettings = {
       camera: "Allow Camera",
       cameraHint: "Allow the agent to capture a photo or short video via the built-in camera.",
       keepAwake: "Keep awake",
-      keepAwakeHint: "Keep the screen awake while OpenClaw is active.",
+      keepAwakeHint: "Keep the screen awake while Sharklet is active.",
       healthSummary: "Health summaries",
       healthSummaryHint: "Allow the agent to request a health summary from this device.",
       device: "Device",
@@ -582,12 +582,12 @@ const enSettings = {
       chromeExtension: "Chrome extension",
       chromeExtensionSetup: "Set up Chrome on this Mac",
       chromeExtensionHint:
-        "Prepare the OpenClaw extension on this Mac, then approve it in Chrome. This does not install on a remote Gateway.",
+        "Prepare the Sharklet extension on this Mac, then approve it in Chrome. This does not install on a remote Gateway.",
       chromeExtensionPreparing: "Preparing Chrome…",
       chromeExtensionPending:
-        "Native host registered and installation requested. Open Chrome and approve OpenClaw; restart Chrome if the request has not appeared. Use the Store link if you previously removed it.",
+        "Native host registered and installation requested. Open Chrome and approve Sharklet; restart Chrome if the request has not appeared. Use the Store link if you previously removed it.",
       chromeExtensionStoreRequired:
-        "Native host registered. Add OpenClaw from the Chrome Web Store to finish setup.",
+        "Native host registered. Add Sharklet from the Chrome Web Store to finish setup.",
       chromeExtensionInstalled:
         "Native host registered and extension found. Open the extension to check its connection; installation alone does not verify a connection.",
       chromeExtensionFailed:
@@ -794,8 +794,8 @@ const enSettings = {
       enable: "Enable notifications",
       openSystemSettings: "Open System Settings",
       blockedHint: "Allow notifications in this site's browser permissions.",
-      nativeBlockedHint: "Allow OpenClaw in macOS System Settings > Notifications.",
-      iosInstallRequired: "On iPhone or iPad, use Share > Add to Home Screen, then open OpenClaw.",
+      nativeBlockedHint: "Allow Sharklet in macOS System Settings > Notifications.",
+      iosInstallRequired: "On iPhone or iPad, use Share > Add to Home Screen, then open Sharklet.",
       accountDefaults: "Account defaults",
       installedApp: "This browser or app",
       deliverDevice: "Deliver to this browser or app",
