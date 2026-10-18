@@ -24,7 +24,7 @@ const enSettings = {
       secret: "Gateway secret",
       secretPlaceholder: "Paste the token or type the password",
       setupCodeHint:
-        "This is a device setup code for the OpenClaw mobile app, not the Gateway secret. Paste it in the app's Gateway settings instead; the Gateway secret comes from openclaw gateway auth-token --show on the Gateway host.",
+        "This is a device setup code for the Sharklet mobile app, not the Gateway secret. Paste it in the app's Gateway settings instead; the Gateway secret comes from openclaw gateway auth-token --show on the Gateway host.",
       secretHint: "Tokens are saved for this tab after connecting. Passwords are never stored.",
       tokenHint: "This Gateway expects its token. Saved for this tab after connecting.",
       passwordHint: "This Gateway expects its password. Passwords are never stored.",
@@ -333,7 +333,7 @@ const enSettings = {
       sourceConfig: "Provider config",
       sourceExternal: "External CLI",
       sourceInherited: "Shared credential",
-      sourceSaved: "Saved in OpenClaw",
+      sourceSaved: "Saved in Sharklet",
     },
     apiKey: {
       label: "API key",
@@ -523,7 +523,7 @@ const enSettings = {
   },
   configPage: {
     deviceSettings: {
-      appOnly: "These settings are only available inside the OpenClaw app.",
+      appOnly: "These settings are only available inside the Sharklet app.",
       loading: "Waiting for settings from the app…",
       intro: "App behavior and capabilities on this Mac.",
       introIos: "App behavior and capabilities on this device.",
@@ -600,7 +600,7 @@ const enSettings = {
       cookieSyncUnavailable: "Cookie sync requires remote mode with an external OpenClaw CLI.",
       cookieSyncEnabled: "Sync cookies to the remote computer",
       cookieSyncHint:
-        "Continuously copy this Mac's logged-in cookies for the domains below into the remote OpenClaw browser profile. Off by default.",
+        "Continuously copy this Mac's logged-in cookies for the domains below into the remote Sharklet browser profile. Off by default.",
       domains: "Domains",
       domainsHint:
         "Cookies are only synced for these hostnames; an empty list means nothing is synced.",
@@ -668,7 +668,7 @@ const enSettings = {
       privacy: "Privacy",
       activePresence: "Active computer presence",
       activePresenceHint:
-        "Share this Mac's idle duration so OpenClaw can identify the Mac you used most recently and route node alerts. Never sends keys, pointer positions, app names, or window titles. Requires Accessibility.",
+        "Share this Mac's idle duration so Sharklet can identify the Mac you used most recently and route node alerts. Never sends keys, pointer positions, app names, or window titles. Requires Accessibility.",
     },
     deviceTalk: {
       title: "This Mac",
