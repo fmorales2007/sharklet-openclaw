@@ -944,7 +944,7 @@ export const en: TranslationMap & {
     ownerSession: "Session",
     ownerWorkboard: "Workboard",
     title: "Managed Worktrees",
-    subtitle: "Isolated repository checkouts owned by OpenClaw.",
+    subtitle: "Isolated repository checkouts owned by Sharklet.",
     cleanNow: "Clean up now",
     name: "Name",
     namePlaceholder: "auto",
@@ -1359,7 +1359,7 @@ export const en: TranslationMap & {
     moveSessionTitle: "Move session",
     moveSessionDescription: 'Choose where "{session}" should continue.',
     moveSessionNoReplayWarning:
-      "OpenClaw safely reconciles the current workspace before moving. Active work is never replayed.",
+      "Sharklet safely reconciles the current workspace before moving. Active work is never replayed.",
     moveSessionActiveRunWarning:
       "The active turn will be interrupted. Partial output is not replayed; send the next turn again after the move.",
     moveSessionAction: "Move session",
@@ -5175,7 +5175,7 @@ export const en: TranslationMap & {
       titleOne: "1 cloud workspace conflict",
       titleMany: "{count} cloud workspace conflicts",
       description:
-        "OpenClaw kept your local versions and applied the other cloud changes. Inspect the staged result or take its version for a conflicted path.",
+        "Sharklet kept your local versions and applied the other cloud changes. Inspect the staged result or take its version for a conflicted path.",
       summary: "Local versions kept; inspect or take the cloud version.",
       showCommands: "Show commands",
       morePaths: "+{count} more paths",
@@ -5188,7 +5188,7 @@ export const en: TranslationMap & {
       commandHelp:
         "Run these in Bash or zsh (Git Bash on Windows). If inspect says the path does not exist, the cloud deleted it; verify and remove the local path manually. If checkout reports a file/directory conflict, move or remove the blocking local path, then retry. If the staged ref is missing, the notice is stale; do not change the local path.",
       commandsUnavailable:
-        "This filename contains terminal control characters, so OpenClaw will not build a copyable shell command for it. Inspect the staged ref directly and enter the path manually with care.",
+        "This filename contains terminal control characters, so Sharklet will not build a copyable shell command for it. Inspect the staged ref directly and enter the path manually with care.",
       dismiss: "Dismiss workspace conflict notice",
       eventSender: "Cloud workspace",
       eventTitleOne: "Cloud result applied with 1 conflict",
