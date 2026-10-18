@@ -1057,7 +1057,7 @@ export const en: TranslationMap & {
     start: "Start session",
     startInTerminal: "Start in terminal",
     nativeTerminalHint:
-      "Start the native CLI on the selected machine using its own account and configuration. This does not create an OpenClaw Chat.",
+      "Start the native CLI on the selected machine using its own account and configuration. This does not create a Sharklet Chat.",
     chooseNativeHost: "Choose a native CLI host",
     nativeHostsUnavailable:
       "No native CLI is available. Install it on the Gateway or connect a machine with CLI access, then reconnect to the Gateway.",
@@ -5059,11 +5059,11 @@ export const en: TranslationMap & {
       remoteViewOnly: "This session is on a paired device and is view-only.",
       unsupportedViewOnly: "This external session source is view-only.",
       sessionMenu: "External session actions",
-      openInOpenClaw: "Open in OpenClaw",
+      openInOpenClaw: "Open in Sharklet",
       openInTerminal: "Open in terminal",
       deleteSession: "Delete",
       deleteSessionConfirm:
-        "Delete this external session from OpenClaw? Make sure no other runner is using it. Beamed sessions are deleted permanently. Sessions kept by another tool, such as Codex, are archived there and may be restorable.",
+        "Delete this external session from Sharklet? Make sure no other runner is using it. Beamed sessions are deleted permanently. Sessions kept by another tool, such as Codex, are archived there and may be restorable.",
       terminalUnavailable: "Terminal opening is unavailable for this session.",
     },
     taskSuggestions: {
