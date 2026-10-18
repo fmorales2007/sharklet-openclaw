@@ -5129,7 +5129,7 @@ export const en: TranslationMap & {
     followUpModeOverriding: "Overriding server default ({mode})",
     followUpModeReset: "Reset to server default",
     catalogOpenTarget: "Open external sessions in",
-    catalogOpenTargetViewer: "OpenClaw viewer",
+    catalogOpenTargetViewer: "Sharklet viewer",
     catalogOpenTargetTerminal: "Terminal",
     catalogOutputTruncated: "[Output truncated]",
     onboardingDisabled: "Disabled during setup",
