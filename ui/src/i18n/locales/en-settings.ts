@@ -128,7 +128,7 @@ const enSettings = {
         "This profile is unavailable or does not support project preparation. Refresh and select an eligible profile.",
       cancelBuild: "Cancel build",
       cancelBuildMessage:
-        "Stop this snapshot build and destroy its worker? OpenClaw waits for provider work and cleanup to finish.",
+        "Stop this snapshot build and destroy its worker? Sharklet waits for provider work and cleanup to finish.",
       buildCancelled: "Build canceled",
       buildAge: "Age: {age}",
       buildAfterRestart: "After the Gateway restarts, build a snapshot from the Snapshots view.",
@@ -218,7 +218,7 @@ const enSettings = {
       idleTimeoutHelp: "Stop an unused worker after this positive Go duration.",
       idleTimeoutPlaceholder: "45m",
       setup: "Setup command",
-      setupHelp: "Optional idempotent shell command run before OpenClaw is installed.",
+      setupHelp: "Optional idempotent shell command run before Sharklet is installed.",
       setupPlaceholder: "command -v node || install-node",
       desktop: "Desktop",
       desktopHelp:
@@ -368,7 +368,7 @@ const enSettings = {
       heading: "Connect a verified AI model",
       signedInNoModels:
         "You're signed in, but this account exposes no usable models. Choose another provider or account to continue.",
-      notConfigured: "Choose a provider and verify the model OpenClaw will use.",
+      notConfigured: "Choose a provider and verify the model Sharklet will use.",
       noModels: "No models available",
       modelRequired: "Model required",
       chooseProvider: "Choose another provider",
@@ -377,7 +377,7 @@ const enSettings = {
       action: "Log out",
       actionFor: "Log out {account}",
       confirm:
-        "Remove the saved sign-in for {provider} from OpenClaw? You can add this account again later.",
+        "Remove the saved sign-in for {provider} from Sharklet? You can add this account again later.",
       loggingOut: "Logging out…",
       done: "Logged out.",
     },
@@ -413,7 +413,7 @@ const enSettings = {
       retryDiscover: "Retry",
       thinkingHelpLabel: "About thinking defaults",
       thinkingHelp:
-        "Sets the global default for new sessions when no session-specific thinking level is set. OpenClaw maps unsupported levels to the closest option supported by the selected model.",
+        "Sets the global default for new sessions when no session-specific thinking level is set. Sharklet maps unsupported levels to the closest option supported by the selected model.",
       thinkingDefaultHelp:
         "Uses the selected model's thinking policy instead of saving a global thinking override.",
       fastModeHelpLabel: "About fast mode defaults",
@@ -466,7 +466,7 @@ const enSettings = {
       installKind: "Install type",
       policyTitle: "Update policy",
       channel: "Release channel",
-      channelDescription: "Choose which OpenClaw release track this Gateway follows.",
+      channelDescription: "Choose which Sharklet release track this Gateway follows.",
       checkForUpdates: "Check for updates",
       checkForUpdatesDescription: "Periodically check for new versions and show update notices.",
       automaticUpdates: "Automatic updates",
