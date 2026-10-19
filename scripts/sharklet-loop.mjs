@@ -6,7 +6,10 @@
 // worktree and judges the result. Method, routines and daily use:
 // docs/loops/README.md in the docs repo.
 //
-//   node scripts/sharklet-loop.mjs status <phase|auto>
+//   node scripts/sharklet-loop.mjs status <phase|auto> [--json]
+//   node scripts/sharklet-loop.mjs inbox list [--open]          what waits for the owner (JSON)
+//   node scripts/sharklet-loop.mjs inbox answer <id> <text>     the owner's answer; unblocks its task
+//   node scripts/sharklet-loop.mjs inbox add <level> <title> [--kind K] [--task ID] [--detail text]
 //   node scripts/sharklet-loop.mjs next <phase|auto>            start the next runnable task
 //   node scripts/sharklet-loop.mjs check <phase|auto> <ID>      gates, audit, CI: keep, fix or discard
 //   node scripts/sharklet-loop.mjs plan-next <phase|auto>       brief for the next L1 plan
@@ -283,7 +286,9 @@ function commitDocs(message, files) {
     }
   }
   try {
-    const rel = files.map((f) => path.relative(DOCS, f).replaceAll("\\", "/"));
+    const rel = files
+      .filter((f) => fs.existsSync(f))
+      .map((f) => path.relative(DOCS, f).replaceAll("\\", "/"));
     run("git", ["add", "--", ...rel], { cwd: DOCS });
     if (run("git", ["diff", "--cached", "--quiet", "--", ...rel], { cwd: DOCS }).status === 0) {
       return;
@@ -634,13 +639,160 @@ function classify(task, byId) {
   return "runnable";
 }
 
-function status(phase) {
+// --json prints one line of JSON for the dashboard and the orchestrator, so
+// they read the classification from here instead of repeating it.
+function status(phase, asJson = false) {
   const { tasks } = readTasks(phase);
   const byId = new Map(tasks.map((t) => [t.id, t]));
-  for (const task of tasks) {
-    console.log(`${task.prompt ?? task.id}\t${task.autonomy ?? "-"}\t${classify(task, byId)}`);
+  const rows = tasks.map((task) => ({
+    id: task.prompt ?? String(task.id),
+    subject: task.subject ?? "",
+    autonomy: task.autonomy ?? "-",
+    state: classify(task, byId),
+    note: oneLine(task.loopNote, 300),
+  }));
+  if (asJson) {
+    console.log(JSON.stringify({ phase, tasks: rows }));
+  } else {
+    for (const row of rows) {
+      console.log(`${row.id}\t${row.autonomy}\t${row.state}`);
+    }
   }
   return new Result(0, "status", `phase ${phase}`);
+}
+
+// --- inbox: what the orchestrator hands to the owner, and the owner's answers
+
+const INBOX = path.join(DOCS, "docs/loops/inbox.json");
+const LEVELS = ["decision", "alert", "info"];
+
+function readInbox() {
+  return fs.existsSync(INBOX) ? JSON.parse(fs.readFileSync(INBOX, "utf8")) : { items: [] };
+}
+
+function flag(args, name) {
+  const at = args.indexOf(name);
+  return at === -1 ? undefined : args[at + 1];
+}
+
+function writeInbox(data) {
+  fs.writeFileSync(INBOX, `${JSON.stringify(data, null, 2)}\n`);
+}
+
+// What only the owner decides reaches the inbox here, from the runner itself:
+// a blocked task's question (kind "answer"), a plan or a userGate to approve
+// ("approve-plan", "approve-gate"), a metric batch that failed delivery. An
+// item is data the owner reads, never a command: bounded text, a known level,
+// a task id of the usual shape (SHARKLET-SECURITY §2). The caller commits.
+// ponytail: read-modify-write outside the docs lock; two writers in the same
+// second can lose one item. Take the lock here too if that ever happens.
+function addInboxItem({ level, kind = "answer", task, title, detail }) {
+  if (!LEVELS.includes(level) || !title?.trim()) {
+    throw new Error(`inbox: level is ${LEVELS.join("|")} and a title is required`);
+  }
+  if (task && !/^[\w-]{1,40}$/u.test(task)) {
+    throw new Error("inbox: --task is a task id");
+  }
+  const data = readInbox();
+  const same = data.items.find(
+    (item) => item.status !== "closed" && item.kind === kind && (item.task ?? "") === (task ?? ""),
+  );
+  if (same) {
+    return { id: same.id, isNew: false };
+  }
+  const id = String(Math.max(0, ...data.items.map((item) => Number(item.id) || 0)) + 1);
+  data.items.push({
+    id,
+    at: new Date().toISOString(),
+    level,
+    kind,
+    task,
+    title: title.trim().slice(0, 200),
+    detail: detail ? String(detail).slice(0, 4000) : undefined,
+    status: "open",
+  });
+  writeInbox(data);
+  return { id, isNew: true };
+}
+
+// Closes the open items of a task once what they asked for is done.
+function closeInboxFor(task, kinds, note) {
+  const data = readInbox();
+  let changed = false;
+  for (const item of data.items) {
+    if (item.task === task && item.status !== "closed" && kinds.includes(item.kind)) {
+      Object.assign(item, {
+        status: "closed",
+        closedNote: note,
+        closedAt: new Date().toISOString(),
+      });
+      changed = true;
+    }
+  }
+  if (changed) {
+    writeInbox(data);
+  }
+}
+
+// The owner's answers for a task, newest last, for the next attempt's brief.
+function answersFor(task) {
+  return readInbox().items.filter((item) => item.task === task && item.answer);
+}
+
+function inbox(sub, args) {
+  if (sub === "list") {
+    const all = readInbox().items;
+    const items = args.includes("--open") ? all.filter((item) => item.status !== "closed") : all;
+    console.log(JSON.stringify({ items }));
+    return new Result(0, "inbox", `${items.length} items`);
+  }
+  if (sub === "add") {
+    const [level, title] = args;
+    const { id, isNew } = addInboxItem({
+      level,
+      kind: flag(args, "--kind") ?? "answer",
+      task: flag(args, "--task"),
+      title,
+      detail: flag(args, "--detail"),
+    });
+    if (isNew) {
+      commitDocs(`Loop inbox: ${level} ${id}: ${title}`.slice(0, 120), [INBOX]);
+    }
+    return new Result(0, isNew ? "added" : "duplicate", id);
+  }
+  if (sub === "answer") {
+    // The owner answering a blocked task's question is also the retry: the
+    // next attempt starts with the answer in its brief.
+    const [id, ...words] = args;
+    const text = words.join(" ").trim().slice(0, 4000);
+    const data = readInbox();
+    const item = data.items.find((one) => one.id === id);
+    if (!item || item.status === "closed" || !text) {
+      throw new Error(`inbox answer: no open item ${id}, or an empty answer`);
+    }
+    Object.assign(item, { status: "closed", answer: text, closedAt: new Date().toISOString() });
+    writeInbox(data);
+    const files = [INBOX];
+    if (item.task && item.kind === "answer") {
+      const phase = resolvePhase("auto");
+      const task = readTasks(phase).tasks.find((t) => t.prompt === item.task);
+      if (task?.status === "blocked") {
+        updateTask(phase, item.task, { status: "pending" });
+        record({
+          loop: "task",
+          id: item.task,
+          status: "reset",
+          description: `answered by usuario: ${text}`,
+        });
+        files.push(tasksFile(phase), RESULTS);
+      }
+    }
+    commitDocs(`Loop inbox: ${id} answered`, files);
+    return new Result(0, "answered", id);
+  }
+  throw new Error(
+    "inbox list [--open] | add <level> <title> [--kind K] [--task ID] [--detail text] | answer <id> <text>",
+  );
 }
 
 function tasksIn(phase, want) {
@@ -673,7 +825,24 @@ function finishTask(phase, task, wt, st, status, description) {
   const minutes = Math.round((Date.now() - Date.parse(st.startedAt)) / 60_000);
   record({ loop: "task", id: task.prompt, commit, status, minutes, description });
   fs.rmSync(file, { force: true });
-  commitDocs(`Loop: ${task.prompt} ${status} (${commit})`, [tasksFile(phase), RESULTS]);
+  if (status === "blocked") {
+    addInboxItem({
+      level: "decision",
+      kind: "answer",
+      task: task.prompt,
+      title: `${task.prompt} needs your decision`,
+      detail: findTask(phase, task.prompt).loopNote ?? description,
+    });
+  } else if (status === "keep" && task.userGate) {
+    addInboxItem({
+      level: "decision",
+      kind: "approve-gate",
+      task: task.prompt,
+      title: `${task.prompt} is done and waits for your approval`,
+      detail: oneLine(findTask(phase, task.prompt).evidence, 1500),
+    });
+  }
+  commitDocs(`Loop: ${task.prompt} ${status} (${commit})`, [tasksFile(phase), RESULTS, INBOX]);
   return new Result(status === "keep" ? 0 : 20, status, `${task.prompt} ${oneLine(description)}`);
 }
 
@@ -723,11 +892,26 @@ function next(phase) {
   const start = git(wt, "rev-parse", "HEAD");
   updateTask(phase, task.prompt, { status: "in_progress" });
   const plan = task.planFile ? fs.readFileSync(path.join(DOCS, task.planFile), "utf8") : "";
+  const answers = answersFor(task.prompt)
+    .map((item) => `- ${item.closedAt?.slice(0, 10) ?? ""}, a "${item.title}": ${item.answer}`)
+    .join("\n");
+  // A blocked, discarded or crashed attempt keeps its commits here (finishTask).
+  const earlier = refExists(`refs/heads/loop-attempt/${task.prompt}`)
+    ? git(mainCheckout, "log", "-1", "--format=%h %s", `loop-attempt/${task.prompt}`)
+    : "";
   const brief = [
     template("modo-loop.md", taskVars(phase, task, wt)),
+    answers
+      ? `Respuestas del dueño para esta tarea (mandan sobre el prompt; no vuelvas a bloquear por lo mismo):\n${answers}`
+      : "",
+    earlier
+      ? `Un intento anterior dejó commits en la rama local loop-attempt/${task.prompt} (${earlier}). Si sirven, reutilízalos con git cherry-pick en vez de empezar de cero.`
+      : "",
     promptBlock(task.prompt),
     plan ? `\nPlan aprobado (${task.planApproved}), síguelo:\n\n${plan}` : "",
-  ].join("\n\n");
+  ]
+    .filter(Boolean)
+    .join("\n\n");
   const state = stateDir(wt);
   const briefFile = path.join(state, `brief-${task.prompt}.md`);
   fs.writeFileSync(briefFile, brief);
@@ -856,7 +1040,16 @@ function planSave(phase, id) {
   }
   updateTask(phase, id, { planFile: rel });
   record({ loop: "plan", id, status: "plan", description: rel });
-  commitDocs(`Loop: plan for ${id}`, [tasksFile(phase), RESULTS, file]);
+  // The plan's "Decisiones para ti" section is what the owner reads first.
+  const asks = fs.readFileSync(file, "utf8").split(/^#+\s*Decisiones para ti/imu)[1] ?? "";
+  addInboxItem({
+    level: "decision",
+    kind: "approve-plan",
+    task: id,
+    title: `${id}: plan ready for your approval`,
+    detail: `${rel}${asks.trim() ? `. Decisiones para ti: ${oneLine(asks, 1500)}` : ""}`,
+  });
+  commitDocs(`Loop: plan for ${id}`, [tasksFile(phase), RESULTS, file, INBOX]);
   return new Result(0, "saved", `${rel}; approve it with: approve ${phase} ${id}`);
 }
 
@@ -870,7 +1063,8 @@ function approve(phase, id) {
   } else {
     throw new Error(`${id} has no plan or userGate awaiting approval`);
   }
-  commitDocs(`Loop: ${id} approved`, [tasksFile(phase)]);
+  closeInboxFor(id, ["approve-plan", "approve-gate"], `approved, ${today()}`);
+  commitDocs(`Loop: ${id} approved`, [tasksFile(phase), INBOX]);
   return new Result(0, "approved", id);
 }
 
@@ -880,7 +1074,8 @@ function retry(phase, id) {
     updateTask(phase, id, { status: "pending" });
   }
   record({ loop: "task", id, status: "reset", description: "retry by the user" });
-  commitDocs(`Loop: ${id} retry`, [tasksFile(phase), RESULTS]);
+  closeInboxFor(id, ["answer"], `retried, ${today()}`);
+  commitDocs(`Loop: ${id} retry`, [tasksFile(phase), RESULTS, INBOX]);
   return new Result(0, "reset", id);
 }
 
@@ -1064,12 +1259,35 @@ function metricDeliver(name) {
       path.join(state, `audit-${name}.json`),
     ) ?? ci(wt, branch, DEFAULT_WORKFLOWS, path.join(state, `ci-${name}.log`));
   cleanCandidate(wt, branch);
+  // Findings on the batch go back to the session, like a task's fix round:
+  // without this a batch with one false rename failed delivery every night and
+  // grew on top of itself (2026-10-16 to 10-19).
+  const fixes = ms.deliverFixes ?? 0;
+  if (failure && !failure.fatal && fixes < MAX_FIXES) {
+    writeState(file, { ...ms, deliverFixes: fixes + 1 });
+    const fixFile = path.join(state, `deliver-fix-${name}-${fixes + 1}.md`);
+    fs.writeFileSync(
+      fixFile,
+      `La entrega del lote ${name} falló: ${failure.kind === "audit" ? "la auditoría de Codex encontró hallazgos critical o high" : "la CI falló"}. En ${wt}, corrige o revierte (git revert) los commits que los hallazgos señalan, con commits nuevos y sin push; un renombre falso se revierte, no se discute. No toques ${PROTECTED.join(", ")}. Después vuelve a correr metric-deliver ${name}.\n\n${asData(fs.readFileSync(failure.log, "utf8").slice(-20_000))}\n`,
+    );
+    return new Result(
+      10,
+      "fix",
+      `${name} ${failure.kind} failed (fix ${fixes + 1}/${MAX_FIXES}) brief=${fixFile}`,
+    );
+  }
   let status;
   let detail;
   if (failure) {
     // Unreviewed work stays local, in the worktree, for a person.
     status = "review";
     detail = `${failure.kind} failed: ${failure.log}; kept local in ${wt}, not pushed`;
+    addInboxItem({
+      level: "alert",
+      kind: `deliver-${name}`,
+      title: `Loop B ${name}: the batch failed delivery after ${fixes} fixes`,
+      detail: `${detail}. Best ${ms.best}, ${ms.kept} kept experiments.`,
+    });
   } else if (DRY) {
     status = "keep";
     detail = `dry run: audit passed, nothing pushed (${ms.kept} kept, best ${ms.best})`;
@@ -1100,7 +1318,7 @@ function metricDeliver(name) {
   }
   record({ loop: `metric:${name}`, id: "deliver", metric: ms.best, status, description: detail });
   fs.rmSync(file, { force: true });
-  commitDocs(`Loop: metric ${name} delivered (${status}, best ${ms.best})`, [RESULTS]);
+  commitDocs(`Loop: metric ${name} delivered (${status}, best ${ms.best})`, [RESULTS, INBOX]);
   return new Result(status === "review" ? 20 : 0, status, detail);
 }
 
@@ -1139,11 +1357,12 @@ try {
     process.exit(0);
   }
   checkSettings();
-  const phase = ["metric-next", "metric-check", "metric-deliver"].includes(command)
+  const phase = ["metric-next", "metric-check", "metric-deliver", "inbox"].includes(command)
     ? null
     : resolvePhase(arg);
   const commands = {
-    status: () => status(phase),
+    status: () => status(phase, rest.includes("--json")),
+    inbox: () => inbox(arg, rest),
     next: () => next(phase),
     check: () => check(phase, rest[0]),
     "plan-next": () => planNext(phase),
