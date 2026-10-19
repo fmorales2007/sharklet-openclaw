@@ -591,13 +591,13 @@ const enSettings = {
       chromeExtensionInstalled:
         "Native host registered and extension found. Open the extension to check its connection; installation alone does not verify a connection.",
       chromeExtensionFailed:
-        "Setup could not finish. Install the OpenClaw CLI on this Mac and run openclaw browser extension install for details.",
+        "Setup could not finish. Install the Sharklet CLI on this Mac and run openclaw browser extension install for details.",
       browserImport: "Browser logins",
       browserImportHint:
         "Copy cookies from a Chrome-family profile into an isolated managed profile.",
       importBrowserLogins: "Import browser logins…",
       cookieSync: "Cookie sync",
-      cookieSyncUnavailable: "Cookie sync requires remote mode with an external OpenClaw CLI.",
+      cookieSyncUnavailable: "Cookie sync requires remote mode with an external Sharklet CLI.",
       cookieSyncEnabled: "Sync cookies to the remote computer",
       cookieSyncHint:
         "Continuously copy this Mac's logged-in cookies for the domains below into the remote Sharklet browser profile. Off by default.",

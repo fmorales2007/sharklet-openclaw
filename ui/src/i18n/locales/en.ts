@@ -668,7 +668,7 @@ export const en: TranslationMap & {
       notGitInstall:
         "Not a git checkout. Run `openclaw update` from the CLI for a global reinstall.",
       notOpenclawRoot:
-        "Run the update from an OpenClaw checkout or use the CLI global reinstall path.",
+        "Run the update from a Sharklet checkout or use the CLI global reinstall path.",
       depsInstallFailed: "Dependency install failed. Fix the install error and retry.",
       buildFailed: "Build failed. Fix the build error and retry.",
       buildDirty:
