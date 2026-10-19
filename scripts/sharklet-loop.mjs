@@ -7,6 +7,7 @@
 // docs/loops/README.md in the docs repo.
 //
 //   node scripts/sharklet-loop.mjs status <phase|auto> [--json]
+//   node scripts/sharklet-loop.mjs snapshot <phase|auto>          what the home dashboard shows (JSON)
 //   node scripts/sharklet-loop.mjs inbox list [--open]          what waits for the owner (JSON)
 //   node scripts/sharklet-loop.mjs inbox answer <id> <text>     the owner's answer; unblocks its task
 //   node scripts/sharklet-loop.mjs inbox add <level> <title> [--kind K] [--task ID] [--detail text]
@@ -664,6 +665,48 @@ function status(phase, asJson = false) {
     }
   }
   return new Result(0, "status", `phase ${phase}`);
+}
+
+// What the home dashboard artifact shows, as one JSON line: the orchestrator
+// writes it to the artifact's database each run (docs/loops/modo-orquestador.md).
+function snapshot(phase) {
+  const { tasks } = readTasks(phase);
+  const byId = new Map(tasks.map((t) => [t.id, t]));
+  const rows = tasks.map((task) => ({
+    id: task.prompt ?? String(task.id),
+    state: classify(task, byId),
+  }));
+  const pick = ({ id, task, title, status, recommendation, note }) => ({
+    id,
+    task: task ?? "",
+    title,
+    status,
+    recommendation: recommendation ?? "",
+    note: note ?? "",
+  });
+  const items = readInbox().items.filter((item) => item.status !== "closed");
+  console.log(
+    JSON.stringify({
+      updatedAt: new Date().toISOString(),
+      phase,
+      done: rows.filter((row) => row.state === "done").length,
+      total: rows.length,
+      needsYou: items.filter((item) => item.status === "escalated").map(pick),
+      withOrchestrator: items.filter((item) => item.status === "open").map(pick),
+      active: rows.filter((row) => row.state !== "done" && !row.state.startsWith("waiting")),
+      recent: readResults()
+        .slice(-12)
+        .reverse()
+        .map(({ date, loop, id, metric, status, description }) => ({
+          date,
+          label: ["exp", "baseline", "deliver"].includes(id) ? loop.replace("metric:", "") : id,
+          metric: metric ?? "",
+          status,
+          description: oneLine(description, 160),
+        })),
+    }),
+  );
+  return new Result(0, "snapshot", `phase ${phase}`);
 }
 
 // --- inbox: what the orchestrator hands to the owner, and the owner's answers
@@ -1408,6 +1451,7 @@ try {
     : resolvePhase(arg);
   const commands = {
     status: () => status(phase, rest.includes("--json")),
+    snapshot: () => snapshot(phase),
     inbox: () => inbox(arg, rest),
     next: () => next(phase),
     check: () => check(phase, rest[0]),
