@@ -7,6 +7,7 @@
 // docs/loops/README.md in the docs repo.
 //
 //   node scripts/sharklet-loop.mjs status <phase|auto> [--json]
+//   node scripts/sharklet-loop.mjs snapshot <phase|auto>          what the home dashboard shows (JSON)
 //   node scripts/sharklet-loop.mjs inbox list [--open]          what waits for the owner (JSON)
 //   node scripts/sharklet-loop.mjs inbox answer <id> <text>     the owner's answer; unblocks its task
 //   node scripts/sharklet-loop.mjs inbox add <level> <title> [--kind K] [--task ID] [--detail text]
@@ -439,13 +440,16 @@ function writeState(file, state) {
 
 // The checks job of sharklet-checks.yml, run before CI: a lint or type error
 // costs minutes here and a whole CI round plus a fix there (F2-01, 2026-10-16).
-const CI_MIRROR = [
-  "corepack pnpm lint:sharklet",
-  "corepack pnpm tsgo:ui",
-  "corepack pnpm tsgo:core",
-];
+// Type checks stay in CI, where tsgo takes 1.4 min, and out of the local gate,
+// where it took about 23 on this PC per check (owner's call, 2026-10-19).
+const CI_MIRROR = ["corepack pnpm lint:sharklet"];
+const CI_ONLY = /^\s*corepack pnpm tsgo:/u;
 function fastGateOf(task) {
-  const own = task.fastGate ?? "";
+  const own = (task.fastGate ?? "")
+    .split("&&")
+    .filter((step) => step.trim() && !CI_ONLY.test(step))
+    .join("&&")
+    .trim();
   return [own, ...CI_MIRROR.filter((step) => !own.includes(step))].filter(Boolean).join(" && ");
 }
 
@@ -624,14 +628,16 @@ function classify(task, byId) {
   if (!["L1", "L2"].includes(task.autonomy)) {
     return task.autonomy === "L3" ? `metric loop ${task.loopProgram}` : "manual (L0)";
   }
-  if (!(task.blockedBy ?? []).every((id) => done(byId.get(id)))) {
-    return "waiting on dependencies";
-  }
+  // An L1 plan is written and approved ahead of its dependencies, so a whole
+  // phase's plans reach the owner in one batch instead of one a night.
   if (task.autonomy === "L1" && !task.planFile) {
     return "needs a plan";
   }
   if (task.autonomy === "L1" && !task.planApproved) {
     return "plan awaiting approval";
+  }
+  if (!(task.blockedBy ?? []).every((id) => done(byId.get(id)))) {
+    return "waiting on dependencies";
   }
   if (discards(task.prompt) >= MAX_DISCARDS) {
     return `${MAX_DISCARDS} discards: needs you (retry)`;
@@ -659,6 +665,48 @@ function status(phase, asJson = false) {
     }
   }
   return new Result(0, "status", `phase ${phase}`);
+}
+
+// What the home dashboard artifact shows, as one JSON line: the orchestrator
+// writes it to the artifact's database each run (docs/loops/modo-orquestador.md).
+function snapshot(phase) {
+  const { tasks } = readTasks(phase);
+  const byId = new Map(tasks.map((t) => [t.id, t]));
+  const rows = tasks.map((task) => ({
+    id: task.prompt ?? String(task.id),
+    state: classify(task, byId),
+  }));
+  const pick = ({ id, task, title, status, recommendation, note }) => ({
+    id,
+    task: task ?? "",
+    title,
+    status,
+    recommendation: recommendation ?? "",
+    note: note ?? "",
+  });
+  const items = readInbox().items.filter((item) => item.status !== "closed");
+  console.log(
+    JSON.stringify({
+      updatedAt: new Date().toISOString(),
+      phase,
+      done: rows.filter((row) => row.state === "done").length,
+      total: rows.length,
+      needsYou: items.filter((item) => item.status === "escalated").map(pick),
+      withOrchestrator: items.filter((item) => item.status === "open").map(pick),
+      active: rows.filter((row) => row.state !== "done" && !row.state.startsWith("waiting")),
+      recent: readResults()
+        .slice(-12)
+        .reverse()
+        .map(({ date, loop, id, metric, status, description }) => ({
+          date,
+          label: ["exp", "baseline", "deliver"].includes(id) ? loop.replace("metric:", "") : id,
+          metric: metric ?? "",
+          status,
+          description: oneLine(description, 160),
+        })),
+    }),
+  );
+  return new Result(0, "snapshot", `phase ${phase}`);
 }
 
 // --- inbox: what the orchestrator hands to the owner, and the owner's answers
@@ -790,8 +838,33 @@ function inbox(sub, args) {
     commitDocs(`Loop inbox: ${id} answered`, files);
     return new Result(0, "answered", id);
   }
+  if (sub === "escalate" || sub === "close") {
+    // The orchestrator's two moves on an item: hand it to the owner with its
+    // recommendation (the owner can accept it in one tap), or close an
+    // outside fault it fixed. Neither one answers or approves.
+    const [id] = args;
+    const note = flag(args, "--note")?.slice(0, 1000);
+    const data = readInbox();
+    const item = data.items.find((one) => one.id === id);
+    if (!item || item.status === "closed") {
+      throw new Error(`inbox ${sub}: no open item ${id}`);
+    }
+    if (sub === "close" && item.kind !== "error" && !item.kind.startsWith("deliver-")) {
+      throw new Error(`inbox close: item ${id} is a ${item.kind}, which only the owner closes`);
+    }
+    const at = new Date().toISOString();
+    if (sub === "escalate") {
+      const recommendation = flag(args, "--recommend")?.slice(0, 1000);
+      Object.assign(item, { status: "escalated", escalatedAt: at, recommendation, note });
+    } else {
+      Object.assign(item, { status: "closed", closedAt: at, closedNote: note });
+    }
+    writeInbox(data);
+    commitDocs(`Loop inbox: ${id} ${item.status}`, [INBOX]);
+    return new Result(0, item.status, id);
+  }
   throw new Error(
-    "inbox list [--open] | add <level> <title> [--kind K] [--task ID] [--detail text] | answer <id> <text>",
+    "inbox list [--open] | add <level> <title> [--kind K] [--task ID] [--detail text] | answer <id> <text> | escalate <id> [--recommend text] [--note text] | close <id> [--note text]",
   );
 }
 
@@ -841,6 +914,18 @@ function finishTask(phase, task, wt, st, status, description) {
       title: `${task.prompt} is done and waits for your approval`,
       detail: oneLine(findTask(phase, task.prompt).evidence, 1500),
     });
+  } else if (status === "crash" || status === "discard") {
+    // An error goes to the orchestrator first; it escalates what it cannot fix.
+    addInboxItem({
+      level: "alert",
+      kind: "error",
+      task: task.prompt,
+      title: `${task.prompt} ${status}`,
+      detail: description,
+    });
+  }
+  if (status === "keep") {
+    closeInboxFor(task.prompt, ["error", "answer"], `kept, ${today()}`);
   }
   commitDocs(`Loop: ${task.prompt} ${status} (${commit})`, [tasksFile(phase), RESULTS, INBOX]);
   return new Result(status === "keep" ? 0 : 20, status, `${task.prompt} ${oneLine(description)}`);
@@ -1024,7 +1109,11 @@ function planNext(phase) {
     return new Result(3, "nothing", `no L1 task needs a plan in phase ${phase}`);
   }
   serverPreflight();
-  const wt = worktree(task.branch, task.base ?? "custom");
+  // Planned ahead of its dependencies, a task's base branch may not exist yet:
+  // the plan reads custom, and the branch follows its base once that lands.
+  const base = task.base ?? "custom";
+  const known = refExists(`refs/remotes/origin/${base}`) || refExists(`refs/heads/${base}`);
+  const wt = worktree(task.branch, known ? base : "custom");
   const planFile = path.join(DOCS, `docs/loops/plans/${task.prompt}.md`);
   const brief = `${template("modo-plan.md", { ...taskVars(phase, task, wt), PLAN: planFile })}\n\n${promptBlock(task.prompt)}`;
   const briefFile = path.join(stateDir(wt), `plan-${task.prompt}.md`);
@@ -1362,6 +1451,7 @@ try {
     : resolvePhase(arg);
   const commands = {
     status: () => status(phase, rest.includes("--json")),
+    snapshot: () => snapshot(phase),
     inbox: () => inbox(arg, rest),
     next: () => next(phase),
     check: () => check(phase, rest[0]),
