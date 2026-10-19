@@ -2946,7 +2946,7 @@ export const en: TranslationMap & {
       description:
         "Exactly one memory plugin owns the memory slot. Selecting an engine enables it and disables the others.",
       rowTitle: "Memory engine",
-      openClawMemory: "OpenClaw Memory",
+      openClawMemory: "Sharklet Memory",
       off: "Off",
       unavailable: "Unavailable",
       autoHint: "No engine is pinned in config, so the slot falls back to its default owner.",
