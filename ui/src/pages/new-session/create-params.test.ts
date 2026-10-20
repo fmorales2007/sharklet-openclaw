@@ -282,3 +282,17 @@ describe("buildDraftSessionCreateParams", () => {
     });
   });
 });
+
+describe("buildDraftSessionCreateParams memoryless", () => {
+  const base = { agentId: "main", message: "hi", worktree: false } as const;
+
+  it("sends memoryless only when asked and never with incognito", () => {
+    expect(buildDraftSessionCreateParams({ ...base, memoryless: true })).toMatchObject({
+      memoryless: true,
+    });
+    expect(buildDraftSessionCreateParams(base)).not.toHaveProperty("memoryless");
+    expect(
+      buildDraftSessionCreateParams({ ...base, memoryless: true, visibility: "incognito" }),
+    ).not.toHaveProperty("memoryless");
+  });
+});

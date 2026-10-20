@@ -86,6 +86,7 @@ export type NewSessionComposerOptions = {
   voiceControl?: TemplateResult | typeof nothing;
   messageLocked?: boolean;
   visibility?: NewSessionVisibility;
+  memoryless?: boolean;
   draftAvailable?: boolean;
   capabilityMenu?: CapabilityMenuProps;
   toolOverrides?: SessionToolOverrides | null;
@@ -94,6 +95,7 @@ export type NewSessionComposerOptions = {
   onInput: (message: string, mentions?: readonly HumanMention[]) => void;
   onOpenImage?: (item: ImageLightboxItem) => void;
   onVisibilityChange?: (visibility: NewSessionVisibility) => void;
+  onMemorylessChange?: (memoryless: boolean) => void;
   onSubmit: () => void;
   onBackgroundSubmit?: () => void;
 };

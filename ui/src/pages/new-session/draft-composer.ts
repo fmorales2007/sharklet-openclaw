@@ -227,6 +227,7 @@ export function renderNewSessionDraftComposer(options: {
   mentions?: readonly HumanMention[];
   getMentions?: () => readonly HumanMention[];
   visibility?: NewSessionVisibility;
+  memoryless?: boolean;
   draftAvailable?: boolean;
   capabilityMenu?: CapabilityMenuProps;
   toolOverrides?: SessionToolOverrides | null;
@@ -248,6 +249,7 @@ export function renderNewSessionDraftComposer(options: {
   onInput: (message: string, mentions?: readonly HumanMention[]) => void;
   onOpenImage?: (item: ImageLightboxItem) => void;
   onVisibilityChange?: (visibility: NewSessionVisibility) => void;
+  onMemorylessChange?: (memoryless: boolean) => void;
   onSubmit: () => void;
   onBackgroundSubmit?: () => void;
 }) {
@@ -293,6 +295,7 @@ export function renderNewSessionDraftComposer(options: {
     getMentions: options.getMentions,
     mentionDirectory,
     visibility: options.visibility,
+    memoryless: options.memoryless,
     draftAvailable: options.draftAvailable,
     capabilityMenu: options.capabilityMenu,
     toolOverrides: options.toolOverrides,
@@ -342,6 +345,7 @@ export function renderNewSessionDraftComposer(options: {
     onInput: options.onInput,
     onOpenImage: options.onOpenImage,
     onVisibilityChange: options.onVisibilityChange,
+    onMemorylessChange: options.onMemorylessChange,
     onSubmit: options.onSubmit,
     onBackgroundSubmit: options.onBackgroundSubmit,
   });

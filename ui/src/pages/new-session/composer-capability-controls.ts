@@ -14,6 +14,7 @@ type NewSessionComposerCapabilityOptions = {
   submitting: boolean;
   messageLocked?: boolean;
   visibility?: NewSessionVisibility;
+  memoryless?: boolean;
   draftAvailable?: boolean;
   capabilityMenu?: CapabilityMenuProps;
   toolOverrides?: SessionToolOverrides | null;
@@ -23,6 +24,7 @@ type NewSessionComposerCapabilityOptions = {
   };
   requestUpdate: () => void;
   onVisibilityChange?: (visibility: NewSessionVisibility) => void;
+  onMemorylessChange?: (memoryless: boolean) => void;
 };
 
 export function renderNewSessionDraftVisibility(options: NewSessionComposerCapabilityOptions) {
@@ -62,19 +64,35 @@ export function renderNewSessionPlusMenu(
     open: controller.capabilityMenuOpen,
     view: controller.capabilityMenuView,
     toolOverrides: options.toolOverrides,
-    rootToggles: options.draftAvailable
-      ? [
-          {
-            value: "new-session-draft",
-            label: t("newSession.draft"),
-            icon: icons.pencil,
-            checked: draftEnabled,
-            disabled,
-            title: t("newSession.draftDescription"),
-            onChange: (checked) => options.onVisibilityChange?.(checked ? "draft" : "normal"),
-          },
-        ]
-      : undefined,
+    rootToggles: [
+      ...(options.draftAvailable
+        ? [
+            {
+              value: "new-session-draft",
+              label: t("newSession.draft"),
+              icon: icons.pencil,
+              checked: draftEnabled,
+              disabled,
+              title: t("newSession.draftDescription"),
+              onChange: (checked: boolean) =>
+                options.onVisibilityChange?.(checked ? "draft" : "normal"),
+            },
+          ]
+        : []),
+      ...(options.onMemorylessChange
+        ? [
+            {
+              value: "new-session-memoryless",
+              label: t("newSession.memoryless"),
+              icon: icons.brain,
+              checked: options.memoryless === true,
+              disabled: disabled || options.visibility === "incognito",
+              title: t("newSession.memorylessDescription"),
+              onChange: options.onMemorylessChange,
+            },
+          ]
+        : []),
+    ],
     onOpenChange: (open) => {
       controller.capabilityMenuOpen = open;
       if (!open) {

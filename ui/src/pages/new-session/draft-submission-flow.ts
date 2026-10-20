@@ -57,6 +57,7 @@ import { startNewSessionInTerminal } from "./terminal-start.ts";
 
 export class DraftSubmissionFlow {
   private visibilityValue: NewSessionVisibility = "normal";
+  private memorylessValue = false;
   private messageValue = "";
   private mentionsValue: readonly HumanMention[] = [];
   private activeSubmission: { message: ReturnType<typeof buildLocalUserMessage> } | null = null;
@@ -108,6 +109,10 @@ export class DraftSubmissionFlow {
 
   get visibility(): NewSessionVisibility {
     return this.visibilityValue;
+  }
+
+  get memoryless(): boolean {
+    return this.memorylessValue;
   }
 
   get message(): string {
@@ -177,7 +182,16 @@ export class DraftSubmissionFlow {
     const wasIncognito = this.visibilityValue === "incognito";
     const publish = this.callbacks.requestUpdate;
     this.visibilityValue = visibility;
+    if (visibility === "incognito") {
+      this.memorylessValue = false;
+    }
     this.draftPersistence.transitionIncognito(wasIncognito, visibility === "incognito", publish);
+  }
+
+  setMemoryless(memoryless: boolean) {
+    this.startedSession.current = null;
+    this.memorylessValue = memoryless && this.visibilityValue !== "incognito";
+    this.callbacks.requestUpdate();
   }
 
   setError(error: string | null) {
@@ -225,6 +239,7 @@ export class DraftSubmissionFlow {
       toolOverrides: this.capabilities.toolOverrides,
       permissionMode: this.permission.value,
       visibility: options.visibility ?? this.visibilityValue,
+      memoryless: this.memorylessValue,
       catalogId: this.read().data?.catalogId,
       category: this.gateway.resolvedGroupCategory(),
     });
@@ -331,6 +346,7 @@ export class DraftSubmissionFlow {
       ? (this.submissionOutcomeUnknown ?? "placement-interrupted")
       : null;
     this.visibilityValue = "normal";
+    this.memorylessValue = false;
     this.capabilities.reset();
     this.permission.reset();
     this.attachmentDraft.reset({ release: true });
