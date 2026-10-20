@@ -106,3 +106,48 @@ if (
 ) {
   installSafeLocalStorageForTesting(window);
 }
+
+// Tests assert en-US text and number formats. Node on Windows takes its default
+// locale from the OS (es-CL gives "123.456"), so pin the default here; callers
+// that pass an explicit locale are untouched.
+const TEST_LOCALE = "en-US";
+for (const name of ["NumberFormat", "DateTimeFormat"] as const) {
+  const Native = Intl[name] as unknown as new (l?: unknown, o?: unknown) => unknown;
+  const Pinned = function (this: unknown, locales?: unknown, options?: unknown) {
+    return new Native(locales ?? TEST_LOCALE, options);
+  } as unknown as typeof Native;
+  Pinned.prototype = Native.prototype;
+  Object.defineProperty(Pinned, "supportedLocalesOf", {
+    value: (Native as never as typeof Intl.NumberFormat).supportedLocalesOf,
+  });
+  Object.defineProperty(Intl, name, { configurable: true, writable: true, value: Pinned });
+}
+for (const [proto, method] of [
+  [Number.prototype, "toLocaleString"],
+  [Date.prototype, "toLocaleString"],
+  [Date.prototype, "toLocaleDateString"],
+  [Date.prototype, "toLocaleTimeString"],
+  [Array.prototype, "toLocaleString"],
+] as const) {
+  const native = proto[method] as (this: unknown, l?: unknown, o?: unknown) => string;
+  Object.defineProperty(proto, method, {
+    configurable: true,
+    writable: true,
+    value(this: unknown, locales?: unknown, options?: unknown) {
+      return native.call(this, locales ?? TEST_LOCALE, options);
+    },
+  });
+}
+
+// Node's own `navigator` (used when jsdom's is absent) also reads the OS language,
+// which would pick the es locale in the i18n resolver.
+if (typeof globalThis.navigator !== "undefined" && globalThis.navigator.language !== TEST_LOCALE) {
+  Object.defineProperty(globalThis.navigator, "language", {
+    configurable: true,
+    value: TEST_LOCALE,
+  });
+  Object.defineProperty(globalThis.navigator, "languages", {
+    configurable: true,
+    value: [TEST_LOCALE],
+  });
+}
