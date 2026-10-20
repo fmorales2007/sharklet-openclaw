@@ -457,7 +457,17 @@ function gate(wt, command, start, logFile) {
   if (!command) {
     return null;
   }
-  const result = sh(wt, checkCommand(command, "fastGate"), { LOOP_START: start });
+  let result = sh(wt, checkCommand(command, "fastGate"), { LOOP_START: start });
+  // On this Windows host vitest sometimes fails to start its worker pool
+  // (F2-07 discard and Loop B guards, 2026-10-16 to 10-19): a tool fault, not
+  // a test result. One rerun for exactly that message; any real failure stands.
+  if (
+    result.status !== 0 &&
+    /Failed to start (threads|forks) worker/u.test(result.stdout + result.stderr)
+  ) {
+    console.log("[loop] vitest could not start its workers; running the gate once more");
+    result = sh(wt, checkCommand(command, "fastGate"), { LOOP_START: start });
+  }
   fs.writeFileSync(logFile, `${result.stdout}\n${result.stderr}`);
   return result.status === 0 ? null : { kind: "gate", log: logFile };
 }
