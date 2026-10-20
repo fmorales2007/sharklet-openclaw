@@ -118,7 +118,8 @@ for (const name of ["NumberFormat", "DateTimeFormat"] as const) {
   } as unknown as typeof Native;
   Pinned.prototype = Native.prototype;
   Object.defineProperty(Pinned, "supportedLocalesOf", {
-    value: (Native as never as typeof Intl.NumberFormat).supportedLocalesOf,
+    value: (locales?: string | string[]) =>
+      (Native as never as typeof Intl.NumberFormat).supportedLocalesOf(locales),
   });
   Object.defineProperty(Intl, name, { configurable: true, writable: true, value: Pinned });
 }
@@ -141,7 +142,7 @@ for (const [proto, method] of [
 
 // Node's own `navigator` (used when jsdom's is absent) also reads the OS language,
 // which would pick the es locale in the i18n resolver.
-if (typeof globalThis.navigator !== "undefined" && globalThis.navigator.language !== TEST_LOCALE) {
+if (globalThis.navigator !== undefined && globalThis.navigator.language !== TEST_LOCALE) {
   Object.defineProperty(globalThis.navigator, "language", {
     configurable: true,
     value: TEST_LOCALE,
