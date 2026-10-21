@@ -81,6 +81,13 @@ if (typeof HTMLDialogElement !== "undefined" && !("close" in HTMLDialogElement.p
   });
 }
 
+// Node's own navigator.language follows the OS locale (ICU ignores LANG on
+// Windows), so a non-English host would boot the UI in its language and break
+// every English copy assertion. Tests that need another locale stub navigator.
+if (typeof navigator !== "undefined" && navigator.language !== "en-US") {
+  Object.defineProperty(navigator, "language", { configurable: true, value: "en-US" });
+}
+
 // Node 25+ exposes accessor-backed WebStorage that can be disabled or inert.
 // Vitest intentionally rejects all storage accessors, so jsdom needs an owned
 // value descriptor even when invoking the original getter appears to work.

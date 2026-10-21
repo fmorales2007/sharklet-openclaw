@@ -453,11 +453,18 @@ function fastGateOf(task) {
   return [own, ...CI_MIRROR.filter((step) => !own.includes(step))].filter(Boolean).join(" && ");
 }
 
+// Before a gateway run, vitest compiles its workers with tsdown and prints
+// nothing: 844 s on this PC (F2-07, 2026-10-21) against the 300 s no-output
+// watchdog, so every gateway gate was killed before a test ran. 40 min is
+// upstream's extra-long silence floor (scripts/lib/vitest-process-env.mts).
+const GATE_ENV = { OPENCLAW_VITEST_NO_OUTPUT_TIMEOUT_MS: "2400000" };
+
 function gate(wt, command, start, logFile) {
   if (!command) {
     return null;
   }
-  let result = sh(wt, checkCommand(command, "fastGate"), { LOOP_START: start });
+  const env = { ...GATE_ENV, LOOP_START: start };
+  let result = sh(wt, checkCommand(command, "fastGate"), env);
   // On this Windows host vitest sometimes fails to start its worker pool
   // (F2-07 discard and Loop B guards, 2026-10-16 to 10-19): a tool fault, not
   // a test result. One rerun for exactly that message; any real failure stands.
@@ -466,7 +473,7 @@ function gate(wt, command, start, logFile) {
     /Failed to start (threads|forks) worker/u.test(result.stdout + result.stderr)
   ) {
     console.log("[loop] vitest could not start its workers; running the gate once more");
-    result = sh(wt, checkCommand(command, "fastGate"), { LOOP_START: start });
+    result = sh(wt, checkCommand(command, "fastGate"), env);
   }
   fs.writeFileSync(logFile, `${result.stdout}\n${result.stderr}`);
   return result.status === 0 ? null : { kind: "gate", log: logFile };
