@@ -457,7 +457,17 @@ function gate(wt, command, start, logFile) {
   if (!command) {
     return null;
   }
-  const result = sh(wt, checkCommand(command, "fastGate"), { LOOP_START: start });
+  let result = sh(wt, checkCommand(command, "fastGate"), { LOOP_START: start });
+  // On this Windows host vitest sometimes fails to start its worker pool
+  // (F2-07 discard and Loop B guards, 2026-10-16 to 10-19): a tool fault, not
+  // a test result. One rerun for exactly that message; any real failure stands.
+  if (
+    result.status !== 0 &&
+    /Failed to start (threads|forks) worker/u.test(result.stdout + result.stderr)
+  ) {
+    console.log("[loop] vitest could not start its workers; running the gate once more");
+    result = sh(wt, checkCommand(command, "fastGate"), { LOOP_START: start });
+  }
   fs.writeFileSync(logFile, `${result.stdout}\n${result.stderr}`);
   return result.status === 0 ? null : { kind: "gate", log: logFile };
 }
@@ -947,6 +957,35 @@ function recoverStale(phase) {
       acceptTaskEdits(phase, id, st.before);
       finishTask(phase, task, wt, st, "crash", "the session ended without running check");
     }
+  }
+  // An attempt whose session set its task's status itself and stopped without
+  // check (F2-07, 2026-10-17) left its state behind, and the worktree read as
+  // busy forever. Close it the way check would: a blocked task keeps its
+  // question, anything else counts as a crash; the commits stay in
+  // loop-attempt/<ID>.
+  const dirs = fs.existsSync(LOOP_ROOT) ? fs.readdirSync(LOOP_ROOT) : [];
+  for (const dir of dirs) {
+    const wt = path.join(LOOP_ROOT, dir);
+    if (!fs.existsSync(path.join(wt, ".git"))) {
+      continue;
+    }
+    const st = readState(path.join(stateDir(wt), "current.json"));
+    const now = st?.phase === phase ? readTasks(phase).tasks.find((t) => t.prompt === st.id) : null;
+    if (!now || now.status === "in_progress") {
+      continue;
+    }
+    const task = st.before.tasks.find((t) => t.prompt === st.id);
+    const blocked = acceptTaskEdits(phase, st.id, st.before).status === "blocked";
+    finishTask(
+      phase,
+      task,
+      wt,
+      st,
+      blocked ? "blocked" : "crash",
+      blocked
+        ? (now.loopNote ?? "blocked without check")
+        : "the attempt ended without running check",
+    );
   }
 }
 
