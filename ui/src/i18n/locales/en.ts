@@ -3369,7 +3369,7 @@ export const en: TranslationMap & {
     productName: "Sharklet",
     tagline: "Your personal AI assistant, running on your own devices.",
     waveHello: "Wave hello",
-    linksLabel: "OpenClaw community and resources",
+    linksLabel: "Community and resources",
     linkWebsite: "Website",
     linkDocs: "Docs",
     linkGitHub: "GitHub",
