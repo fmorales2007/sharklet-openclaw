@@ -22,7 +22,6 @@ import { SubscriptionsController } from "../lit/subscriptions-controller.ts";
 import { icons } from "./icons.ts";
 import { renderMcpServerForm, type McpServerForm } from "./mcp-server-form.ts";
 import {
-  renderDocsLink,
   renderLearnMoreLink,
   renderSettingsEmpty,
   renderSettingsLoadingSkeleton,
@@ -52,8 +51,6 @@ class McpServersCard extends OpenClawLightDomElement {
   private context?: ApplicationContext;
 
   @property() pluginsHref = "";
-
-  @property() docsUrl = "https://docs.openclaw.ai/tools/mcp";
 
   @state() private rows: McpServerSummary[] | null = null;
   @state() private busy = false;
@@ -249,9 +246,7 @@ class McpServersCard extends OpenClawLightDomElement {
     const body = !rows
       ? renderSettingsLoadingSkeleton({ rows: 2 })
       : rows.length === 0
-        ? renderSettingsEmpty(html`
-            ${t("mcpPage.noServers")} ${renderDocsLink(this.docsUrl, t("mcpPage.setUpFirstServer"))}
-          `)
+        ? renderSettingsEmpty(t("mcpPage.noServers"))
         : rows.map((server) => this.renderRow(server));
     return html`
       <div class="mcp-server-list">
