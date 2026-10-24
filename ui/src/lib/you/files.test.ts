@@ -122,7 +122,9 @@ describe("validation rejects wrong type, over length and unexpected fields", () 
   });
 
   it("a value shaped like a key never reaches a file", () => {
-    expect(validateAboutYou({ text: `token ${"sk-"}${"a".repeat(24)}` })).toMatch(/key-shaped/);
+    expect(validateAboutYou({ text: ["token sk-", "a".repeat(24)].join("") })).toMatch(
+      /key-shaped/,
+    );
   });
 
   it("error text names a path and a rule, never the value", () => {

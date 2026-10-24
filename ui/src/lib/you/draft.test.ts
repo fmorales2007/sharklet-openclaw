@@ -54,7 +54,7 @@ describe("draftProblems", () => {
     const draft = structuredClone(base);
     draft.rules.push({ when: "", skill: "" });
     draft.aboutYou = "x".repeat(1201);
-    draft.memory = `note ${"sk-"}${"b".repeat(24)}`;
+    draft.memory = ["note sk-", "b".repeat(24)].join("");
     expect(Object.keys(draftProblems(draft, say)).toSorted()).toEqual(["about", "memory", "rules"]);
   });
 });

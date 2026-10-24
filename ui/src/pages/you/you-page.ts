@@ -38,7 +38,7 @@ function failureLine(agent: string, failure: YouSaveFailure): string {
       return t("youPage.failed.changed", { agent });
     case "invalid":
       return t("youPage.failed.invalid", { agent });
-    case "rpc":
+    default:
       return t("youPage.failed.rpc", { agent, reason: failure.error.message });
   }
 }
