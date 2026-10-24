@@ -1,5 +1,6 @@
 import { expect, it } from "vitest";
 import { installMockGateway } from "../test-helpers/control-ui-e2e.ts";
+import { openToolOutput } from "./chat-flow.test-support.ts";
 import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts";
 
 const suite = createControlUiE2eSuite({ name: "Control UI browser preview URLs" });
@@ -48,14 +49,7 @@ suite.define(() => {
         const cards = page.locator("openclaw-browser-tab-card");
         await expect.poll(() => cards.count()).toBe(1);
         expect(await cards.locator(".url").textContent()).toBe("https://example.com");
-        for (const selector of [".chat-activity-group__summary", ".chat-tool-msg-summary"]) {
-          for (const summary of await page.locator(selector).all()) {
-            if ((await summary.getAttribute("aria-expanded")) !== "true") {
-              await summary.click();
-            }
-          }
-        }
-        await page.getByText("Opened about:blank", { exact: true }).waitFor();
+        await openToolOutput(page, "Opened about:blank");
         expect(await cards.count()).toBe(1);
       },
     );
