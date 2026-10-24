@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Sharklet's loops, after Karpathy's autoresearch: one fresh Claude Desktop
-// session per attempt (a scheduled routine), machine gates, an independent
+// Sharklet's loops, after Karpathy's autoresearch: a scheduled Claude Desktop
+// session that works the queue task by task, machine gates, an independent
 // Codex audit, and git as a ratchet: a commit stays only when everything
 // passes. The session does the work; this script picks the work, prepares the
 // worktree and judges the result. Method, routines and daily use:
@@ -379,10 +379,11 @@ function fetch() {
 
 // Tasks start from the pushed branch (the runner pushes every keep, so anything
 // local only is a dead attempt); a metric branch keeps its local commits until
-// they are delivered. A base that exists only locally is used as is.
+// they are delivered. A base that exists only locally is used as is. The caller
+// runs fetch() first, once: next must tell a network outage, which stops the
+// run, from a task that cannot start, which only blocks that task.
 function worktree(branch, base, { resetToRemote = true } = {}) {
   const wt = worktreePath(branch);
-  fetch();
   if (!fs.existsSync(wt)) {
     fs.mkdirSync(LOOP_ROOT, { recursive: true });
     if (refExists(`refs/heads/${branch}`)) {
@@ -453,22 +454,33 @@ function fastGateOf(task) {
   return [own, ...CI_MIRROR.filter((step) => !own.includes(step))].filter(Boolean).join(" && ");
 }
 
+// On this Windows host vitest sometimes fails to start its worker pool or
+// stalls with no output until run-vitest kills it (F2-07 and F2-02 discards,
+// Loop B guards, 2026-10-16 to 10-21): a tool fault, not a test result.
+function toolFault(result) {
+  return (
+    result.status !== 0 &&
+    /Failed to start (threads|forks) worker|terminating stalled Vitest/u.test(
+      (result.stdout ?? "") + (result.stderr ?? ""),
+    )
+  );
+}
+
 function gate(wt, command, start, logFile) {
   if (!command) {
     return null;
   }
+  // One rerun on a vitest fault; if it stalls again the task waits for a
+  // person instead of being handed a fix it cannot make.
   let result = sh(wt, checkCommand(command, "fastGate"), { LOOP_START: start });
-  // On this Windows host vitest sometimes fails to start its worker pool
-  // (F2-07 discard and Loop B guards, 2026-10-16 to 10-19): a tool fault, not
-  // a test result. One rerun for exactly that message; any real failure stands.
-  if (
-    result.status !== 0 &&
-    /Failed to start (threads|forks) worker/u.test(result.stdout + result.stderr)
-  ) {
-    console.log("[loop] vitest could not start its workers; running the gate once more");
+  if (toolFault(result)) {
+    console.log("[loop] vitest stalled or could not start; running the gate once more");
     result = sh(wt, checkCommand(command, "fastGate"), { LOOP_START: start });
   }
   fs.writeFileSync(logFile, `${result.stdout}\n${result.stderr}`);
+  if (toolFault(result)) {
+    return { kind: "gate-tool", log: logFile, fatal: true };
+  }
   return result.status === 0 ? null : { kind: "gate", log: logFile };
 }
 
@@ -624,6 +636,12 @@ function resetTo(wt, start) {
 
 // --- Loop A: tasks ----------------------------------------------------------
 
+// A planFile counts only if the file is there: F2-02b had one set and approved
+// with no file, and every next crashed on it for two days (2026-10-20 to 10-22).
+function hasPlan(task) {
+  return Boolean(task.planFile) && fs.existsSync(path.join(DOCS, task.planFile));
+}
+
 function classify(task, byId) {
   const done = (t) => t?.status === "completed";
   if (task.status === "completed") {
@@ -640,7 +658,7 @@ function classify(task, byId) {
   }
   // An L1 plan is written and approved ahead of its dependencies, so a whole
   // phase's plans reach the owner in one batch instead of one a night.
-  if (task.autonomy === "L1" && !task.planFile) {
+  if (task.autonomy === "L1" && !hasPlan(task)) {
     return "needs a plan";
   }
   if (task.autonomy === "L1" && !task.planApproved) {
@@ -655,7 +673,7 @@ function classify(task, byId) {
   return "runnable";
 }
 
-// --json prints one line of JSON for the dashboard and the orchestrator, so
+// --json prints one line of JSON for the dashboard and the Loop routine, so
 // they read the classification from here instead of repeating it.
 function status(phase, asJson = false) {
   const { tasks } = readTasks(phase);
@@ -677,8 +695,8 @@ function status(phase, asJson = false) {
   return new Result(0, "status", `phase ${phase}`);
 }
 
-// What the home dashboard artifact shows, as one JSON line: the orchestrator
-// writes it to the artifact's database each run (docs/loops/modo-orquestador.md).
+// What the home dashboard artifact shows, as one JSON line: the Loop routine
+// writes it to the artifact's database at the end of each run (docs/loops/README.md).
 function snapshot(phase) {
   const { tasks } = readTasks(phase);
   const byId = new Map(tasks.map((t) => [t.id, t]));
@@ -702,7 +720,6 @@ function snapshot(phase) {
       done: rows.filter((row) => row.state === "done").length,
       total: rows.length,
       needsYou: items.filter((item) => item.status === "escalated").map(pick),
-      withOrchestrator: items.filter((item) => item.status === "open").map(pick),
       active: rows.filter((row) => row.state !== "done" && !row.state.startsWith("waiting")),
       recent: readResults()
         .slice(-12)
@@ -719,7 +736,7 @@ function snapshot(phase) {
   return new Result(0, "snapshot", `phase ${phase}`);
 }
 
-// --- inbox: what the orchestrator hands to the owner, and the owner's answers
+// --- inbox: what waits for the owner, and the owner's answers
 
 const INBOX = path.join(DOCS, "docs/loops/inbox.json");
 const LEVELS = ["decision", "alert", "info"];
@@ -767,7 +784,13 @@ function addInboxItem({ level, kind = "answer", task, title, detail }) {
     task,
     title: title.trim().slice(0, 200),
     detail: detail ? String(detail).slice(0, 4000) : undefined,
-    status: "open",
+    // Straight to the owner: the loop session already wrote its recommendation
+    // in the note when it had one.
+    status: "escalated",
+    recommendation: /Recomendaci[oó]n:\s*([^\n]+)/iu
+      .exec(detail ?? "")?.[1]
+      ?.trim()
+      .slice(0, 1000),
   });
   writeInbox(data);
   return { id, isNew: true };
@@ -848,33 +871,8 @@ function inbox(sub, args) {
     commitDocs(`Loop inbox: ${id} answered`, files);
     return new Result(0, "answered", id);
   }
-  if (sub === "escalate" || sub === "close") {
-    // The orchestrator's two moves on an item: hand it to the owner with its
-    // recommendation (the owner can accept it in one tap), or close an
-    // outside fault it fixed. Neither one answers or approves.
-    const [id] = args;
-    const note = flag(args, "--note")?.slice(0, 1000);
-    const data = readInbox();
-    const item = data.items.find((one) => one.id === id);
-    if (!item || item.status === "closed") {
-      throw new Error(`inbox ${sub}: no open item ${id}`);
-    }
-    if (sub === "close" && item.kind !== "error" && !item.kind.startsWith("deliver-")) {
-      throw new Error(`inbox close: item ${id} is a ${item.kind}, which only the owner closes`);
-    }
-    const at = new Date().toISOString();
-    if (sub === "escalate") {
-      const recommendation = flag(args, "--recommend")?.slice(0, 1000);
-      Object.assign(item, { status: "escalated", escalatedAt: at, recommendation, note });
-    } else {
-      Object.assign(item, { status: "closed", closedAt: at, closedNote: note });
-    }
-    writeInbox(data);
-    commitDocs(`Loop inbox: ${id} ${item.status}`, [INBOX]);
-    return new Result(0, item.status, id);
-  }
   throw new Error(
-    "inbox list [--open] | add <level> <title> [--kind K] [--task ID] [--detail text] | answer <id> <text> | escalate <id> [--recommend text] [--note text] | close <id> [--note text]",
+    "inbox list [--open] | add <level> <title> [--kind K] [--task ID] [--detail text] | answer <id> <text>",
   );
 }
 
@@ -924,8 +922,12 @@ function finishTask(phase, task, wt, st, status, description) {
       title: `${task.prompt} is done and waits for your approval`,
       detail: oneLine(findTask(phase, task.prompt).evidence, 1500),
     });
-  } else if (status === "crash" || status === "discard") {
-    // An error goes to the orchestrator first; it escalates what it cannot fix.
+  } else if (
+    (status === "crash" || status === "discard") &&
+    discards(task.prompt) >= MAX_DISCARDS
+  ) {
+    // A single crash or discard goes back to pending and the next run retries
+    // it; the owner hears only when the task has stopped (retry clears it).
     addInboxItem({
       level: "alert",
       kind: "error",
@@ -1005,16 +1007,40 @@ function next(phase) {
   const busy = (t) =>
     fs.existsSync(worktreePath(t.branch)) &&
     fs.existsSync(path.join(stateDir(worktreePath(t.branch)), "current.json"));
-  const task = tasksIn(phase, "runnable").find((t) => !busy(t));
-  if (!task) {
+  const ready = tasksIn(phase, "runnable").filter((t) => !busy(t));
+  if (ready.length === 0) {
     status(phase);
     return new Result(3, "nothing", `no runnable task in phase ${phase}`);
   }
   // Only when there is work to do: an idle run never touches the server.
   serverPreflight();
+  fetch();
+  for (const task of ready) {
+    try {
+      return startTask(phase, task);
+    } catch (error) {
+      // One task that cannot start must not stop the queue behind it.
+      const note = `could not start: ${oneLine(error.message, 300)}`;
+      updateTask(phase, task.prompt, { status: "blocked", loopNote: note });
+      record({ loop: "task", id: task.prompt, status: "blocked", description: note });
+      addInboxItem({
+        level: "decision",
+        kind: "answer",
+        task: task.prompt,
+        title: `${task.prompt} could not start`,
+        detail: note,
+      });
+      commitDocs(`Loop: ${task.prompt} blocked at start`, [tasksFile(phase), RESULTS, INBOX]);
+      console.log(`[loop] ${task.prompt} ${note}; trying the next task`);
+    }
+  }
+  status(phase);
+  return new Result(3, "nothing", `no runnable task in phase ${phase} could start (see the inbox)`);
+}
+
+function startTask(phase, task) {
   const wt = worktree(task.branch, task.base ?? "custom");
   const start = git(wt, "rev-parse", "HEAD");
-  updateTask(phase, task.prompt, { status: "in_progress" });
   const plan = task.planFile ? fs.readFileSync(path.join(DOCS, task.planFile), "utf8") : "";
   const answers = answersFor(task.prompt)
     .map((item) => `- ${item.closedAt?.slice(0, 10) ?? ""}, a "${item.title}": ${item.answer}`)
@@ -1039,6 +1065,7 @@ function next(phase) {
   const state = stateDir(wt);
   const briefFile = path.join(state, `brief-${task.prompt}.md`);
   fs.writeFileSync(briefFile, brief);
+  updateTask(phase, task.prompt, { status: "in_progress" });
   writeState(path.join(state, "current.json"), {
     phase,
     id: task.prompt,
@@ -1148,6 +1175,7 @@ function planNext(phase) {
     return new Result(3, "nothing", `no L1 task needs a plan in phase ${phase}`);
   }
   serverPreflight();
+  fetch();
   // Planned ahead of its dependencies, a task's base branch may not exist yet:
   // the plan reads custom, and the branch follows its base once that lands.
   const base = task.base ?? "custom";
@@ -1166,7 +1194,8 @@ function planSave(phase, id) {
   if (!fs.existsSync(file) || fs.readFileSync(file, "utf8").trim().length < 200) {
     throw new Error(`${rel} is missing or too short to be a plan`);
   }
-  updateTask(phase, id, { planFile: rel });
+  // A new plan needs a new approval, whatever an earlier one said.
+  updateTask(phase, id, { planFile: rel, planApproved: undefined });
   record({ loop: "plan", id, status: "plan", description: rel });
   // The plan's "Decisiones para ti" section is what the owner reads first.
   const asks = fs.readFileSync(file, "utf8").split(/^#+\s*Decisiones para ti/imu)[1] ?? "";
@@ -1184,7 +1213,7 @@ function planSave(phase, id) {
 function approve(phase, id) {
   const task = findTask(phase, id);
   const by = `usuario, ${today()}`;
-  if (task.planFile && !task.planApproved) {
+  if (hasPlan(task) && !task.planApproved) {
     updateTask(phase, id, { planApproved: by });
   } else if (task.status === "completed" && task.userGate && !task.approvedBy) {
     updateTask(phase, id, { approvedBy: by });
@@ -1202,7 +1231,7 @@ function retry(phase, id) {
     updateTask(phase, id, { status: "pending" });
   }
   record({ loop: "task", id, status: "reset", description: "retry by the user" });
-  closeInboxFor(id, ["answer"], `retried, ${today()}`);
+  closeInboxFor(id, ["answer", "error"], `retried, ${today()}`);
   commitDocs(`Loop: ${id} retry`, [tasksFile(phase), RESULTS, INBOX]);
   return new Result(0, "reset", id);
 }
@@ -1239,6 +1268,7 @@ function metricState(name) {
 
 function metricNext(name) {
   serverPreflight();
+  fetch();
   const program = readProgram(name);
   const wt = worktree(`loop/${name}`, program.base, { resetToRemote: false });
   const file = metricState(name);
@@ -1325,9 +1355,12 @@ function metricCheck(name) {
     });
     return new Result(20, "crash", "the experiment left uncommitted changes");
   }
-  const guard = touchesProtected(wt, ms.start)
-    ? { status: 1 }
-    : sh(wt, checkCommand(program.guard, "guard"), { LOOP_START: ms.start });
+  const runGuard = () => sh(wt, checkCommand(program.guard, "guard"), { LOOP_START: ms.start });
+  let guard = touchesProtected(wt, ms.start) ? { status: 1 } : runGuard();
+  if (toolFault(guard)) {
+    console.log("[loop] vitest stalled or could not start; running the guard once more");
+    guard = runGuard();
+  }
   fs.writeFileSync(
     path.join(stateDir(wt), `guard-${name}.log`),
     `${guard.stdout ?? ""}
