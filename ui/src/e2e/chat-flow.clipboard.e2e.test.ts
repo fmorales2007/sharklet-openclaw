@@ -97,7 +97,7 @@ async function selectBubbleText(bubble: Locator): Promise<void> {
 }
 
 suite.define(() => {
-  it.each(["tool-diff", "selection", "agent-id"] as const)(
+  it.each(["selection", "agent-id"] as const)(
     "reports clipboard failure from the %s action",
     async (surface) => {
       const artifactDirParent = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
@@ -145,17 +145,7 @@ suite.define(() => {
           `${suite.server.baseUrl}${surface === "agent-id" ? "settings/agents/main" : "chat"}`,
         );
         let button;
-        if (surface === "tool-diff") {
-          await page.getByText(text, { exact: true }).waitFor();
-          await page
-            .locator(".chat-tool-msg-summary")
-            .first()
-            .click({ position: { x: 4, y: 4 } });
-          button = await page
-            .locator(".chat-tool-card__actions")
-            .getByRole("button", { name: "Copy", exact: true })
-            .elementHandle();
-        } else if (surface === "selection") {
+        if (surface === "selection") {
           const bubble = page.locator(".chat-bubble").filter({ hasText: text });
           await bubble.waitFor();
           await selectBubbleText(bubble);
@@ -186,9 +176,7 @@ suite.define(() => {
         expect(await button.evaluate((element) => element.isConnected)).toBe(true);
         expect(await hasAccessibleName("Copy failed")).toBe(true);
         const copiedValue = (await readClipboardFailureProof(page)).value;
-        expect(copiedValue).toBe(
-          surface === "tool-diff" ? "-before\n+after" : surface === "selection" ? text : "main",
-        );
+        expect(copiedValue).toBe(surface === "selection" ? text : "main");
         await deferClipboard(page);
         await button.dblclick();
         expect(await button.isDisabled()).toBe(true);

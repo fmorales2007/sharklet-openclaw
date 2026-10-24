@@ -12,7 +12,7 @@ suite.define(() => {
     { reasoningLevel: "off", withTools: true },
     { reasoningLevel: "on", withTools: true },
     { reasoningLevel: "stream", withTools: true },
-  ])("keeps reasoning in work: %o", async ({ reasoningLevel, withTools }) => {
+  ])("shows reasoning in line: %o", async ({ reasoningLevel, withTools }) => {
     const context = await suite.newBrowserContext({
       locale: "en-US",
       serviceWorkers: "block",
@@ -71,16 +71,12 @@ suite.define(() => {
       const pane = page.locator('openclaw-chat-pane[aria-hidden="false"]');
       const answer = pane.getByText(finalText, { exact: true });
       const reasoning = pane.locator(".chat-thinking", { hasText: reasoningText });
-      const worked = pane.locator(".chat-work-group > .chat-activity-group__summary");
 
       for (const reload of [false, true]) {
         if (reload) {
           await page.reload();
         }
         await answer.waitFor();
-        await expect.poll(() => reasoning.isVisible()).toBe(false);
-        await worked.click();
-        await expect.poll(() => worked.getAttribute("aria-expanded")).toBe("true");
         await expect.poll(() => reasoning.isVisible()).toBe(reasoningLevel === "on");
         if (reasoningLevel === "on") {
           expect(await reasoning.locator("pre code").allTextContents()).toEqual([code]);

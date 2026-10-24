@@ -956,8 +956,6 @@ describeControlUiE2e("Control UI chat message actions", () => {
         .poll(() => userOversizedBubble.locator(".chat-text").textContent())
         .toContain(oversizedNotice);
 
-      const activitySummary = page.locator(".chat-activity-group__summary").last();
-      await activitySummary.click();
       const groupedToolBubble = page.locator('.chat-bubble[data-entry-id="oversized-tool-1"]');
       await groupedToolBubble.waitFor({ state: "visible" });
       expect(await groupedToolBubble.getAttribute("data-message-text")).toBe(oversizedNotice);

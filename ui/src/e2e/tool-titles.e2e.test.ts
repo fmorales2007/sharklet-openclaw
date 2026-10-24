@@ -40,8 +40,9 @@ suite.define(() => {
         const historyRow = page.locator(".chat-tool-row", { hasText: "Check the test suite" });
         await historyRow.waitFor();
         await historyRow.click();
-        await page.locator(".chat-tool-msg-body", { hasText: "All tests passed." }).waitFor();
-        expect(await page.locator(".chat-tool-msg-body").textContent()).toContain(command);
+        const panel = page.locator("openclaw-chat-detail-panel", { hasText: "All tests passed." });
+        await panel.waitFor();
+        expect(await panel.textContent()).toContain("pnpm test");
 
         await page.locator(".agent-chat__composer-combobox textarea").fill("Check the workspace");
         await page.getByRole("button", { name: "Send message" }).click();

@@ -487,12 +487,7 @@ suite.define(() => {
           .waitFor();
         const toolRow = detailPanel.locator(".chat-tool-row", { hasText: "Check model routing" });
         await toolRow.waitFor();
-        await toolRow.click();
-        const toolBody = detailPanel.locator(".chat-tool-msg-body", {
-          hasText: "Routing boundary checks passed.",
-        });
-        await toolBody.waitFor();
-        expect(await toolBody.textContent()).toContain("pnpm test routing");
+        expect(await toolRow.getAttribute("aria-expanded")).toBeNull();
         expect(
           await detailPanel.getByRole("button", { name: "Show earlier", exact: true }).count(),
         ).toBe(0);
@@ -505,7 +500,7 @@ suite.define(() => {
           path.join(railFlowDir, "02-native-transcript-with-tool-result.png"),
           await takeControlUiViewportScreenshot(page, page.locator(".shell"), [
             detailPanel,
-            toolBody,
+            toolRow,
           ]),
         );
         await page.getByRole("button", { name: "Restore split", exact: true }).click();
