@@ -55,8 +55,11 @@ const RESULTS = path.join(DOCS, "docs/loops/results.tsv");
 const MAX_FIXES = 2;
 const MAX_DISCARDS = 2;
 const MAX_IDLE = 3;
-// A session that never ran `check` (closed app, crash) leaves its task here.
-const STALE_HOURS = 8;
+// A session that never ran `check` (out of usage budget, closed app) leaves
+// its task here. Only the Loop routine starts tasks and its runs never overlap
+// (Run now is refused while one runs), so an hour is enough: waiting 8 cost
+// F2-03 a whole night (2026-10-24).
+const STALE_HOURS = 1;
 const DEFAULT_WORKFLOWS = ["sharklet-checks.yml", "sharklet-ui-tests.yml"];
 
 // Gates and metrics come from tasks.json and docs/loops/*.md and run in bash on
@@ -200,8 +203,11 @@ function updateTask(phase, id, fields) {
   return task;
 }
 
-// A session may only report on its own task. Everything else in tasks.json
-// (gates, branches, autonomy, other tasks) is restored from when it started.
+// A session may only report on its own task. Its task's settings (gates,
+// branch, autonomy) come back from when it started; every other task comes from
+// the committed tasks.json, which holds what the runner and the owner recorded
+// since. Restoring those from the old snapshot undid a plan and an approval
+// when an attempt was recovered hours later (F2-03, 2026-10-24).
 const SESSION_FIELDS = ["status", "done", "evidence", "pending", "loopNote"];
 function acceptTaskEdits(phase, id, before) {
   let mine = {};
@@ -210,8 +216,12 @@ function acceptTaskEdits(phase, id, before) {
   } catch {
     // Unparseable JSON from the session: keep only what was there before.
   }
-  const data = structuredClone(before);
-  const task = data.tasks.find((t) => t.prompt === id);
+  const rel = path.relative(DOCS, tasksFile(phase)).replaceAll("\\", "/");
+  const committed = run("git", ["show", `HEAD:${rel}`], { cwd: DOCS });
+  const data = committed.status === 0 ? JSON.parse(committed.stdout) : structuredClone(before);
+  const at = data.tasks.findIndex((t) => t.prompt === id);
+  data.tasks[at] = structuredClone(before.tasks.find((t) => t.prompt === id));
+  const task = data.tasks[at];
   for (const field of SESSION_FIELDS) {
     if (field in mine) {
       task[field] = mine[field];
@@ -251,7 +261,8 @@ function record(row) {
   console.log(`[loop] ${row.id} ${row.status}: ${oneLine(row.description, 120)}`);
 }
 
-// Discards since the task's last "reset" row (written by `retry`) or keep.
+// Discards since the task's last "reset" row (written by `retry`) or keep. A
+// "paused" attempt (out of usage budget mid-task) is not one.
 function discards(id) {
   let count = 0;
   for (const row of readResults()) {
@@ -860,7 +871,11 @@ function inbox(sub, args) {
     if (item.task && item.kind === "answer") {
       const phase = resolvePhase("auto");
       const task = readTasks(phase).tasks.find((t) => t.prompt === item.task);
-      if (task?.status === "blocked") {
+      // A block whose fix only the owner can make (a protected file, a
+      // dependency, a push) stays blocked after the answer: unblocking it sent
+      // the next attempt into the same wall (F2-03, F2-07, 2026-10-24). retry
+      // releases it once the change is in; the answer still reaches the brief.
+      if (task?.status === "blocked" && !/^Acción del dueño:/u.test(task.loopNote ?? "")) {
         updateTask(phase, item.task, { status: "pending" });
         record({
           loop: "task",
@@ -947,7 +962,8 @@ function finishTask(phase, task, wt, st, status, description) {
 }
 
 // A task left in_progress by a session that never ran `check` goes back to
-// pending once its attempt is older than STALE_HOURS.
+// pending once its attempt is older than STALE_HOURS, as "paused": the next
+// attempt picks up its commits from loop-attempt/<ID>, and it is not a discard.
 function recoverStale(phase) {
   for (const { prompt: id } of tasksIn(phase, "in progress")) {
     let attempt;
@@ -960,7 +976,7 @@ function recoverStale(phase) {
     const { wt, st, task } = attempt;
     if (Date.now() - Date.parse(st.startedAt) >= STALE_HOURS * 3_600_000) {
       acceptTaskEdits(phase, id, st.before);
-      finishTask(phase, task, wt, st, "crash", "the session ended without running check");
+      finishTask(phase, task, wt, st, "paused", "the session ended without running check");
     }
   }
   // An attempt whose session set its task's status itself and stopped without

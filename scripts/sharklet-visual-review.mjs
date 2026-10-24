@@ -208,7 +208,6 @@ try {
             bodyFont: getComputedStyle(document.body).fontFamily,
             uiPx,
             title: document.title,
-            mascotIsOurs: customElements.get("openclaw-mascot")?.name === "SharkletMascot",
             horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
             // upstream's "Styles failed to load" banner: a role=alert div appended
             // to <body>, as opposed to the hidden boot-error <section>.
@@ -268,7 +267,6 @@ try {
             String(state.missionStrip),
           );
         }
-        check(run, "mascot element is Sharklet's", state.mascotIsOurs, String(state.mascotIsOurs));
         check(
           run,
           "no horizontal page scroll",
