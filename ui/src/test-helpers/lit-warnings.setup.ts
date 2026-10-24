@@ -7,6 +7,63 @@ const issuedWarnings = ((globalThis as { litIssuedWarnings?: Set<string> }).litI
 
 issuedWarnings.add("dev-mode");
 
+// Pin locale and time zone so formatting assertions do not depend on the host.
+// Windows ICU ignores LANG/LC_ALL, so the default locale is pinned in-process;
+// Node re-reads TZ on assignment. Node's own `navigator.language` (which i18n
+// reads) also follows the host locale. Browser runs get both from the launcher.
+if (!("__vitest_browser__" in globalThis)) {
+  process.env.TZ = "UTC";
+  const locale = "en-US";
+  if (globalThis.navigator) {
+    Object.defineProperty(globalThis.navigator, "language", {
+      configurable: true,
+      get: () => locale,
+    });
+    Object.defineProperty(globalThis.navigator, "languages", {
+      configurable: true,
+      get: () => [locale],
+    });
+  }
+  for (const key of [
+    "Collator",
+    "DateTimeFormat",
+    "ListFormat",
+    "NumberFormat",
+    "PluralRules",
+    "RelativeTimeFormat",
+    "Segmenter",
+  ] as const) {
+    Object.defineProperty(Intl, key, {
+      configurable: true,
+      writable: true,
+      value: new Proxy(Intl[key], {
+        apply: (target, thisArg, [locales, ...rest]) =>
+          Reflect.apply(target, thisArg, [locales ?? locale, ...rest]),
+        construct: (target, [locales, ...rest], newTarget) =>
+          Reflect.construct(target, [locales ?? locale, ...rest], newTarget),
+      }),
+    });
+  }
+  for (const [proto, method, index] of [
+    [Number.prototype, "toLocaleString", 0],
+    [BigInt.prototype, "toLocaleString", 0],
+    [Date.prototype, "toLocaleString", 0],
+    [Date.prototype, "toLocaleDateString", 0],
+    [Date.prototype, "toLocaleTimeString", 0],
+    [String.prototype, "localeCompare", 1],
+  ] as const) {
+    const original = (proto as unknown as Record<string, (...args: unknown[]) => unknown>)[method];
+    Object.defineProperty(proto, method, {
+      configurable: true,
+      writable: true,
+      value(this: unknown, ...args: unknown[]) {
+        args[index] ??= locale;
+        return original.apply(this, args);
+      },
+    });
+  }
+}
+
 // Web Awesome resolves `for` targets while Lit content is still in a detached
 // render root. The app renders into a connected root; JSDOM unit helpers do not.
 const findElementById = (root: ParentNode, id: string) =>
