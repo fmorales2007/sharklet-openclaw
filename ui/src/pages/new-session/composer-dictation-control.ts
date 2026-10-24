@@ -8,12 +8,12 @@ import {
   renderComposerVoiceButton,
   renderMicrophonePicker,
 } from "../chat/components/chat-composer-controls.ts";
+import type { ComposerDictationText } from "../chat/components/chat-composer-dictation-text.ts";
 import { ComposerDictationController } from "../chat/composer-dictation.ts";
 import { ComposerMicrophonePicker } from "../chat/composer-microphone-picker.ts";
-import type { NewSessionComposerTextareaController } from "./composer.ts";
 
 type NewSessionDictationOptions = {
-  textarea: NewSessionComposerTextareaController;
+  textarea: ComposerDictationText;
   getClient: () => GatewayBrowserClient | null;
   isConnected: () => boolean;
   canCommit: () => boolean;

@@ -3,13 +3,13 @@ import type { ApplicationContext } from "../../app/context.ts";
 import type { ImageLightboxItem } from "../../components/image-lightbox.ts";
 import { t } from "../../i18n/index.ts";
 import type { HumanMention } from "../../lib/chat/chat-types.ts";
-import { renderChatPermissionPicker } from "../chat/components/chat-permission-picker.ts";
 import type { NewSessionDictationControl } from "./composer-dictation-control.ts";
-import { renderNewSessionDraftComposer, renderNewSessionDraftErrors } from "./draft-composer.ts";
+import { renderNewSessionDraftErrors } from "./draft-composer.ts";
 import type { DraftGatewayState } from "./draft-gateway-state.ts";
 import type { DraftPlaceState } from "./draft-place-state.ts";
 import type { DraftSubmissionFlow } from "./draft-submission-flow.ts";
 import type { NewSessionTitleController } from "./draft-title.ts";
+import { renderHomeComposer } from "./home-composer-slot.ts";
 import { renderNewSessionIncognitoNotice } from "./incognito-control.ts";
 
 export function renderNewSessionDraftView(options: {
@@ -60,8 +60,9 @@ export function renderNewSessionDraftView(options: {
         titlePreparation.setComposing(false);
       }}
     >
-      ${renderTargetBar()} ${renderNewSessionDraftErrors(place, submission, isCatalogTarget)}
-      ${renderNewSessionDraftComposer({
+      ${renderHomeComposer({
+        header: html`${renderTargetBar()}
+        ${renderNewSessionDraftErrors(place, submission, isCatalogTarget)}`,
         agent: place.selectedAgent(),
         agentId: place.agentId,
         attachmentDraft: submission.attachmentDraft,
@@ -81,23 +82,21 @@ export function renderNewSessionDraftView(options: {
         draftAvailable: capabilities.canStartAsDraft(context),
         ...capabilities.composerProps(context, gateway, place.agentId),
         modelControl: place.modelControl,
-        permissionControl: isCatalogTarget
+        permissionPicker: isCatalogTarget
           ? undefined
-          : renderChatPermissionPicker({
+          : {
               canSelectFull: place.isAdmin(),
               defaultMode: place.selectedAgent()?.defaultPermissionMode,
               disabled: submission.submitting || Boolean(submission.pendingPlacement.sessionKey),
               disabledReason: submission.submitting ? t("newSession.starting") : undefined,
               mode: submission.permission.value,
               onSelect: (permissionMode) => submission.permission.set(permissionMode ?? undefined),
-            }),
+            },
         requiresModifier: preferences?.chatSendShortcut === "modifier-enter",
         requestUpdate,
         submitting: submission.submitting,
-        textareaController: submission.composerTextarea,
         voiceControl,
         messageLocked: Boolean(submission.pendingPlacement.sessionKey),
-        nativeTerminal: isCatalogTarget,
         onUnsupportedAttachment: () =>
           submission.setError(t("newSession.terminalAttachmentsUnsupported")),
         onInput: onMessage,

@@ -18,13 +18,14 @@ import { normalizeAgentId } from "../../lib/sessions/session-key.ts";
 import type { SessionPlacementRecovery } from "../../lib/sessions/session-placement-recovery.ts";
 import { deleteSessionPlacementDraft } from "../../lib/sessions/session-placement-startup.ts";
 import { buildChatApiAttachments } from "../chat/attachment-api.ts";
+import { resetChatComposerState } from "../chat/components/chat-composer-state.ts";
+import { HOME_COMPOSER_PANE_ID } from "../chat/components/chat-composer-types.ts";
 import { CHAT_COMPOSER_DRAFT_STORAGE_ERROR } from "../chat/composer-persistence.ts";
 import { buildInitialChatSubmission, buildLocalUserMessage } from "../chat/user-message-content.ts";
 import { NewSessionAttachmentDraft } from "./attachment-draft.ts";
 import { prepareBackgroundSessionCompletion } from "./background-session-notice.ts";
 import { NewSessionCapabilityController } from "./capability-controller.ts";
 import * as catalog from "./catalog-target.ts";
-import { NewSessionComposerTextareaController } from "./composer.ts";
 import type { DraftSessionCreateOverrides, NewSessionVisibility } from "./create-params.ts";
 import type { DraftGatewayState } from "./draft-gateway-state.ts";
 import { NewSessionDraftPersistence } from "./draft-persistence.ts";
@@ -68,7 +69,6 @@ export class DraftSubmissionFlow {
   private readonly sessionStartup: DraftSessionStartup;
   readonly pendingPlacement = new PendingSessionPlacementRecoveryState();
   readonly attachmentDraft: NewSessionAttachmentDraft;
-  readonly composerTextarea = new NewSessionComposerTextareaController();
   readonly permission = new NewSessionPermissionSelection(() => this.callbacks.requestUpdate());
   readonly draftPersistence: NewSessionDraftPersistence;
   readonly capabilities: NewSessionCapabilityController;
@@ -723,7 +723,7 @@ export class DraftSubmissionFlow {
     this.startedSession.current = null;
     this.draftPersistence.disconnect();
     this.attachmentDraft.reset({ release: true });
-    this.composerTextarea.disconnect();
+    resetChatComposerState(HOME_COMPOSER_PANE_ID);
   }
 
   private placement = () => resolveDraftSessionPlacement(this.pendingPlacement, this.place);

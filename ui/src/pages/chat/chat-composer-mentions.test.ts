@@ -5,11 +5,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { GatewayBrowserClient } from "../../api/gateway.ts";
 import type { HumanMention } from "../../lib/chat/chat-types.ts";
 import { updateHumanMentions } from "../../lib/chat/human-mentions.ts";
-import {
-  NewSessionComposerTextareaController,
-  renderNewSessionComposer,
-} from "../new-session/composer.ts";
 import { createComposerProps, resetComposerFixture } from "./chat-composer.test-support.ts";
+import { HOME_COMPOSER_PANE_ID } from "./components/chat-composer-types.ts";
 import { renderChatComposer } from "./components/chat-composer.ts";
 
 const people: UsersMentionableResult = {
@@ -19,10 +16,8 @@ const people: UsersMentionableResult = {
   ],
   truncated: false,
 };
-const controllers: NewSessionComposerTextareaController[] = [];
 
 afterEach(async () => {
-  controllers.splice(0).forEach((controller) => controller.disconnect());
   await resetComposerFixture();
 });
 
@@ -41,8 +36,6 @@ function composerFixture(
     eventListeners.add(listener);
     return () => eventListeners.delete(listener);
   });
-  const controller = new NewSessionComposerTextareaController();
-  controllers.push(controller);
   let draft = initial;
   let mentions = initialMentions;
   let ownerKey = "sender-one";
@@ -78,27 +71,34 @@ function composerFixture(
             onAbort: abort,
             onSend: () => send({ draft, mentions }),
           })
-        : renderNewSessionComposer({
-            message: draft,
+        : renderChatComposer({
+            ...props,
+            paneId: HOME_COMPOSER_PANE_ID,
+            draft,
             mentions,
+            getDraft: () => draft,
             getMentions: () => mentions,
             mentionDirectory: directory,
-            attachments: [],
-            getAttachments: () => [],
-            canSubmit: true,
-            pendingAttachmentReads: 0,
-            readSignal: new AbortController().signal,
-            requiresModifier: false,
-            requestUpdate: renderCurrent,
-            submitting: false,
-            textareaController: controller,
-            onAttachmentsChange: () => undefined,
-            onPendingReadsChange: () => undefined,
-            onInput: (next, selected) => {
+            onDraftChange: (next, selected) => {
               onInput(next, selected);
               renderCurrent();
             },
-            onSubmit: () => send({ draft, mentions }),
+            onRequestUpdate: renderCurrent,
+            onSend: () => send({ draft, mentions }),
+            home: {
+              dictation: { active: false },
+              placeholder: "Message",
+              nativeTerminal: false,
+              submitting: false,
+              messageLocked: false,
+              requiresModifier: false,
+              start: {
+                canSubmit: true,
+                label: "Start",
+                onSubmit: () => send({ draft, mentions }),
+              },
+              commandOwner: { client, agentId: "main", draftOwnerKey: ownerKey },
+            },
           }),
       container,
     );

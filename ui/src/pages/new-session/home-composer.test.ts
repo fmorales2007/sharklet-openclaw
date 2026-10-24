@@ -14,15 +14,19 @@ import {
 import type { SessionToolOverrides } from "../../lib/sessions/patch.ts";
 import { waitForFast } from "../../test-helpers/wait-for.ts";
 import { adjustTextareaHeight } from "../chat/components/chat-composer-dom.ts";
+import {
+  getChatComposerState,
+  resetChatComposerState,
+} from "../chat/components/chat-composer-state.ts";
+import { HOME_COMPOSER_PANE_ID } from "../chat/components/chat-composer-types.ts";
 import { buildLocalUserMessage } from "../chat/user-message-content.ts";
 import { NewSessionAttachmentDraft } from "./attachment-draft.ts";
-import { NewSessionComposerTextareaController } from "./composer.ts";
 import type { NewSessionVisibility } from "./create-params.ts";
-import { renderNewSessionBody, renderNewSessionDraftComposer } from "./draft-composer.ts";
+import { renderNewSessionBody } from "./draft-composer.ts";
+import { renderHomeComposer } from "./home-composer-slot.ts";
 import { NewSessionModelControl } from "./model-control.ts";
 
 const attachmentDrafts: NewSessionAttachmentDraft[] = [];
-const textareaControllers: NewSessionComposerTextareaController[] = [];
 
 function renderComposer(
   overrides: {
@@ -48,7 +52,6 @@ function renderComposer(
     onInput?: (message: string) => void;
     onSubmit?: () => void;
     onBackgroundSubmit?: () => void;
-    textareaController?: NewSessionComposerTextareaController;
   } = {},
 ) {
   const container = document.createElement("div");
@@ -57,23 +60,19 @@ function renderComposer(
     () => undefined,
   );
   attachmentDrafts.push(attachmentDraft);
-  const textareaController =
-    overrides.textareaController ?? new NewSessionComposerTextareaController();
-  if (!textareaControllers.includes(textareaController)) {
-    textareaControllers.push(textareaController);
-  }
   let message = overrides.message ?? "";
   let agentId = overrides.agentId ?? "main";
   let draftOwnerKey = overrides.draftOwnerKey ?? "draft:one";
   const renderCurrent = () =>
     render(
-      renderNewSessionDraftComposer({
+      renderHomeComposer({
+        header: html``,
         agentId,
         attachmentDraft,
         canSubmit: overrides.canSubmit ?? true,
         context: overrides.context,
         draftOwnerKey,
-        isCatalogTarget: true,
+        isCatalogTarget: overrides.nativeTerminal ?? false,
         message,
         visibility: overrides.visibility,
         draftAvailable: overrides.draftAvailable,
@@ -86,10 +85,8 @@ function renderComposer(
         dictationActive: overrides.dictationActive,
         dictationPreview: overrides.dictationPreview,
         dictationStatus: overrides.dictationStatus,
-        nativeTerminal: overrides.nativeTerminal,
         onUnsupportedAttachment: overrides.onUnsupportedAttachment,
         submitting: overrides.submitting ?? false,
-        textareaController,
         messageLocked: overrides.messageLocked,
         onInput: (next) => {
           message = next;
@@ -111,7 +108,6 @@ function renderComposer(
     attachmentDraft,
     composer,
     container,
-    textareaController,
     rerender: renderCurrent,
     rerenderForAgent: (nextAgentId: string) => {
       agentId = nextAgentId;
@@ -138,10 +134,7 @@ afterEach(() => {
     attachmentDraft.reset({ release: true });
   }
   attachmentDrafts.length = 0;
-  for (const textareaController of textareaControllers) {
-    textareaController.disconnect();
-  }
-  textareaControllers.length = 0;
+  resetChatComposerState(HOME_COMPOSER_PANE_ID);
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   replaceSlashCommands(buildFallbackSlashCommands());
@@ -286,8 +279,9 @@ describe("new-session composer keyboard submission", () => {
     const client = { request } as unknown as GatewayBrowserClient;
     const context = {
       gateway: { snapshot: { client } },
+      sessions: { state: { result: null } },
     } as unknown as ApplicationContext;
-    const { composer, rerenderForAgent, textareaController } = renderComposer({
+    const { composer, rerenderForAgent } = renderComposer({
       agentId: "writer",
       context,
       message: "$",
@@ -320,7 +314,7 @@ describe("new-session composer keyboard submission", () => {
       ],
     });
     await waitForFast(() => {
-      expect(textareaController.skillMenuState.skillCommandRefreshPending).toBe(false);
+      expect(getChatComposerState(HOME_COMPOSER_PANE_ID).skillCommandRefreshPending).toBe(false);
     });
     expect(composer.querySelector(".skill-menu")?.textContent ?? "").not.toContain("writer_only");
     expect(getSkillCommandCompletions("writer_only")).toEqual([]);
@@ -338,8 +332,9 @@ describe("new-session composer keyboard submission", () => {
     const snapshot = { client: firstClient };
     const context = {
       gateway: { snapshot },
+      sessions: { state: { result: null } },
     } as unknown as ApplicationContext;
-    const { composer, rerender, textareaController } = renderComposer({
+    const { composer, rerender } = renderComposer({
       agentId: "writer",
       context,
       message: "$",
@@ -373,7 +368,7 @@ describe("new-session composer keyboard submission", () => {
       ],
     });
     await waitForFast(() => {
-      expect(textareaController.skillMenuState.skillCommandRefreshPending).toBe(false);
+      expect(getChatComposerState(HOME_COMPOSER_PANE_ID).skillCommandRefreshPending).toBe(false);
     });
     expect(composer.querySelector(".skill-menu")?.textContent ?? "").not.toContain(
       "previous_client_only",
@@ -636,11 +631,12 @@ describe("new-session composer keyboard submission", () => {
       blockedSubmitNotice: "Restoring your last session setup…",
       onSubmit,
     });
-    const notice = composer.querySelector<HTMLElement>(".new-session-page__blocked-submit");
+    const notice = composer.querySelector<HTMLElement>(".agent-chat__composer-underlaps");
+    const band = notice?.querySelector<HTMLElement>(".agent-chat__composer-status-band");
     const input = composer.querySelector<HTMLElement>(".agent-chat__input");
     const start = composer.querySelector<HTMLButtonElement>(".new-session-page__start-submit");
 
-    expect(notice?.getAttribute("role")).toBe("status");
+    expect(band?.getAttribute("role")).toBe("status");
     expect(notice?.classList.contains("agent-chat__composer-underlaps")).toBe(true);
     expect(notice?.getAttribute("data-tone")).toBe("info");
     expect(notice?.querySelector(".agent-chat__composer-status-band")).not.toBeNull();
@@ -733,9 +729,8 @@ describe("new-session composer sizing lifecycle", () => {
       disconnect = disconnect;
     }
     vi.stubGlobal("ResizeObserver", TestResizeObserver);
-    const textareaController = new NewSessionComposerTextareaController();
     const onInput = vi.fn();
-    const first = renderComposer({ textareaController, onInput });
+    const first = renderComposer({ onInput });
     document.body.append(first.container);
     const textarea = first.composer.querySelector<HTMLTextAreaElement>("textarea");
     if (!textarea) {
@@ -751,25 +746,27 @@ describe("new-session composer sizing lifecycle", () => {
     });
     await Promise.resolve();
     const readsAfterAttach = scrollHeightReads;
+    // One observer for the textarea overflow and one for the popover anchor.
+    const observersAfterAttach = resizeObserverConstructed.mock.calls.length;
 
     textarea.value = "typed";
     textarea.dispatchEvent(new InputEvent("input", { bubbles: true }));
     expect(onInput).toHaveBeenCalledWith("typed");
     const readsAfterInput = scrollHeightReads;
     render(
-      renderNewSessionDraftComposer({
+      renderHomeComposer({
+        header: html``,
         agentId: "main",
         attachmentDraft: first.attachmentDraft,
         canSubmit: true,
         context: undefined,
         draftOwnerKey: "draft:one",
-        isCatalogTarget: true,
+        isCatalogTarget: false,
         message: "typed",
         modelControl: new NewSessionModelControl(() => undefined),
         requiresModifier: false,
         requestUpdate: () => undefined,
         submitting: false,
-        textareaController,
         onInput,
         onSubmit: () => undefined,
       }),
@@ -778,24 +775,24 @@ describe("new-session composer sizing lifecycle", () => {
     await Promise.resolve();
 
     expect(first.container.querySelector("textarea")).toBe(textarea);
-    expect(resizeObserverConstructed).toHaveBeenCalledOnce();
+    expect(resizeObserverConstructed).toHaveBeenCalledTimes(observersAfterAttach);
     expect(disconnect).not.toHaveBeenCalled();
     expect(scrollHeightReads).toBe(readsAfterInput);
 
     render(
-      renderNewSessionDraftComposer({
+      renderHomeComposer({
+        header: html``,
         agentId: "main",
         attachmentDraft: first.attachmentDraft,
         canSubmit: true,
         context: undefined,
         draftOwnerKey: "draft:one",
-        isCatalogTarget: true,
+        isCatalogTarget: false,
         message: "restored programmatically",
         modelControl: new NewSessionModelControl(() => undefined),
         requiresModifier: false,
         requestUpdate: () => undefined,
         submitting: false,
-        textareaController,
         onInput,
         onSubmit: () => undefined,
       }),
@@ -805,10 +802,10 @@ describe("new-session composer sizing lifecycle", () => {
 
     expect(scrollHeightReads).toBeGreaterThan(readsAfterInput);
     expect(readsAfterAttach).toBeGreaterThan(0);
-    expect(resizeObserverConstructed).toHaveBeenCalledOnce();
+    expect(resizeObserverConstructed).toHaveBeenCalledTimes(observersAfterAttach);
     expect(disconnect).not.toHaveBeenCalled();
-    textareaController.disconnect();
-    expect(disconnect).toHaveBeenCalledOnce();
+    resetChatComposerState(HOME_COMPOSER_PANE_ID);
+    expect(disconnect).toHaveBeenCalledTimes(observersAfterAttach);
     first.container.remove();
   });
 });
@@ -860,7 +857,9 @@ describe("new-session composer attachment drops", () => {
 
   it("keeps page-level incognito out of the composer when drafts are unavailable", () => {
     const { composer } = renderComposer();
-    const switches = composer.querySelectorAll<HTMLButtonElement>('[role="switch"]');
+    const switches = composer.querySelectorAll<HTMLButtonElement>(
+      '.new-session-page__visibility[role="switch"]',
+    );
 
     expect(switches).toHaveLength(0);
   });
@@ -976,104 +975,5 @@ describe("new-session composer attachment drops", () => {
     const disabledTextareaDrop = createDragEvent("drop", [], ["text/uri-list"]);
     textarea.dispatchEvent(disabledTextareaDrop);
     expect(disabledTextareaDrop.defaultPrevented).toBe(true);
-  });
-});
-
-describe("new-session composer dictation insertion", () => {
-  function draftTextarea(composer: HTMLElement, value: string, start: number, end = start) {
-    const textarea = composer.querySelector<HTMLTextAreaElement>("textarea");
-    if (!textarea) {
-      throw new Error("Expected composer textarea");
-    }
-    textarea.value = value;
-    textarea.selectionStart = start;
-    textarea.selectionEnd = end;
-    return textarea;
-  }
-
-  it("inserts at the caret the writer left, not where the caret ended up", () => {
-    const { composer, textareaController } = renderComposer({ message: "ship it" });
-    const textarea = draftTextarea(composer, "ship it", 4);
-
-    // Pressing the microphone blurs the draft, so the caret is read then rather
-    // than when the transcript comes back and the caret has moved.
-    textareaController.captureSelection();
-    textarea.selectionStart = textarea.value.length;
-    textarea.selectionEnd = textarea.value.length;
-
-    expect(textareaController.insertTranscript("please")).toBe("ship please it");
-    expect(textarea.value).toBe("ship please it");
-  });
-
-  it("preserves edits made after Stop before inserting a late transcript", () => {
-    const { composer, textareaController } = renderComposer({ message: "ship it" });
-    const textarea = draftTextarea(composer, "ship it", 4);
-    textareaController.captureSelection();
-    textarea.value = "ship it today";
-    textarea.selectionStart = 4;
-    textarea.selectionEnd = 4;
-
-    expect(textareaController.insertTranscript("please", true)).toBe("ship please it today");
-    expect(textarea.value).toBe("ship please it today");
-  });
-
-  it("replaces the range the writer had highlighted", () => {
-    const { composer, textareaController } = renderComposer({ message: "ship the thing" });
-    draftTextarea(composer, "ship the thing", 5, 14);
-    textareaController.captureSelection();
-
-    expect(textareaController.insertTranscript("it now")).toBe("ship it now");
-  });
-
-  it("appends when no caret was captured", () => {
-    const { composer, textareaController } = renderComposer({ message: "ship" });
-    draftTextarea(composer, "ship", 0);
-
-    expect(textareaController.insertTranscript("it")).toBe("ship it");
-  });
-
-  it("reads uncommitted keystrokes from the draft rather than the committed value", () => {
-    const { composer, textareaController } = renderComposer({ message: "ship" });
-    // The writer kept typing after the last commit upward; the element holds it.
-    draftTextarea(composer, "ship the", 8);
-    textareaController.captureSelection();
-
-    expect(textareaController.insertTranscript("thing")).toBe("ship the thing");
-  });
-
-  it("reports nothing to insert for a blank transcript so the draft is left alone", () => {
-    const { composer, textareaController } = renderComposer({ message: "ship it" });
-    const textarea = draftTextarea(composer, "ship it", 7);
-    textareaController.captureSelection();
-
-    expect(textareaController.insertTranscript("   ")).toBeNull();
-    expect(textarea.value).toBe("ship it");
-  });
-
-  it("spends a captured caret once, so a later transcript appends instead of reusing it", () => {
-    const { composer, textareaController } = renderComposer({ message: "ship it" });
-    draftTextarea(composer, "ship it", 0);
-    textareaController.captureSelection();
-
-    expect(textareaController.insertTranscript("please")).toBe("please ship it");
-    expect(textareaController.insertTranscript("now")).toBe("please ship it now");
-  });
-
-  it("previews from the captured draft without consuming or mutating it", () => {
-    const { composer, textareaController } = renderComposer({ message: "ship it" });
-    const textarea = draftTextarea(composer, "ship it", 4);
-    textareaController.captureSelection();
-
-    expect(textareaController.previewTranscript("please")).toBe("ship please it");
-    expect(textarea.value).toBe("ship it");
-    expect(textareaController.insertTranscript("please")).toBe("ship please it");
-  });
-
-  it("has nothing to insert into once the draft is gone", () => {
-    const { textareaController } = renderComposer({ message: "ship it" });
-    textareaController.captureSelection();
-    textareaController.disconnect();
-
-    expect(textareaController.insertTranscript("it")).toBeNull();
   });
 });

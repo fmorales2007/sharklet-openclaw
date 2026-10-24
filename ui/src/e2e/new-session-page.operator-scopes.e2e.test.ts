@@ -167,7 +167,7 @@ suite.define(() => {
       await page.locator(".new-session-page__message").press("Enter");
 
       await pollLocatorText(
-        page.locator('.new-session-page__blocked-submit[role="status"]'),
+        page.locator('.agent-chat__composer-underlaps [role="status"]'),
       ).toContain("This action requires operator.admin access.");
       expect(await gateway.getRequests("sessions.create")).toHaveLength(0);
     } finally {

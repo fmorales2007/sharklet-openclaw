@@ -29,6 +29,7 @@ import {
   scheduleTextareaHeightAdjustment,
 } from "./chat-composer-dom.ts";
 import { createGoalComposerController } from "./chat-composer-goal-mode.ts";
+import { submitHome, syncHomeCommandOwner } from "./chat-composer-home.ts";
 import { createComposerKeyDownHandler } from "./chat-composer-keydown.ts";
 import type { HumanMentionMenuHost } from "./chat-composer-mention-menu.ts";
 import { resolveComposerMenus } from "./chat-composer-menus.ts";
@@ -82,6 +83,10 @@ function resolveChatSlashCommandArgOptions(
 export function renderChatComposer(props: ChatComposerProps) {
   const state = getChatComposerState(props.paneId);
   state.slashCommandDispatchConnected = props.connected;
+  const home = props.home;
+  if (home) {
+    syncHomeCommandOwner(state, home.commandOwner);
+  }
   const canCompose = props.canSend;
   const isBusy = props.sending || props.stream !== null;
   const canAbort = Boolean(props.canAbort && props.onAbort);
@@ -194,11 +199,21 @@ export function renderChatComposer(props: ChatComposerProps) {
     commitDraft: skillMenuHost.commitDraft,
     getTextarea: () => state.composerTextarea,
     resolveArgOptions: (command) => resolveChatSlashCommandArgOptions(command, props),
-    runCommand: () => void props.onSend(),
-    canRun: (inline) => state.slashCommandDispatchConnected && !(inline && !props.onSlashCommand),
-    runInlineCommand: props.connected ? props.onSlashCommand : undefined,
+    ...(home
+      ? {
+          // Home starts the session; commands that act on a live session do not apply yet.
+          runCommand: () => submitHome(state, home),
+          canRun: (inline: boolean) => !inline,
+          commandFilter: (command: SlashCommandDef) => command.executeLocal !== true,
+        }
+      : {
+          runCommand: () => void props.onSend(),
+          canRun: (inline: boolean) =>
+            state.slashCommandDispatchConnected && !(inline && !props.onSlashCommand),
+          runInlineCommand: props.connected ? props.onSlashCommand : undefined,
+          activateComposerMode: (command: SlashCommandDef) => goalComposer.activateCommand(command),
+        }),
     refreshCommands: props.onSlashIntent,
-    activateComposerMode: (command) => goalComposer.activateCommand(command),
   };
   const mentionMenuHost: HumanMentionMenuHost = {
     paneId: props.paneId,
@@ -207,6 +222,7 @@ export function renderChatComposer(props: ChatComposerProps) {
     getTextarea: skillMenuHost.getTextarea,
     commitDraft: commitMenuDraft,
   };
+  const menusActive = !goalComposer.active && !home?.nativeTerminal;
   const sendShortcut = normalizeChatSendShortcut(props.sendShortcut);
   // Keyboard and tooltip share the opposite action, including inherited queue modes.
   const alternateFollowUpMode: ChatFollowUpMode | undefined =
@@ -293,11 +309,15 @@ export function renderChatComposer(props: ChatComposerProps) {
   state.questionTakeoverActive = questionTakeoverActive;
   const showComposer = !questionTakeoverActive;
 
-  const placeholder = goalComposer.active
-    ? t("chat.goals.objectivePlaceholder")
-    : hasVisualAttachments
-      ? t("chat.composer.placeholderWithAttachments")
-      : t("chat.composer.placeholder", { name: props.assistantName || "agent" });
+  const placeholder = home
+    ? home.dictation.active
+      ? ""
+      : state.typingPlaceholder.get(home.placeholder, visibleDraft, requestUpdate)
+    : goalComposer.active
+      ? t("chat.goals.objectivePlaceholder")
+      : hasVisualAttachments
+        ? t("chat.composer.placeholderWithAttachments")
+        : t("chat.composer.placeholder", { name: props.assistantName || "agent" });
 
   // Offline text and attachments may enter the persisted reconnect queue, but
   // slash commands are live controls and must not execute against stale state.
@@ -364,7 +384,7 @@ export function renderChatComposer(props: ChatComposerProps) {
         : undefined,
     );
     state.mentionInput = undefined;
-    if (!goalComposer.active) {
+    if (menusActive) {
       updateSlashMenu(target.value, state, slashMenuHost, requestUpdate);
       updateSkillMenu(target.value, target.selectionStart, state, skillMenuHost, requestUpdate);
       state.mentionMenu.update(target.value, target.selectionStart, requestUpdate, typedAtSign);
@@ -424,7 +444,7 @@ export function renderChatComposer(props: ChatComposerProps) {
   };
   const handleSelect = (event: Event) => {
     const target = event.target as HTMLTextAreaElement;
-    if (goalComposer.active) {
+    if (!menusActive) {
       return;
     }
     updateSlashMenu(target.value, state, slashMenuHost, requestUpdate);
@@ -478,7 +498,8 @@ export function renderChatComposer(props: ChatComposerProps) {
   };
   state.microphonePicker ??= new ComposerMicrophonePicker(requestUpdate);
   const devicePicker = state.microphonePicker;
-  devicePicker.syncCatalog(props.gatewayClient ?? null, props.connected);
+  // Home dictates through its own control; this picker would duplicate its catalog loads.
+  devicePicker.syncCatalog(home ? null : (props.gatewayClient ?? null), !home && props.connected);
   const startRealtimeTalk = () => {
     if (devicePicker.realtimeStatus !== "ready") {
       devicePicker.handleOpen();
@@ -660,7 +681,9 @@ export function renderChatComposer(props: ChatComposerProps) {
   if (props.modelSwitching && state.slashMenuCommand?.key === "think") {
     resetSlashMenuState(state);
   }
-  const commandsVisible = props.connected && canCompose;
+  const commandsVisible = home
+    ? !home.nativeTerminal && !home.dictation.active && canCompose
+    : props.connected && canCompose;
   if (
     !(commandsVisible && isSkillMenuVisible(state)) &&
     state.skillMenuOpen &&
