@@ -116,6 +116,7 @@ export function renderMessageActionButtons(
   details: MessageActionDetails,
   opts: {
     onReply?: (target: MessageReplyTarget) => void;
+    onRetry?: () => void;
   },
 ) {
   return html`
@@ -125,6 +126,22 @@ export function renderMessageActionButtons(
         : nothing
     }
     ${details.markdown ? renderCopyAsMarkdownButton(details.markdown) : nothing}
+    ${opts.onRetry ? renderRetryButton(opts.onRetry) : nothing}
+  `;
+}
+
+export function renderRetryButton(onRetry: () => void) {
+  return html`
+    <openclaw-tooltip .content=${t("chat.messages.retry")}>
+      <button
+        class="chat-retry-btn"
+        type="button"
+        aria-label=${t("chat.messages.retry")}
+        @click=${onRetry}
+      >
+        ${icons.refresh}
+      </button>
+    </openclaw-tooltip>
   `;
 }
 

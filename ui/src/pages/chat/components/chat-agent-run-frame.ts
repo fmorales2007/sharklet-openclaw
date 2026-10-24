@@ -15,15 +15,12 @@ import {
   renderWorkGroupSummary,
   type StreamGroupOptions,
 } from "./chat-message.ts";
-import { renderBrowserTabPreviews } from "./chat-tool-cards.ts";
 
 type MessageGroupRenderOptions = Parameters<typeof renderMessageGroup>[1];
 
 type AgentRunFrameOptions = {
   streamOptions: StreamGroupOptions;
   renderGroupOptions: (group: MessageGroup) => MessageGroupRenderOptions;
-  isWorkExpanded: (key: string) => boolean;
-  onToggleWork: (key: string, expanded: boolean) => void;
   turnRecap?: TurnRecap;
 };
 
@@ -60,15 +57,9 @@ export function renderAgentRunFrame(frame: AgentRunFrameRenderItem, opts: AgentR
       return renderStreamGroupParts(part.parts, opts.streamOptions, "standalone");
     }
     if (part.kind === "work-group") {
-      const expanded = opts.isWorkExpanded(part.key);
       return html`
-        ${renderWorkGroupSummary(part, {
-          expanded,
-          onToggle: () => opts.onToggleWork(part.key, expanded),
-          presentation: "continuation",
-          browserTabPreviews: renderBrowserTabPreviews(part.groups, opts.renderGroupOptions(shell)),
-        })}
-        ${expanded ? part.groups.map(renderFrameGroup) : nothing}
+        ${renderWorkGroupSummary(part, { presentation: "continuation" })}
+        ${part.groups.map(renderFrameGroup)}
       `;
     }
     if (part.kind === "activity-run") {

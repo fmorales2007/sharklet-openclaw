@@ -199,11 +199,6 @@ export function renderMessageMeta(timestamp: number, meta: GroupMeta | null) {
     );
   }
 
-  // Cost
-  if (meta.cost > 0) {
-    parts.push(html`<span class="msg-meta__cost">${formatCost(meta.cost)}</span>`);
-  }
-
   // Context %
   if (meta.contextPercent !== null) {
     const pct = meta.contextPercent;
@@ -223,5 +218,9 @@ export function renderMessageMeta(timestamp: number, meta: GroupMeta | null) {
     parts.push(html`<span class="msg-meta__model">${shortModel}</span>`);
   }
 
-  return renderChatTimestamp(timestamp, parts);
+  // The cost comes from the usage the gateway reported; it sits in the footer
+  // next to the time instead of behind the details tooltip.
+  return html`${renderChatTimestamp(timestamp, parts)}${
+    meta.cost > 0 ? html`<span class="chat-group-cost">${formatCost(meta.cost)}</span>` : nothing
+  }`;
 }

@@ -1,6 +1,5 @@
 import { html, nothing } from "lit";
 import type { QuestionPrompt } from "../../../app/question-prompt.ts";
-import { icons } from "../../../components/icons.ts";
 import { t } from "../../../i18n/index.ts";
 import type { AssistantIdentity } from "../../../lib/assistant-identity.ts";
 import type { ChatItem } from "../../../lib/chat/chat-types.ts";
@@ -15,7 +14,6 @@ import {
 import { renderChatTimestamp } from "./chat-message-timestamp.ts";
 import { renderChatQuestionSummary } from "./chat-question-card.ts";
 import type { SidebarContent } from "./chat-sidebar.ts";
-import { shouldToggleSelectableDisclosure, syncToolDisclosureOverflow } from "./chat-tool-cards.ts";
 import { renderChatWorkingIndicator } from "./chat-working-indicator.ts";
 
 /** A contiguous run of in-flight streaming items rendered under one assistant group. */
@@ -56,6 +54,8 @@ export type StreamGroupOptions = StreamMessageOptions & {
   startupLabel?: string;
   waitingApproval?: boolean;
   runOutputTokens?: number | null;
+  /** The session's effort level; the working shark swims at its speed. */
+  thinkingLevel?: string | null;
   questionPrompts?: ReadonlyMap<string, QuestionPrompt>;
 };
 
@@ -70,6 +70,7 @@ export function renderStreamGroupParts(
         waitingApproval: opts.waitingApproval === true,
         startupLabel: opts.startupLabel,
         outputTokens: opts.runOutputTokens,
+        effort: opts.thinkingLevel,
         presentation,
       });
     }
@@ -145,42 +146,22 @@ export function renderStreamGroup(parts: StreamGroupPart[], opts: StreamGroupOpt
 }
 
 /**
- * Collapsed-turn rollup header: one slim "Worked for X" disclosure standing in
- * for the turn's intermediate work once the run is done. The check icon is
- * the turn's done indicator; the expanded groups render after this row.
+ * Summary line of a completed turn's intermediate work: "Worked for X". The
+ * work itself stays in the thread as step lines right after it; the check icon
+ * is the turn's done indicator.
  */
 export function renderWorkGroupSummary(
   item: { key: string; durationMs: number | null },
-  opts: {
-    expanded: boolean;
-    onToggle: () => void;
-    presentation?: "standalone" | "continuation";
-    browserTabPreviews?: unknown;
-  },
+  opts: { presentation?: "standalone" | "continuation" } = {},
 ) {
   const duration = formatDurationCompact(item.durationMs);
   const label = duration ? t("chat.workRun.workedFor", { duration }) : t("chat.workRun.worked");
   const content = html`
-    <div class="chat-activity-group chat-work-group ${opts.expanded ? "is-open" : ""}">
-      <button
-        class="chat-inline-disclosure chat-activity-group__summary"
-        type="button"
-        aria-expanded=${String(opts.expanded)}
-        @pointerenter=${syncToolDisclosureOverflow}
-        @focus=${syncToolDisclosureOverflow}
-        @click=${(event: MouseEvent) => {
-          if (shouldToggleSelectableDisclosure(event)) {
-            opts.onToggle();
-          }
-        }}
-      >
-        <span class="chat-tool-disclosure__content">
-          <span class="chat-activity-group__label" title=${label}>${label}</span>
-        </span>
-        <span class="chat-tool-row__chevron" aria-hidden="true">${icons.chevronRight}</span>
-      </button>
+    <div class="chat-activity-group chat-work-group">
+      <div class="chat-activity-group__summary">
+        <span class="chat-activity-group__label" title=${label}>${label}</span>
+      </div>
       <div class="chat-work-group__separator" aria-hidden="true"></div>
-      ${opts.expanded ? nothing : (opts.browserTabPreviews ?? nothing)}
     </div>
   `;
   return opts.presentation === "continuation"

@@ -53,6 +53,9 @@ if (!("__vitest_browser__" in globalThis)) {
     [String.prototype, "localeCompare", 1],
   ] as const) {
     const original = (proto as unknown as Record<string, (...args: unknown[]) => unknown>)[method];
+    if (!original) {
+      continue;
+    }
     Object.defineProperty(proto, method, {
       configurable: true,
       writable: true,
