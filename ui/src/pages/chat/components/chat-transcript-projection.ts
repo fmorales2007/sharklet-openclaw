@@ -25,11 +25,9 @@ import {
   collapseCompletedTurnWork,
   deleteExpansionState,
   getExpansionStateVersion,
-  getExpandedToolCards,
   getExpandedUserMessages,
   persistedMessageEntryId,
   setExpansionState,
-  syncToolCardExpansionState,
 } from "../chat-thread.ts";
 import { hasForwardedSource } from "../chat-turn-boundary.ts";
 import { renderAgentRunFrame } from "./chat-agent-run-frame.ts";
@@ -55,7 +53,6 @@ import {
   getTranscriptState,
   type ChatThreadProps,
 } from "./chat-thread-interactions.ts";
-import { renderBrowserTabPreviews } from "./chat-tool-cards.ts";
 import { latestTranscriptAnnouncement } from "./chat-transcript-announcement.ts";
 import type { TranscriptRow } from "./chat-transcript-layout.ts";
 import {
@@ -163,13 +160,6 @@ export function projectChatTranscript(
     props.browserTabPreviewsActive === false
       ? latestBrowserTabCards([], [])
       : latestBrowserTabCards(props.messages, props.toolMessages);
-  syncToolCardExpansionState(
-    props.sessionKey,
-    chatItems,
-    Boolean(props.autoExpandToolCalls),
-    searchFiltering || !props.showToolCalls,
-  );
-  const expandedToolCards = getExpandedToolCards(props.sessionKey);
   const expandedUserMessages = getExpandedUserMessages(props.sessionKey);
   const expandedAssistantMessages = transcript.expandedAssistantMessages;
   const recoveryKey = (messageId: string) => JSON.stringify([props.fullMessageAgentId, messageId]);
@@ -195,14 +185,6 @@ export function projectChatTranscript(
   const questionPrompts = new Map(
     (props.questionPrompts ?? []).map((prompt) => [prompt.id, prompt]),
   );
-  const toggleToolCardExpanded = (toolCardId: string, expanded?: boolean) => {
-    setExpansionState(
-      expandedToolCards,
-      toolCardId,
-      !(expanded ?? expandedToolCards.get(toolCardId) ?? false),
-    );
-    requestUpdate();
-  };
   const toggleAssistantMessageExpanded = (messageId: string) => {
     const key = recoveryKey(messageId);
     const current = expandedAssistantMessages.get(key);
@@ -318,11 +300,24 @@ export function projectChatTranscript(
     startupLabel: props.startupLabel,
     waitingApproval: props.waitingApproval,
     runOutputTokens,
+    thinkingLevel: props.thinkingLevel,
     questionPrompts,
   } satisfies StreamGroupOptions;
   // Latest ownership crosses rows: the former owner must rerender when a
   // newer answer arrives even if its own message object stays stable.
   let latestAssistantItemKey: string | null = null;
+  // Retry belongs to the latest reply: rewind to the prompt behind it, which
+  // restores the prompt into the composer, and send it again.
+  const latestUserEntryId = (() => {
+    for (let index = chatItems.length - 1; index >= 0; index -= 1) {
+      const candidate = chatItems[index];
+      if (candidate?.kind === "group" && candidate.role.toLowerCase() === "user") {
+        const last = candidate.messages.at(-1)?.message;
+        return last ? persistedMessageEntryId(last) : null;
+      }
+    }
+    return null;
+  })();
   const renderGroupOptions = (item: MessageGroup) => {
     const lastMessage = item.messages.at(-1)?.message;
     const rewindEntryId =
@@ -336,8 +331,6 @@ export function projectChatTranscript(
       showReasoning,
       showToolCalls: props.showToolCalls,
       autoExpandToolCalls: Boolean(props.autoExpandToolCalls),
-      isToolMessageExpanded: (messageId: string) => expandedToolCards.get(messageId),
-      onToggleToolMessageExpanded: toggleToolCardExpanded,
       isUserMessageExpanded: (messageId: string) => expandedUserMessages.get(messageId) ?? false,
       onToggleUserMessageExpanded: (messageId: string) => {
         setExpansionState(expandedUserMessages, messageId, !expandedUserMessages.get(messageId));
@@ -347,8 +340,6 @@ export function projectChatTranscript(
       getAssistantMessageExpansion: (messageId: string) =>
         expandedAssistantMessages.get(recoveryKey(messageId)),
       onToggleAssistantMessageExpanded: toggleAssistantMessageExpanded,
-      isToolExpanded: (toolCardId: string) => expandedToolCards.get(toolCardId) ?? false,
-      onToggleToolExpanded: toggleToolCardExpanded,
       assistantName: props.assistantName,
       assistantAvatar: assistantIdentity.avatar,
       agents: props.agents,
@@ -378,6 +369,16 @@ export function projectChatTranscript(
             }
           : undefined,
       rewindDisabled: Boolean(props.runActive || props.runWorking),
+      onRetry:
+        latestUserEntryId && props.onRewindMessage && item.key === latestAssistantItemKey
+          ? () => {
+              void Promise.resolve(props.onRewindMessage?.(latestUserEntryId)).then((rewound) => {
+                if (rewound) {
+                  props.onSend();
+                }
+              });
+            }
+          : undefined,
       activeContinuation: activeContinuationByGroupKey.get(item.key),
       turnRecap: turnRecapByGroupKey.get(item.key),
       latestAssistant: item.key === latestAssistantItemKey,
@@ -385,7 +386,7 @@ export function projectChatTranscript(
   };
   // Only the working indicator shows live usage, so rows without one keep
   // memoizing across usage patches.
-  const workingUsageKey = `usage:${runOutputTokens ?? ""}`;
+  const workingUsageKey = `usage:${runOutputTokens ?? ""}:${props.thinkingLevel ?? ""}`;
   const liveStatusSignature = (item: ChatRenderItem): string => {
     if (item.kind === "agent-run-frame") {
       const hasWorkingIndicator = item.parts.some(
@@ -428,15 +429,7 @@ export function projectChatTranscript(
       return renderStreamGroup(item.parts, streamGroupOptions);
     }
     if (item.kind === "work-group") {
-      const workExpanded = expandedToolCards.get(item.key) ?? false;
-      return renderWorkGroupSummary(item, {
-        expanded: workExpanded,
-        browserTabPreviews: renderBrowserTabPreviews(item.groups, {
-          sessionKey: props.sessionKey,
-          latestBrowserTabs,
-        }),
-        onToggle: () => toggleToolCardExpanded(item.key, workExpanded),
-      });
+      return renderWorkGroupSummary(item);
     }
     if (item.kind === "activity-run") {
       const firstGroup = item.groups[0];
@@ -452,8 +445,6 @@ export function projectChatTranscript(
       return renderAgentRunFrame(item, {
         streamOptions: streamGroupOptions,
         renderGroupOptions,
-        isWorkExpanded: (key) => expandedToolCards.get(key) ?? false,
-        onToggleWork: toggleToolCardExpanded,
         turnRecap: turnRecapByGroupKey.get(item.key),
       });
     }
@@ -606,7 +597,7 @@ export function projectChatTranscript(
   const transcriptRows: TranscriptRow<ChatRenderItem>[] = [];
   for (const item of transcriptItems) {
     transcriptRows.push({ kind: "item", key: item.key, item });
-    if (item.kind === "work-group" && expandedToolCards.get(item.key)) {
+    if (item.kind === "work-group") {
       for (const group of item.groups) {
         transcriptRows.push({ kind: "item", key: `${item.key}:${group.key}`, item: group });
       }
@@ -644,8 +635,6 @@ export function projectChatTranscript(
   }
   trackTranscriptRenderDependencies(state, [
     locale,
-    expandedToolCards,
-    getExpansionStateVersion(expandedToolCards),
     expandedUserMessages,
     getExpansionStateVersion(expandedUserMessages),
     expandedAssistantMessages,

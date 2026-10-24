@@ -2,6 +2,7 @@
 
 import { render } from "lit";
 import { describe, expect, it, vi } from "vitest";
+import type { SidebarContent } from "./chat-sidebar.ts";
 import { renderToolCard, resolveToolRowText } from "./chat-tool-cards.ts";
 
 describe("execution purpose cards", () => {
@@ -22,39 +23,32 @@ describe("execution purpose cards", () => {
         id: "msg:purpose",
         name,
         args: { ...args, title: "Check the workspace" },
+        inputText: JSON.stringify(args),
         live: true,
         outputText: "workspace checked",
       };
-      const options = {
-        messageKey: "purpose",
-        expanded: false,
-        runActive: true,
-        onToggleExpanded: vi.fn(),
-      };
+      const onOpenSidebar = vi.fn<(content: SidebarContent) => void>();
+      const options = { messageKey: "purpose", runActive: true, onOpenSidebar };
       render(renderToolCard(card, options), container);
       expect(container.querySelector(".chat-tool-row__title")?.textContent).toBe(
         "Check the workspace",
       );
       expect(container.querySelector(".chat-tool-row__cmd")).toBeNull();
-      expect(container.querySelector(".chat-tool-msg-body")).toBeNull();
       expect(resolveToolRowText(card, true)).toBe("Check the workspace");
 
-      render(
-        renderToolCard({ ...card, completed: true }, { ...options, expanded: true }),
-        container,
-      );
+      render(renderToolCard({ ...card, completed: true }, options), container);
       expect(container.querySelector(".chat-tool-row__title")?.textContent).toBe(
         "Check the workspace",
       );
+      container.querySelector<HTMLButtonElement>("button.chat-tool-row")?.click();
+      const details = onOpenSidebar.mock.calls[0]?.[0];
+      if (details?.kind !== "markdown") {
+        throw new Error("Expected tool details Markdown");
+      }
       for (const source of Object.values(args)) {
-        expect(container.querySelector(".chat-tool-msg-body")?.textContent).toContain(source);
+        expect(details.content).toContain(JSON.stringify(source).slice(1, -1));
       }
-      if (args.code) {
-        expect(container.querySelector(".chat-tool-term")).toBeNull();
-      }
-      expect(container.querySelector(".chat-tool-msg-body")?.textContent).toContain(
-        "workspace checked",
-      );
+      expect(details.content).toContain("workspace checked");
     },
   );
 
@@ -64,14 +58,7 @@ describe("execution purpose cards", () => {
   ])("does not treat $name business title arguments as activity descriptions", ({ name, args }) => {
     const container = document.createElement("div");
     render(
-      renderToolCard(
-        { id: "business-title", name, args },
-        {
-          messageKey: "business-title",
-          expanded: false,
-          onToggleExpanded: vi.fn(),
-        },
-      ),
+      renderToolCard({ id: "business-title", name, args }, { messageKey: "business-title" }),
       container,
     );
     expect(container.querySelector(".chat-tool-row__title")).toBeNull();
@@ -83,19 +70,15 @@ describe("execution purpose cards", () => {
       id: "shell-preamble",
       name: "exec",
       args: { command: "set -euo pipefail\ncd /workspace\npnpm test" },
+      inputText: "set -euo pipefail\ncd /workspace\npnpm test",
     };
-    render(
-      renderToolCard(card, {
-        messageKey: "shell-preamble",
-        expanded: true,
-        onToggleExpanded: vi.fn(),
-      }),
-      container,
-    );
+    const onOpenSidebar = vi.fn<(content: SidebarContent) => void>();
+    render(renderToolCard(card, { messageKey: "shell-preamble", onOpenSidebar }), container);
     expect(container.querySelector(".chat-tool-row__cmd")?.textContent).toBe("pnpm test");
     expect(resolveToolRowText(card)).toBe("$ pnpm test");
-    expect(container.querySelector(".chat-tool-msg-body")?.textContent).toContain(
-      card.args.command,
-    );
+    container.querySelector<HTMLButtonElement>("button.chat-tool-row")?.click();
+    expect(onOpenSidebar.mock.calls[0]?.[0]).toMatchObject({
+      content: expect.stringContaining("cd /workspace"),
+    });
   });
 });

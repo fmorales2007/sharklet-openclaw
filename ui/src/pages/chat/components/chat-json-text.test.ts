@@ -44,7 +44,7 @@ afterEach(() => {
   }
 });
 
-describe.each(["user", "assistant", "toolResult"])("%s JSON message text", (role) => {
+describe.each(["user", "assistant"])("%s JSON message text", (role) => {
   function renderMessage(text: string, isStreaming = false) {
     const container = createContainer();
     render(
@@ -52,10 +52,9 @@ describe.each(["user", "assistant", "toolResult"])("%s JSON message text", (role
         prepareChatMessageRender({
           role,
           content: text,
-          ...(role === "toolResult" ? { toolName: "lookup", toolCallId: "json-result" } : {}),
         }),
         "json-message",
-        { isStreaming, showReasoning: false, isToolMessageExpanded: () => true },
+        { isStreaming, showReasoning: false },
       ),
       container,
     );
@@ -91,18 +90,6 @@ describe.each(["user", "assistant", "toolResult"])("%s JSON message text", (role
     },
   );
 
-  it("keeps explicitly fenced JSON literal without another disclosure", () => {
-    const text = '{"id":9007199254740993,"text":"**stars**"}';
-    const fenced = "```json\n" + text + "\n```";
-    const container = renderMessage(fenced);
-    expect(container.querySelector(".chat-json-collapse")).toBeNull();
-    // Tool cards show raw output; authored message Markdown consumes its fence.
-    expect(container.querySelector("pre code")?.textContent?.trimEnd()).toBe(
-      role === "toolResult" ? fenced : text,
-    );
-    expect(container.querySelector("pre strong")).toBeNull();
-  });
-
   if (role === "assistant") {
     it("does not auto-disclose a streaming JSON message", () => {
       const text = "[9007199254740993,1e400,-0]";
@@ -111,13 +98,6 @@ describe.each(["user", "assistant", "toolResult"])("%s JSON message text", (role
       expect(container.textContent).toContain(text);
     });
   }
-
-  it("keeps invalid JSON as ordinary message output", () => {
-    const text = '{"count": }';
-    const container = renderMessage(text);
-    expect(container.querySelector(".chat-json-collapse")).toBeNull();
-    expect(container.textContent).toContain(text);
-  });
 });
 
 describe("tool JSON details", () => {
@@ -127,17 +107,11 @@ describe("tool JSON details", () => {
     render(
       renderToolCard(
         { id: "json-tool", name: "lookup", outputText: text, completed: true },
-        {
-          messageKey: "test-message",
-          expanded: true,
-          onToggleExpanded: vi.fn(),
-          onOpenSidebar: openSidebar,
-        },
+        { messageKey: "test-message", onOpenSidebar: openSidebar },
       ),
       container,
     );
-    expect(container.querySelector(".chat-tool-card__block code")?.textContent).toBe(text);
-    container.querySelector<HTMLButtonElement>(".chat-tool-card__action-btn")!.click();
+    container.querySelector<HTMLButtonElement>("button.chat-tool-row")!.click();
     expect(openSidebar).toHaveBeenCalledOnce();
     const content = openSidebar.mock.calls[0]?.[0];
     expect(content?.kind).toBe("markdown");
@@ -163,18 +137,35 @@ describe("tool JSON details", () => {
     expect(panel.querySelector("pre code")?.textContent?.trimEnd()).toBe(text);
     expect(panel.querySelector("pre strong")).toBeNull();
   });
+});
 
-  it("keeps explicitly fenced JSON output literal in details", () => {
-    const text = '{"id":9007199254740993,"text":"**stars**"}';
-    const panel = openToolDetails("```json\n" + text + "\n```");
+describe("standalone tool result JSON", () => {
+  it.each(jsonSources)("opens $name literally in the detail panel", ({ text }) => {
+    const container = createContainer();
+    const openSidebar = vi.fn<(content: SidebarContent) => void>();
+    render(
+      renderGroupedMessage(
+        prepareChatMessageRender({
+          role: "toolResult",
+          content: text,
+          toolName: "lookup",
+          toolCallId: "json-result",
+        }),
+        "json-message",
+        { showReasoning: false },
+        openSidebar,
+      ),
+      container,
+    );
+    expect(container.querySelector(".chat-json-collapse")).toBeNull();
+    container.querySelector<HTMLButtonElement>("button.chat-tool-row")!.click();
+    const content = openSidebar.mock.calls[0]?.[0];
+    if (content?.kind !== "markdown") {
+      throw new Error("Expected tool output Markdown");
+    }
+    const panel = createContainer();
+    panel.innerHTML = toSanitizedMarkdownHtml(content.content);
     expect(panel.querySelector("pre code")?.textContent?.trimEnd()).toBe(text);
     expect(panel.querySelector("pre strong")).toBeNull();
-  });
-
-  it("keeps invalid JSON as ordinary detail output", () => {
-    const text = '{"count": }';
-    const panel = openToolDetails(text);
-    expect(panel.querySelector("pre code")).toBeNull();
-    expect(panel.textContent).toContain(text);
   });
 });

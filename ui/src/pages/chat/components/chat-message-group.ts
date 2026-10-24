@@ -11,14 +11,8 @@ import { t } from "../../../i18n/index.ts";
 import type { MessageGroup } from "../../../lib/chat/chat-types.ts";
 import { normalizeRoleForGrouping } from "../../../lib/chat/message-normalizer.ts";
 import { formatSenderLabel } from "../../../lib/chat/sender-label.ts";
-import {
-  readToolApprovalReviewOutcome,
-  readToolApprovalReviews,
-  resolveToolApprovalReviewOutcome,
-} from "../../../lib/chat/tool-approval-reviews.ts";
-import { summarizeToolGroup } from "../../../lib/chat/tool-call-grouping.ts";
+import { readToolApprovalReviews } from "../../../lib/chat/tool-approval-reviews.ts";
 import { extractToolCardsCached } from "../../../lib/chat/tool-cards.ts";
-import { fnv1aUtf16 } from "../../../lib/fnv1a.ts";
 import { resolveIdentityHue } from "../../../lib/identity-avatar.ts";
 import { renderChatAvatar, renderForwardedAvatar } from "../chat-avatar.ts";
 import type { TurnRecap } from "../chat-progress.ts";
@@ -49,13 +43,7 @@ import {
 import type { AssistantMessageDisclosure } from "./chat-message-text.ts";
 import { extractGroupMeta, renderMessageMeta } from "./chat-message-timestamp.ts";
 import type { SidebarContent, SidebarFullMessageLoader } from "./chat-sidebar.ts";
-import {
-  isRunningToolCard,
-  renderBrowserTabPreviews,
-  resolveToolRowText,
-  shouldToggleSelectableDisclosure,
-  syncToolDisclosureOverflow,
-} from "./chat-tool-cards.ts";
+import { renderBrowserTabPreviews } from "./chat-tool-cards.ts";
 import { shouldAnimateUserTurnEntry } from "./chat-user-turn-entry.ts";
 import { renderTurnRecapRow } from "./chat-working-indicator.ts";
 
@@ -100,6 +88,7 @@ type RenderMessageGroupOptions = Omit<
     onReply?: (target: MessageReplyTarget) => void;
     resolveReplyPreview?: (replyToId: string) => ReplyPreview | undefined;
     onRewind?: () => void;
+    onRetry?: () => void;
     rewindDisabled?: boolean;
     activeContinuation?: ActiveContinuation;
     turnRecap?: TurnRecap;
@@ -200,89 +189,14 @@ export function renderActivityGroup(
   if (!firstGroup || opts.showToolCalls === false) {
     return nothing;
   }
-  const cards = groups.flatMap((group) =>
-    group.messages.flatMap((item) => extractToolCardsCached(item.message)),
-  );
-  const latestGroup = groups[groups.length - 1] ?? firstGroup;
-  const latestCards = latestGroup.messages.flatMap((item) => extractToolCardsCached(item.message));
-  // While a run is live, the newest still-running call names the group so
-  // the collapsed header reads like a status line; afterwards it aggregates.
-  const runningCard = opts.runActive
-    ? latestCards.findLast((card) => isRunningToolCard(card, opts.runActive))
-    : undefined;
-  const groupSummaryLabel = runningCard
-    ? `${resolveToolRowText(runningCard, opts.runActive)}…`
-    : summarizeToolGroup(cards.map((card) => ({ name: card.name, args: card.args })));
-  const activityDisclosureId = `activity:${firstGroup.key}`;
-  const activityBodyId = `activity-body-${fnv1aUtf16(firstGroup.key).toString(16)}`;
-  const activityExpanded = opts.isToolMessageExpanded?.(activityDisclosureId) ?? false;
-  const approvalReviews = cards.flatMap((card) => readToolApprovalReviews(card.details));
-  const recordedReviewOutcomes = cards.flatMap((card) => {
-    const outcome = readToolApprovalReviewOutcome(card.details);
-    return outcome ? [outcome] : [];
-  });
-  const reviewOutcome = resolveToolApprovalReviewOutcome(approvalReviews, recordedReviewOutcomes);
-  const reviewer = approvalReviews[0]?.label ?? "Review";
-  const reviewAriaLabel = reviewOutcome
-    ? t(`chat.toolCards.review.${reviewOutcome === "reviewing" ? "reviewing" : reviewOutcome}`, {
-        reviewer,
-      })
-    : "";
   const content = html`
-    <div class="chat-activity-group ${activityExpanded ? "is-open" : ""}">
-      <button
-        class="chat-inline-disclosure chat-activity-group__summary"
-        type="button"
-        aria-expanded=${String(activityExpanded)}
-        aria-controls=${activityBodyId}
-        @pointerenter=${syncToolDisclosureOverflow}
-        @focus=${syncToolDisclosureOverflow}
-        @click=${(event: MouseEvent) => {
-          if (shouldToggleSelectableDisclosure(event)) {
-            opts.onToggleToolMessageExpanded?.(activityDisclosureId, activityExpanded);
-          }
-        }}
-      >
-        <span class="chat-activity-group__icon">${icons.listTree}</span>
-        <span class="chat-tool-disclosure__content">
-          <span class="chat-activity-group__label" title=${groupSummaryLabel}
-            >${groupSummaryLabel}</span
-          >
-        </span>
-        ${
-          reviewOutcome
-            ? html`<span
-                class="chat-activity-group__review-status"
-                data-outcome=${reviewOutcome}
-                role="img"
-                aria-label=${reviewAriaLabel}
-                >${
-                  reviewOutcome === "denied"
-                    ? icons.shieldX
-                    : reviewOutcome === "reviewing"
-                      ? icons.shieldQuestion
-                      : icons.shieldCheck
-                }</span
-              >`
-            : nothing
-        }
-        <span class="chat-tool-row__chevron" aria-hidden="true">${icons.chevronRight}</span>
-      </button>
-      <div class="chat-activity-group__body" id=${activityBodyId} ?hidden=${!activityExpanded}>
-        ${
-          activityExpanded
-            ? groups.map((group) =>
-                group.messages.map((item, index) =>
-                  renderPreparedGroupMessage(
-                    group,
-                    index,
-                    opts,
-                    prepareGroupMessage(group, item, opts),
-                  ),
-                ),
-              )
-            : nothing
-        }
+    <div class="chat-activity-group">
+      <div class="chat-activity-group__body">
+        ${groups.map((group) =>
+          group.messages.map((item, index) =>
+            renderPreparedGroupMessage(group, index, opts, prepareGroupMessage(group, item, opts)),
+          ),
+        )}
       </div>
       ${renderBrowserTabPreviews(groups, opts)}
     </div>

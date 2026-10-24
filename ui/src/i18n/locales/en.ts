@@ -5472,6 +5472,7 @@ export const en: TranslationMap & {
       askInSideChat: "Ask in side chat",
       addToChat: "Add to chat",
       rewind: "Rewind",
+      retry: "Retry",
       rewindConfirm: "Rewind to before this message?",
       dontAskAgain: "Don't ask again",
       rewindToHere: "Rewind to here",

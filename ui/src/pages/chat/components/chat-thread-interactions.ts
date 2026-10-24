@@ -134,6 +134,7 @@ export type ChatThreadProps = ChatSendStatusActions & {
   fetchLinkFavicon?: LinkFaviconFetcher;
   githubRepo?: MarkdownRenderOptions["githubRepo"];
   autoExpandToolCalls?: boolean;
+  thinkingLevel?: string | null;
   realtimeTalkConversation?: RealtimeTalkConversationEntry[];
   typingActors?: readonly { id: string; label: string; preview?: string }[];
   onOpenSidebar?: (content: SidebarContent) => void;
