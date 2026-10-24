@@ -443,8 +443,11 @@ function writeState(file, state) {
 // costs minutes here and a whole CI round plus a fix there (F2-01, 2026-10-16).
 // Type checks stay in CI, where tsgo takes 1.4 min, and out of the local gate,
 // where it took about 23 on this PC per check (owner's call, 2026-10-19).
+// Vitest too: --changed on a shared file runs nearly the whole UI suite here
+// (6 min) and about 8 tests fail only on Windows, so every UI task blocked;
+// sharklet-ui-tests.yml runs them on Linux each keep (owner's call, 2026-10-24).
 const CI_MIRROR = ["corepack pnpm lint:sharklet"];
-const CI_ONLY = /^\s*corepack pnpm tsgo:/u;
+const CI_ONLY = /^\s*(corepack pnpm tsgo:|node scripts\/run-vitest\.mjs )/u;
 function fastGateOf(task) {
   const own = (task.fastGate ?? "")
     .split("&&")
