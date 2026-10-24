@@ -52,6 +52,8 @@ export function renderChatWorkingIndicator(
     waitingApproval?: boolean;
     startupLabel?: string;
     outputTokens?: number | null;
+    /** Effort level of the run; sets how fast the shark swims. */
+    effort?: string | null;
     presentation?: "standalone" | "continuation";
   } = {},
 ) {
@@ -82,7 +84,11 @@ export function renderChatWorkingIndicator(
                 })}"
                 aria-hidden="true"
               >
-                ${icons.claw}
+                <openclaw-mascot
+                  data-glyph
+                  data-effort=${options.effort || nothing}
+                  .size=${22}
+                ></openclaw-mascot>
               </div>
             `
       }

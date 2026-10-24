@@ -593,7 +593,7 @@ describeControlUiE2e("Control UI chat message actions", () => {
       await group.locator(".msg-meta__details").waitFor({ state: "visible" });
       const metadataStyle = await popupStyle();
       expect(await group.locator(".msg-meta__details").textContent()).toContain("gpt-5.6-luna");
-      expect(await group.locator(".msg-meta__cost").textContent()).toContain("$0.12");
+      expect(await group.locator(".chat-group-cost").textContent()).toContain("$0.12");
       await screenshot(page, "tooltip-metadata.png");
 
       await timestamp.click();

@@ -29,7 +29,8 @@ import { renderPluginSurface } from "../../../plugins/control-ui-view.ts";
 import { renderHighlightedCommand } from "./chat-command-highlight.ts";
 import { renderDiffStatChips } from "./chat-diff-render.ts";
 import {
-  renderExpandedToolCardContent,
+  toolCardSidebarContent,
+  toolFailureLabel,
   toolWorkspacePath,
   type ToolRenderOptions,
 } from "./chat-tool-content.ts";
@@ -426,11 +427,7 @@ export function renderToolApprovalReviews(card: ToolCard) {
 
 export function renderToolCard(
   card: ToolCard,
-  opts: ToolRenderOptions & {
-    expanded: boolean;
-    onToggleExpanded: (id: string) => void;
-    showApprovalReviews?: boolean;
-  },
+  opts: ToolRenderOptions & { showApprovalReviews?: boolean },
 ) {
   const outcome = resolveToolCardOutcome(card, opts.runActive);
   const progressReceipt = renderProgressCardReceipt(card, outcome);
@@ -440,10 +437,11 @@ export function renderToolCard(
   const view = resolveToolCallView({ name: card.name, args: card.args, details: card.details });
   const display = resolveToolDisplay({ name: card.name, args: card.args, detailMode: "explain" });
   const isRunning = outcome === "running";
-  const expanded = opts.expanded;
   const icon = TOOL_ROW_ICONS[view.kind] ?? display.icon;
   const workspaceFilePath = toolWorkspacePath(card, view);
-  const isFileRow = Boolean(workspaceFilePath);
+  const { onOpenSidebar } = opts;
+  const openDetails = onOpenSidebar ? () => onOpenSidebar(toolCardSidebarContent(card)) : undefined;
+  const failure = toolFailureLabel(card);
   const rowContent = html`
     <span class="chat-tool-msg-summary__icon">${renderToolIcon(icon)}</span>
     <span class="chat-tool-disclosure__content"
@@ -455,59 +453,54 @@ export function renderToolCard(
         opts.onOpenWorkspaceFile,
       )}</span
     >
-    <span class="chat-tool-row__chevron" aria-hidden="true">${icons.chevronRight}</span>
+    ${failure ? html`<span class="chat-tool-row__outcome">${failure}</span>` : nothing}
   `;
+  const rowClass = `chat-tool-msg-summary chat-tool-row ${isRunning ? "chat-tool-row--running" : ""}`;
+  // A step is a line of text. The line opens its input and output in the detail
+  // panel; nothing expands inside the thread. A file step keeps its own file
+  // link, so the details button sits beside it instead of wrapping it.
+  const row = workspaceFilePath
+    ? html`<div
+        class="${rowClass} chat-tool-row--file"
+        @pointerenter=${syncToolDisclosureOverflow}
+        @focusin=${syncToolDisclosureOverflow}
+      >
+        ${
+          openDetails
+            ? html`<button
+                class="chat-tool-row__toggle"
+                type="button"
+                aria-label=${resolveToolRowText(card, opts.runActive)}
+                @click=${openDetails}
+              ></button>`
+            : nothing
+        }
+        ${rowContent}
+      </div>`
+    : openDetails
+      ? html`<button
+          class="${rowClass} chat-tool-row--link"
+          type="button"
+          @pointerenter=${syncToolDisclosureOverflow}
+          @focus=${syncToolDisclosureOverflow}
+          @click=${(event: MouseEvent) => {
+            if (shouldToggleSelectableDisclosure(event)) {
+              openDetails();
+            }
+          }}
+        >
+          ${rowContent}
+        </button>`
+      : html`<div class=${rowClass} @pointerenter=${syncToolDisclosureOverflow}>
+          ${rowContent}
+        </div>`;
 
   return renderPluginToolResult(
     card,
     opts,
     html`
-      <div
-        class="chat-tool-msg-collapse chat-tool-msg-collapse--manual ${expanded ? "is-open" : ""}"
-      >
-        ${
-          isFileRow
-            ? html`<div
-                class="chat-inline-disclosure chat-tool-msg-summary chat-tool-row chat-tool-row--file ${
-                  isRunning ? "chat-tool-row--running" : ""
-                }"
-                @pointerenter=${syncToolDisclosureOverflow}
-                @focusin=${syncToolDisclosureOverflow}
-              >
-                <button
-                  class="chat-tool-row__toggle"
-                  type="button"
-                  aria-expanded=${String(expanded)}
-                  aria-label=${resolveToolRowText(card, opts.runActive)}
-                  @click=${() => opts.onToggleExpanded(card.id)}
-                ></button>
-                ${rowContent}
-              </div>`
-            : html`<button
-                class="chat-inline-disclosure chat-tool-msg-summary chat-tool-row ${
-                  isRunning ? "chat-tool-row--running" : ""
-                }"
-                type="button"
-                aria-expanded=${String(expanded)}
-                @pointerenter=${syncToolDisclosureOverflow}
-                @focus=${syncToolDisclosureOverflow}
-                @click=${(event: MouseEvent) => {
-                  if (shouldToggleSelectableDisclosure(event)) {
-                    opts.onToggleExpanded(card.id);
-                  }
-                }}
-              >
-                ${rowContent}
-              </button>`
-        }
-        ${
-          expanded
-            ? html`
-                <div class="chat-tool-msg-body">${renderExpandedToolCardContent(card, opts)}</div>
-              `
-            : nothing
-        }
-        ${opts.showApprovalReviews === false ? nothing : renderToolApprovalReviews(card)}
+      <div class="chat-tool-msg-collapse">
+        ${row} ${opts.showApprovalReviews === false ? nothing : renderToolApprovalReviews(card)}
       </div>
     `,
   );
@@ -515,7 +508,7 @@ export function renderToolCard(
 
 export function renderPluginToolResult(
   card: ToolCard | null | undefined,
-  opts: ToolRenderOptions & { expanded: boolean },
+  opts: ToolRenderOptions,
   defaultView: unknown,
 ) {
   if (!card) {
@@ -535,7 +528,9 @@ export function renderPluginToolResult(
         isError: card.isError,
         completed: card.completed,
       },
-      expanded: opts.expanded,
+      // Part of the public tool-result surface contract (plugin-sdk/control-ui);
+      // a step is a flat line now, so it never reports expanded.
+      expanded: false,
     },
     defaultView,
     opts.presented ?? true,
