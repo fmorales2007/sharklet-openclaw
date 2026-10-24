@@ -42,7 +42,7 @@ function loadSwimRuntime(): Promise<SwimRuntime> {
 
 // Node-environment tests import the icon set, which mounts this element.
 const ElementBase = (
-  typeof HTMLElement === "undefined" ? class {} : HTMLElement
+  typeof HTMLElement === "undefined" ? Object : HTMLElement
 ) as typeof HTMLElement;
 
 class OpenClawMascot extends ElementBase {
