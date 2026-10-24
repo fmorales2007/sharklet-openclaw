@@ -68,7 +68,7 @@ export function renderNewSessionDraftView(options: {
         attachmentDraft: submission.attachmentDraft,
         canSubmit: !submission.submitting && !dictationLocked && submission.canSubmit(),
         submitDisabledReason: submission.submitDisabledReason(),
-        blockedSubmitNotice: submission.blockedSubmitNotice(),
+        blockedSubmitNotice: submission.blockedSubmit.notice(),
         dictationActive: dictation.active,
         dictationPreview: dictation.previewDraft(),
         dictationStatus: dictation.renderStatus(),
@@ -79,7 +79,7 @@ export function renderNewSessionDraftView(options: {
         mentions: submission.mentions,
         getMentions: () => submission.mentions,
         visibility: submission.visibility,
-        memoryless: submission.memoryless,
+        memoryless: submission.memoryless.value,
         draftAvailable: capabilities.canStartAsDraft(context),
         ...capabilities.composerProps(context, gateway, place.agentId),
         modelControl: place.modelControl,
@@ -109,7 +109,7 @@ export function renderNewSessionDraftView(options: {
         },
         onMemorylessChange: (memoryless) => {
           if (!submission.submitting && !submission.pendingPlacement.sessionKey) {
-            submission.setMemoryless(memoryless);
+            submission.memoryless.set(memoryless, submission.visibility === "incognito");
           }
         },
         onSubmit: () => void submission.submit(),

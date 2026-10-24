@@ -5,7 +5,17 @@ import "../../../components/tooltip.ts";
 import { t } from "../../../i18n/index.ts";
 import { resetSkillMenuState } from "./chat-composer-skill-menu.ts";
 import { resetSlashMenuState } from "./chat-composer-slash-menu.ts";
-import type { ChatComposerHomeSlot, ChatComposerState } from "./chat-composer-types.ts";
+import { resetChatComposerState } from "./chat-composer-state.ts";
+import {
+  HOME_COMPOSER_PANE_ID,
+  type ChatComposerHomeSlot,
+  type ChatComposerState,
+} from "./chat-composer-types.ts";
+
+/** Home unmounted: drop its composer state (menus, observers, typing placeholder). */
+export function resetHomeComposer(): void {
+  resetChatComposerState(HOME_COMPOSER_PANE_ID);
+}
 
 /** Closes every open menu, then starts the session. */
 export function submitHome(state: ChatComposerState, home: ChatComposerHomeSlot): void {

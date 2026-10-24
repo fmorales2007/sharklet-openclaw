@@ -1,3 +1,5 @@
+import type { SlashCommandDef } from "../../../lib/chat/commands.ts";
+import { resolveThinkingCommandArgOptionsForSession } from "../../../lib/chat/thinking.ts";
 import { paneDomId } from "./chat-composer-dom.ts";
 import type { HumanMentionMenu } from "./chat-composer-mention-menu.ts";
 import {
@@ -12,6 +14,7 @@ import {
   isSlashMenuVisible,
   type SlashMenuState,
 } from "./chat-composer-slash-menu.ts";
+import type { ChatComposerProps } from "./chat-composer-types.ts";
 
 /** Hosts own admission; both editors expose the same active suggestion to assistive technology. */
 export function resolveComposerMenus(
@@ -47,4 +50,21 @@ export function resolveComposerMenus(
           : "slash-menu-listbox",
     ),
   };
+}
+
+export function resolveChatSlashCommandArgOptions(
+  command: SlashCommandDef,
+  props: ChatComposerProps,
+): string[] {
+  if (command.key !== "think") {
+    return command.argOptions ?? [];
+  }
+  if (props.modelSwitching) {
+    return [];
+  }
+  return resolveThinkingCommandArgOptionsForSession(
+    props.selectedSession,
+    props.sessions?.defaults,
+    props.modelCatalog,
+  );
 }

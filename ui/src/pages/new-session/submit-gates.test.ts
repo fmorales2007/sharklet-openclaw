@@ -244,16 +244,16 @@ describe("DraftSubmissionFlow submit gates", () => {
     // but the gate must be visible, not a silent no-op.
     expect(flow.canSubmit()).toBe(false);
     expect(flow.submitDisabledReason()).toBeTruthy();
-    expect(flow.blockedSubmitNotice()).toBeUndefined();
+    expect(flow.blockedSubmit.notice()).toBeUndefined();
 
     await flow.submit();
     expect(context.sessions.createResult).not.toHaveBeenCalled();
-    expect(flow.blockedSubmitNotice()).toBe(flow.submitDisabledReason());
+    expect(flow.blockedSubmit.notice()).toBe(flow.submitDisabledReason());
 
     resolveBranches({ repositoryStatus: "git", branches: ["main"], defaultBranch: "main" });
     await vi.waitFor(() => expect(flow.canSubmit()).toBe(true));
     // The transient gate lifted; the notice retires itself.
-    expect(flow.blockedSubmitNotice()).toBeUndefined();
+    expect(flow.blockedSubmit.notice()).toBeUndefined();
     expect(flow.submitDisabledReason()).toBeUndefined();
   });
 
@@ -262,7 +262,7 @@ describe("DraftSubmissionFlow submit gates", () => {
     await fixture.flow.submit();
     expect(fixture.flow.canSubmit()).toBe(false);
     expect(fixture.flow.submitBlock()?.gate).toBe("empty-draft");
-    expect(fixture.flow.blockedSubmitNotice()).toBeUndefined();
+    expect(fixture.flow.blockedSubmit.notice()).toBeUndefined();
   });
 
   it("blocks a retained device choice when the selected runtime cannot dispatch there", async () => {

@@ -10,7 +10,6 @@ import { t } from "../../../i18n/index.ts";
 import type { HumanMention } from "../../../lib/chat/chat-types.ts";
 import type { SlashCommandDef } from "../../../lib/chat/commands.ts";
 import { updateHumanMentions } from "../../../lib/chat/human-mentions.ts";
-import { resolveThinkingCommandArgOptionsForSession } from "../../../lib/chat/thinking.ts";
 import { areUiSessionKeysEquivalent } from "../../../lib/sessions/session-key.ts";
 import { detectTextDirection } from "../../../lib/text-direction.ts";
 import { ComposerDictationController, insertComposerDictation } from "../composer-dictation.ts";
@@ -32,7 +31,7 @@ import { createGoalComposerController } from "./chat-composer-goal-mode.ts";
 import { submitHome, syncHomeCommandOwner } from "./chat-composer-home.ts";
 import { createComposerKeyDownHandler } from "./chat-composer-keydown.ts";
 import type { HumanMentionMenuHost } from "./chat-composer-mention-menu.ts";
-import { resolveComposerMenus } from "./chat-composer-menus.ts";
+import { resolveChatSlashCommandArgOptions, resolveComposerMenus } from "./chat-composer-menus.ts";
 import {
   isSkillMenuVisible,
   resetSkillMenuState,
@@ -62,23 +61,6 @@ import { renderChatPermissionPicker } from "./chat-permission-picker.ts";
 import { createGatewayQuestionPanelProps } from "./chat-question-card.ts";
 
 export { isChatRunWorking, resetChatComposerState } from "./chat-composer-state.ts";
-
-function resolveChatSlashCommandArgOptions(
-  command: SlashCommandDef,
-  props: ChatComposerProps,
-): string[] {
-  if (command.key !== "think") {
-    return command.argOptions ?? [];
-  }
-  if (props.modelSwitching) {
-    return [];
-  }
-  return resolveThinkingCommandArgOptionsForSession(
-    props.selectedSession,
-    props.sessions?.defaults,
-    props.modelCatalog,
-  );
-}
 
 export function renderChatComposer(props: ChatComposerProps) {
   const state = getChatComposerState(props.paneId);
