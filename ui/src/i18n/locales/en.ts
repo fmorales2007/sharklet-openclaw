@@ -1051,6 +1051,8 @@ export const en: TranslationMap & {
     incognitoDescription: "Keep this session only until the Gateway restarts",
     draft: "Draft",
     draftDescription: "Keep this session to yourself until you publish it",
+    memoryless: "Memory-less",
+    memorylessDescription: "This chat will not read or write memory",
     messagePlaceholder: "What should this session work on?",
     dictate: "Dictate",
     readingAttachment: "Reading attachment",

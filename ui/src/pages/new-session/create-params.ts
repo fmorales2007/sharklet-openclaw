@@ -2,6 +2,7 @@ import { normalizeOptionalString } from "@openclaw/normalization-core/string-coe
 import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
 import type { HumanMention } from "../../lib/chat/chat-types.ts";
 import type { SessionCreateParams } from "../../lib/sessions/create.ts";
+import { memorylessCreateParams } from "../../lib/sessions/memoryless.ts";
 import { normalizeAgentId } from "../../lib/sessions/session-key.ts";
 
 const WORKTREE_NAME_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -23,6 +24,7 @@ export type DraftSessionCreateSelection = Partial<
   message: string;
   mentions?: readonly HumanMention[];
   visibility: NewSessionVisibility;
+  memoryless?: boolean;
   toolOverrides?: SessionCreateParams["toolOverrides"] | null;
 };
 
@@ -55,6 +57,7 @@ export function buildDraftSessionCreateParams(draft: {
   toolOverrides?: SessionCreateParams["toolOverrides"] | null;
   permissionMode?: SessionCreateParams["permissionMode"];
   visibility?: NewSessionVisibility;
+  memoryless?: boolean;
   attachments?: SessionCreateParams["attachments"];
   projectId?: string;
   projectGitUrl?: string;
@@ -102,6 +105,8 @@ export function buildDraftSessionCreateParams(draft: {
     ...(titleSource ? { titleSource } : {}),
     ...(draft.visibility === "incognito" ? { incognito: true } : {}),
     ...(draft.visibility === "draft" ? { visibility: "draft" } : {}),
+    // Fixed at creation (ADR-006 §7); never combined with incognito.
+    ...(draft.visibility === "incognito" ? {} : memorylessCreateParams(draft.memoryless === true)),
     ...(!draft.deferInitialTurn && draft.attachments?.length
       ? { attachments: draft.attachments }
       : {}),

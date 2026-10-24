@@ -79,6 +79,7 @@ export function renderNewSessionDraftView(options: {
         mentions: submission.mentions,
         getMentions: () => submission.mentions,
         visibility: submission.visibility,
+        memoryless: submission.memoryless,
         draftAvailable: capabilities.canStartAsDraft(context),
         ...capabilities.composerProps(context, gateway, place.agentId),
         modelControl: place.modelControl,
@@ -104,6 +105,11 @@ export function renderNewSessionDraftView(options: {
         onVisibilityChange: (visibility) => {
           if (!submission.submitting && !submission.pendingPlacement.sessionKey) {
             submission.setVisibility(visibility);
+          }
+        },
+        onMemorylessChange: (memoryless) => {
+          if (!submission.submitting && !submission.pendingPlacement.sessionKey) {
+            submission.setMemoryless(memoryless);
           }
         },
         onSubmit: () => void submission.submit(),

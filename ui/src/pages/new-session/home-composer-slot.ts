@@ -36,6 +36,8 @@ type HomeComposerOptions = {
   getMentions?: () => readonly HumanMention[];
   visibility?: NewSessionVisibility;
   draftAvailable?: boolean;
+  memoryless?: boolean;
+  onMemorylessChange?: (memoryless: boolean) => void;
   capabilityMenu?: CapabilityMenuProps;
   toolOverrides?: SessionToolOverrides | null;
   modelControl: NewSessionModelControl;
@@ -230,19 +232,35 @@ export function renderHomeComposer(options: HomeComposerOptions) {
             disabled: locked,
             requestUpdate: options.requestUpdate,
           })}`,
-      rootToggles: options.draftAvailable
-        ? [
-            {
-              value: "new-session-draft",
-              label: t("newSession.draft"),
-              icon: icons.pencil,
-              checked: draftEnabled,
-              disabled: locked,
-              title: t("newSession.draftDescription"),
-              onChange: (checked) => options.onVisibilityChange?.(checked ? "draft" : "normal"),
-            },
-          ]
-        : undefined,
+      rootToggles: [
+        ...(options.draftAvailable
+          ? [
+              {
+                value: "new-session-draft",
+                label: t("newSession.draft"),
+                icon: icons.pencil,
+                checked: draftEnabled,
+                disabled: locked,
+                title: t("newSession.draftDescription"),
+                onChange: (checked: boolean) =>
+                  options.onVisibilityChange?.(checked ? "draft" : "normal"),
+              },
+            ]
+          : []),
+        ...(options.onMemorylessChange
+          ? [
+              {
+                value: "new-session-memoryless",
+                label: t("newSession.memoryless"),
+                icon: icons.brain,
+                checked: options.memoryless === true,
+                disabled: locked || options.visibility === "incognito",
+                title: t("newSession.memorylessDescription"),
+                onChange: options.onMemorylessChange,
+              },
+            ]
+          : []),
+      ],
       voiceControl: options.voiceControl,
       dictation: {
         active: dictationActive,
