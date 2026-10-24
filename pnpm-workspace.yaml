@@ -12,9 +12,8 @@ minimumReleaseAgeStrict: true
 minimumReleaseAgeExclude:
   # Reviewed proxy DNS/TLS controls; remove after 2026-09-15 10:08 UTC.
   - "@openclaw/proxyline@0.3.12"
-  # GHSA-vp8m-p9jh-q5pm / GHSA-w293-vg96-wgc3 security fixes; remove after 2026-09-12.
-  - "undici@8.10.2"
-  - "undici@7.29.1"
+  # GHSA-27r3-jxmh-p828 (body-parser DoS) security fix; remove after 2026-10-29.
+  - "body-parser@2.4.0"
   # Authorized Vitest 5.0.0 migration; remove after 2026-09-10 12:24:37.187 UTC.
   - "vitest@5.0.0"
   - "@vitest/coverage-v8@5.0.0"
@@ -72,7 +71,8 @@ overrides:
   # GHSA-68fv-2mgg-jv7q (high), found by the F1-X scan.
   source-map-js: 1.2.2
   fast-uri: 4.1.4
-  follow-redirects: 1.16.0
+  follow-redirects: 1.16.1
+  "@github/copilot-sdk@1.0.11>zod": 4.6.6
   defu: 6.1.7
   fast-xml-parser: 5.11.0
   request: "npm:@cypress/request@4.0.1"
@@ -87,7 +87,7 @@ overrides:
   "mailparser@3.9.15>html-to-text": 10.0.1
   "mailauth@5.0.2>nodemailer": 10.0.6
   # Mailauth pins vulnerable Undici; remove when its direct dependency is fixed.
-  "mailauth@5.0.2>undici": 8.10.2
+  "mailauth@5.0.2>undici": 8.12.2
   # F1-08: GHSA-6h2x-m376-mqjq; remove when mailauth ships joi >=18.2.6.
   "mailauth@5.0.2>joi": 18.2.6
   "mailparser@3.9.15>nodemailer": 10.0.6

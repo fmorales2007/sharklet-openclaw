@@ -46,6 +46,24 @@ const AUDIT_ADVISORY_VERSION_OVERRIDES = [
     advisoryIds: new Set(["1118204", "GHSA-3q49-cfcf-g5fm"]),
     unaffectedVersions: new Set(["2.2.1", "2.2.5"]),
   },
+  // GHSA-xcx6-jx8p-x3h5 is fixed only in @azure/msal-node 7.1.0, but every
+  // release of @microsoft/teams.apps and @azure/identity still requires ^5.6.0
+  // (msteams plugin only). Accepted by the owner on 2026-10-24; drop this entry
+  // once those packages accept msal-node 7.
+  {
+    packageName: "@azure/msal-node",
+    advisoryIds: new Set(["1243111", "GHSA-xcx6-jx8p-x3h5"]),
+    unaffectedVersions: new Set(["5.6.0"]),
+  },
+  // GHSA-mrhx-c7xc-m3w5 has no zod 3 fix; @a2ui/lit (canvas) and
+  // @discord/embedded-app-sdk still require zod 3 in their latest releases,
+  // while every direct use is on 4.6.6. Accepted by the owner on 2026-10-24;
+  // drop this entry once both move to zod 4.
+  {
+    packageName: "zod",
+    advisoryIds: new Set(["1243066", "GHSA-mrhx-c7xc-m3w5"]),
+    unaffectedVersions: new Set(["3.25.76", "4.6.6"]),
+  },
 ];
 
 class AdvisoryUnavailableError extends Error {}
