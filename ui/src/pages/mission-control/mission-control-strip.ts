@@ -114,6 +114,9 @@ export class MissionControlStrip extends OpenClawLightDomElement {
   }
 
   private renderJobs(rows: readonly GatewaySessionRow[]): TemplateResult {
+    if (rows.length > 0) {
+      void import("./job-progress.ts");
+    }
     const open = this.open && rows.length > 0;
     // Collapsed to zero height is not hidden: inert keeps its Open buttons out
     // of the tab order and the accessibility tree until it is expanded.
@@ -133,11 +136,14 @@ export class MissionControlStrip extends OpenClawLightDomElement {
             <span class="sk-job-step"
               ><span class="sk-live" aria-hidden="true"></span
               ><span class="sk-trunc"
-                >${t(
-                  `missionControl.workingNow.status.${row.status === "queued" ? "queued" : "running"}`,
-                )}</span
-              ></span
-            >
+                ><sharklet-job-progress
+                  session-key=${row.key}
+                  agent-id=${id}
+                  fallback=${t(
+                    `missionControl.workingNow.status.${row.status === "queued" ? "queued" : "running"}`,
+                  )}
+                ></sharklet-job-progress></span
+            ></span>
             <span class="sk-job-meta sk-num"
               >${t("missionControl.workingNow.updated", {
                 time: formatRelativeTimestamp(row.updatedAt),

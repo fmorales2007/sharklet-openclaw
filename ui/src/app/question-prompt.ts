@@ -681,6 +681,32 @@ export async function cancelQuestionPrompt(state: QuestionPromptState, id: strin
   await resolveQuestionPrompt(state, id, { cancel: true });
 }
 
+/**
+ * Drops the typed value of every pending credential question. A phone that
+ * backgrounds the page can keep it in memory for a long time, so the owner types
+ * it again instead. Returns whether anything was dropped.
+ */
+export function dropBackgroundedSecretDrafts(state: QuestionPromptState): boolean {
+  let dropped = false;
+  for (const prompt of state.prompts.values()) {
+    if (prompt.status !== "pending" || prompt.submitting) {
+      continue;
+    }
+    const typed = prompt.questions.some(
+      (question) => question.isSecret && prompt.drafts.get(question.questionId)?.freeText,
+    );
+    if (typed) {
+      clearSecretQuestionDrafts(prompt.questions, prompt.drafts);
+      prompt.revision = ++state.revision;
+      dropped = true;
+    }
+  }
+  if (dropped) {
+    state.onChange();
+  }
+  return dropped;
+}
+
 export function listQuestionPrompts(state: QuestionPromptState): QuestionPrompt[] {
   return [...state.prompts.values()].toSorted(
     (left, right) => left.createdAtMs - right.createdAtMs || left.id.localeCompare(right.id),

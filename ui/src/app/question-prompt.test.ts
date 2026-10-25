@@ -13,6 +13,7 @@ import {
   cancelQuestionPrompt,
   createQuestionPromptState,
   disposeQuestionPromptState,
+  dropBackgroundedSecretDrafts,
   handleQuestionPromptEvent,
   refreshPendingQuestionsWithRetry,
   setQuestionPromptClient,
@@ -1123,5 +1124,47 @@ describe("refreshPendingQuestions", () => {
 
     finishGet({ question: requestedPayload({ status: "cancelled" }) });
     await waitForFast(() => expect(state.prompts.get("question-1")?.status).toBe("cancelled"));
+  });
+});
+
+describe("dropBackgroundedSecretDrafts", () => {
+  const secretQuestion = {
+    questionId: "secret_value",
+    header: "Credential",
+    question: "Paste the credential for SERVICE_API_KEY",
+    options: [],
+    isOther: true,
+    isSecret: true,
+    secretStore: { name: "SERVICE_API_KEY", kind: "secret" },
+  };
+
+  it("empties a typed credential, keeps other drafts and tells the view", () => {
+    const onChange = vi.fn();
+    const state = createState(onChange);
+    requestQuestion(state, {
+      questions: [secretQuestion, requestedPayload().questions[0]],
+    });
+    const prompt = state.prompts.get("question-1")!;
+    prompt.drafts.set("secret_value", { selected: new Set(), freeText: "typed-credential-value" });
+    prompt.drafts.set("format", { selected: new Set(), freeText: "Compact please" });
+    onChange.mockClear();
+
+    expect(dropBackgroundedSecretDrafts(state)).toBe(true);
+
+    expect(prompt.drafts.has("secret_value")).toBe(false);
+    expect(prompt.drafts.get("format")?.freeText).toBe("Compact please");
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(dropBackgroundedSecretDrafts(state)).toBe(false);
+  });
+
+  it("leaves a credential that is already being submitted alone", () => {
+    const state = createState();
+    requestQuestion(state, { questions: [secretQuestion] });
+    const prompt = state.prompts.get("question-1")!;
+    prompt.drafts.set("secret_value", { selected: new Set(), freeText: "in-flight-value" });
+    prompt.submitting = true;
+
+    expect(dropBackgroundedSecretDrafts(state)).toBe(false);
+    expect(prompt.drafts.get("secret_value")?.freeText).toBe("in-flight-value");
   });
 });

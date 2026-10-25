@@ -15,6 +15,7 @@ import type { GatewayBroadcastFn } from "../server-broadcast-types.js";
 import { createDirectChatContext } from "../server-chat.agent-events.test-helpers.js";
 import { createQuestionHandlers } from "./question.js";
 import { createSecretStoreWriteService } from "./secrets.js";
+import type { GatewayRequestContext } from "./shared-types.js";
 import type { GatewayClient, RespondFn } from "./types.js";
 
 export let manager: QuestionManager;
@@ -75,7 +76,11 @@ export function installQuestionTestHooks() {
 export async function callQuestionRpc(
   method: string,
   params: Record<string, unknown>,
-  options?: { client?: GatewayClient; cfg?: OpenClawConfig },
+  options?: {
+    client?: GatewayClient;
+    cfg?: OpenClawConfig;
+    logGateway?: GatewayRequestContext["logGateway"];
+  },
 ) {
   const calls: Parameters<RespondFn>[] = [];
   const respond: RespondFn = (...args) => calls.push(args);
@@ -89,6 +94,7 @@ export async function callQuestionRpc(
       broadcast,
       validateAgentRuntimeApprovalAuthority: createAgentRuntimeApprovalAuthorityValidator(),
       getRuntimeConfig: () => options?.cfg ?? {},
+      ...(options?.logGateway ? { logGateway: options.logGateway } : {}),
     }),
   });
   const response = calls[0];

@@ -3968,6 +3968,7 @@ export const en: TranslationMap & {
       open: "Open",
       openLabel: "Open {name}",
       updated: "Updated {time}",
+      step: "{step} · {done} of {total}",
       status: { running: "Running", queued: "Queued" },
     },
     upNext: {
