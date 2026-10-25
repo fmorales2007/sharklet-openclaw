@@ -477,8 +477,13 @@ export class ChatPane extends ChatPaneLayoutRender {
       approvalErrors: overlays?.snapshot?.approvalErrors,
       onApprovalDecision:
         overlays && !sessionParticipationBlocked
-          ? (approvalId, decision) =>
-              overlays.decideApproval(decision, approvalId, inlineApproval ?? undefined)
+          ? (approvalId, decision, explanation) =>
+              overlays.decideApproval(
+                decision,
+                approvalId,
+                inlineApproval ?? undefined,
+                explanation,
+              )
           : undefined,
       workspaceConflict: visibleWorkspaceConflict,
       onDismissWorkspaceConflict:

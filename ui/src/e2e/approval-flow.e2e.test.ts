@@ -172,7 +172,8 @@ suite.define(() => {
       })
       .waitFor();
     const inlineDecisionButtons = inlineCard.locator(".exec-approval-actions button");
-    expect(await inlineDecisionButtons.count()).toBe(3);
+    // Allow once, Always allow here, Deny and Deny and explain.
+    expect(await inlineDecisionButtons.count()).toBe(4);
     expect(
       await inlineDecisionButtons.evaluateAll((buttons) =>
         buttons.every((button) => (button as HTMLButtonElement).disabled),

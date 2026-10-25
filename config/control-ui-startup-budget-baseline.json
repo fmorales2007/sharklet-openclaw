@@ -1,5 +1,5 @@
 {
-  "startupJsGzipBytes": 354411,
-  "reason": "Sharklet at startup, ratcheted down by F1-X to the measured 354411 B (Windows build) after F1-10 removed upstream's theme families: shell, brand, mascot override, fonts, Mission Control route and strings, page kill switch strings, the typed RPC layer's messages. The history of each earlier bump is in the Sharklet docs (plan-ui-fases.fase-1.tasks.json, tasks F1-01 to F1-10).",
-  "updatedAt": "2026-10-07"
+  "startupJsGzipBytes": 356241,
+  "reason": "Sharklet at startup, raised by F2-04 from 354411 B to the measured 356241 B (Windows build): the shell now mounts the finished-task notice stack and the bell with its history, and the Needs you card gains Deny and explain. The task schema stays out of the boot chunk (loaded on the first task event). Earlier: F1-X ratcheted down to 354411 B after F1-10 removed upstream's theme families. The history of each earlier bump is in the Sharklet docs (plan-ui-fases.fase-1.tasks.json, tasks F1-01 to F1-10).",
+  "updatedAt": "2026-10-25"
 }

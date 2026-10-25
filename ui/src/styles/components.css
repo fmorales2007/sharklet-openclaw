@@ -1198,6 +1198,74 @@ openclaw-session-owner-chip {
 /* Passive notifications stay in the trailing top corner, away from the chat
  * composer and other bottom-docked controls. The host shows one toast at a time
  * (`show()` replaces the active one), so there is no stack to offset against. */
+.exec-approval-explain {
+  display: flex;
+  flex-wrap: wrap;
+  flex-basis: 100%;
+  gap: var(--space-2);
+}
+.exec-approval-explain label {
+  display: grid;
+  flex-basis: 100%;
+  gap: 4px;
+}
+.task-notices {
+  position: fixed;
+  right: calc(20px + var(--safe-area-right));
+  bottom: calc(20px + var(--safe-area-bottom));
+  z-index: var(--z-toast);
+  display: grid;
+  gap: var(--space-2);
+}
+.task-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 8px 8px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--popover);
+  box-shadow: var(--shadow-lg);
+}
+.task-notice--problem {
+  color: var(--danger);
+}
+.notice-bell {
+  position: relative;
+}
+.notice-bell__badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 14px;
+  border-radius: 7px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-size: 10px;
+  line-height: 14px;
+  text-align: center;
+}
+.notice-history {
+  position: fixed;
+  inset: auto;
+  max-width: 320px;
+  padding: var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--popover);
+  color: var(--popover-foreground);
+}
+.notice-history ul {
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+.notice-history li {
+  display: flex;
+  gap: var(--space-2);
+  padding: 4px 0;
+}
+
 .app-toast {
   position: fixed;
   right: calc(20px + var(--safe-area-right));
