@@ -11,7 +11,9 @@ const approval = {
 } as unknown as ExecApprovalRequest;
 
 function stubNotification(permission: NotificationPermission) {
-  const ctor = vi.fn();
+  const ctor = vi.fn(function () {
+    return { addEventListener: vi.fn() };
+  });
   const requestPermission = vi.fn();
   vi.stubGlobal("Notification", Object.assign(ctor, { permission, requestPermission }));
   return { ctor, requestPermission };

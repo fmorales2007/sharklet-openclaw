@@ -1,5 +1,4 @@
 import { html, nothing } from "lit";
-import "../components/task-notices.ts";
 import { isSettingsNavigationRoute, isSettingsTakeover } from "../app-navigation.ts";
 import { isSessionRouteId } from "../app-route-paths.ts";
 import { isRouteId, type RouteId } from "../app-routes.ts";
