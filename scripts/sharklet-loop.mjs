@@ -6,16 +6,13 @@
 // worktree and judges the result. Method, routines and daily use:
 // docs/loops/README.md in the docs repo.
 //
-//   node scripts/sharklet-loop.mjs status <phase|auto> [--json]
-//   node scripts/sharklet-loop.mjs snapshot <phase|auto>          what the home dashboard shows (JSON)
+//   node scripts/sharklet-loop.mjs status <phase|auto>
 //   node scripts/sharklet-loop.mjs inbox list [--open]          what waits for the owner (JSON)
 //   node scripts/sharklet-loop.mjs inbox answer <id> <text>     the owner's answer; unblocks its task
 //   node scripts/sharklet-loop.mjs inbox add <level> <title> [--kind K] [--task ID] [--detail text]
 //   node scripts/sharklet-loop.mjs next <phase|auto>            start the next runnable task
 //   node scripts/sharklet-loop.mjs check <phase|auto> <ID>      gates, audit, CI: keep, fix or discard
-//   node scripts/sharklet-loop.mjs plan-next <phase|auto>       brief for the next L1 plan
-//   node scripts/sharklet-loop.mjs plan-save <phase|auto> <ID>  record docs/loops/plans/<ID>.md
-//   node scripts/sharklet-loop.mjs approve <phase|auto> <ID>    approve a plan or a userGate
+//   node scripts/sharklet-loop.mjs approve <phase|auto> <ID>    approve a userGate
 //   node scripts/sharklet-loop.mjs retry <phase|auto> <ID>      clear a task's discards or block
 //   node scripts/sharklet-loop.mjs metric-next <name>           start one experiment (docs/loops/<name>.md)
 //   node scripts/sharklet-loop.mjs metric-check <name>          guard and metric: keep or discard
@@ -418,20 +415,38 @@ function worktree(branch, base, { resetToRemote = true } = {}) {
     } else {
       git(wt, "merge", "--ff-only", `origin/${branch}`);
     }
-  } else if (
-    refExists(`refs/remotes/origin/${base}`) &&
-    run("git", ["merge-base", "--is-ancestor", "HEAD", `origin/${base}`], { cwd: wt }).status === 0
-  ) {
-    // A local-only branch with no commits of its own follows its base, so an
-    // attempt never starts from an old base that lacks merged CI fixes.
-    git(wt, "merge", "--ff-only", `origin/${base}`);
   }
-  if (!fs.existsSync(path.join(wt, "node_modules"))) {
-    console.log(`[loop] installing dependencies in ${wt} (first run only)`);
+  // Every attempt starts with its base merged in: a pushed task branch never
+  // picked up later base fixes, so F2-02b and F2-03 hit a dependency scan that
+  // was already fixed upstream of them (2026-10-24). A conflict blocks the task.
+  // A metric branch merges its base once per batch, in metricNext.
+  if (
+    resetToRemote &&
+    branch !== base &&
+    refExists(`refs/remotes/origin/${base}`) &&
+    run("git", ["merge-base", "--is-ancestor", `origin/${base}`, "HEAD"], { cwd: wt }).status !== 0
+  ) {
+    const merge = run("git", ["merge", "--no-edit", `origin/${base}`], { cwd: wt });
+    if (merge.status !== 0) {
+      run("git", ["merge", "--abort"], { cwd: wt });
+      throw new Error(
+        `Acción del dueño: merging origin/${base} into ${branch} conflicts; resolve it by hand and retry`,
+      );
+    }
+  }
+  // A worktree whose lockfile moved since its last install (a base merge, a
+  // dependency PR) installs again: phase-2-chat kept dompurify 3.4.14 after
+  // its lockfile asked for 3.4.17 (2026-10-25).
+  const lock = git(wt, "hash-object", "pnpm-lock.yaml");
+  const marker = path.join(stateDir(wt), "installed-lock");
+  const installedLock = fs.existsSync(marker) ? fs.readFileSync(marker, "utf8") : "";
+  if (!fs.existsSync(path.join(wt, "node_modules")) || installedLock !== lock) {
+    console.log(`[loop] installing dependencies in ${wt}`);
     const install = sh(wt, "corepack pnpm install --frozen-lockfile");
     if (install.status !== 0) {
       throw new Error(`pnpm install failed in ${wt}: ${oneLine(install.stderr, 300)}`);
     }
+    fs.writeFileSync(marker, lock);
   }
   return wt;
 }
@@ -587,14 +602,23 @@ function ci(wt, branch, workflows, logFile) {
     if (!id) {
       return { kind: "ci-error", log: `no run of ${workflow} appeared`, fatal: true };
     }
-    if (
-      run("gh", ["run", "watch", id, "--exit-status", "--interval", "30"], { cwd: wt }).status !== 0
-    ) {
+    // Poll the run's own status: `gh run watch` sometimes exits non-zero on a
+    // transient API error, and F2-07's passing CI was read as "unknown" and
+    // blocked (2026-10-24). A failed poll is retried, not taken as a result.
+    let conclusion = "";
+    for (let polls = 0; !conclusion && polls < 240; polls++) {
+      sleep(30);
+      const view = run("gh", ["run", "view", id, "--json", "status,conclusion"], { cwd: wt });
+      const runState = view.status === 0 ? JSON.parse(view.stdout) : {};
+      if (runState.status === "completed") {
+        conclusion = runState.conclusion || "unknown";
+      }
+    }
+    if (conclusion !== "success") {
       // Only a failed step is the task's to fix. A run cancelled (job timeout,
       // a newer dispatch) or failed without a step log is the CI's problem: a
       // fix session would have nothing to go on and would guess at workflows.
-      const view = run("gh", ["run", "view", id, "--json", "conclusion"], { cwd: wt });
-      const conclusion = view.status === 0 ? JSON.parse(view.stdout).conclusion : "unknown";
+      conclusion ||= "still running after 2 hours";
       const failed = run("gh", ["run", "view", id, "--log-failed"], { cwd: wt });
       const tail = failed.stdout.split("\n").slice(-300).join("\n");
       if (conclusion !== "failure" || !tail.trim()) {
@@ -650,8 +674,8 @@ function resetTo(wt, start) {
 
 // --- Loop A: tasks ----------------------------------------------------------
 
-// A planFile counts only if the file is there: F2-02b had one set and approved
-// with no file, and every next crashed on it for two days (2026-10-20 to 10-22).
+// A planFile counts only if the file is there: F2-02b had one set with no
+// file, and every next crashed on it for two days (2026-10-20 to 10-22).
 function hasPlan(task) {
   return Boolean(task.planFile) && fs.existsSync(path.join(DOCS, task.planFile));
 }
@@ -670,14 +694,6 @@ function classify(task, byId) {
   if (!["L1", "L2"].includes(task.autonomy)) {
     return task.autonomy === "L3" ? `metric loop ${task.loopProgram}` : "manual (L0)";
   }
-  // An L1 plan is written and approved ahead of its dependencies, so a whole
-  // phase's plans reach the owner in one batch instead of one a night.
-  if (task.autonomy === "L1" && !hasPlan(task)) {
-    return "needs a plan";
-  }
-  if (task.autonomy === "L1" && !task.planApproved) {
-    return "plan awaiting approval";
-  }
   if (!(task.blockedBy ?? []).every((id) => done(byId.get(id)))) {
     return "waiting on dependencies";
   }
@@ -687,67 +703,13 @@ function classify(task, byId) {
   return "runnable";
 }
 
-// --json prints one line of JSON for the dashboard and the Loop routine, so
-// they read the classification from here instead of repeating it.
-function status(phase, asJson = false) {
+function status(phase) {
   const { tasks } = readTasks(phase);
   const byId = new Map(tasks.map((t) => [t.id, t]));
-  const rows = tasks.map((task) => ({
-    id: task.prompt ?? String(task.id),
-    subject: task.subject ?? "",
-    autonomy: task.autonomy ?? "-",
-    state: classify(task, byId),
-    note: oneLine(task.loopNote, 300),
-  }));
-  if (asJson) {
-    console.log(JSON.stringify({ phase, tasks: rows }));
-  } else {
-    for (const row of rows) {
-      console.log(`${row.id}\t${row.autonomy}\t${row.state}`);
-    }
+  for (const task of tasks) {
+    console.log(`${task.prompt ?? task.id}\t${task.autonomy ?? "-"}\t${classify(task, byId)}`);
   }
   return new Result(0, "status", `phase ${phase}`);
-}
-
-// What the home dashboard artifact shows, as one JSON line: the Loop routine
-// writes it to the artifact's database at the end of each run (docs/loops/README.md).
-function snapshot(phase) {
-  const { tasks } = readTasks(phase);
-  const byId = new Map(tasks.map((t) => [t.id, t]));
-  const rows = tasks.map((task) => ({
-    id: task.prompt ?? String(task.id),
-    state: classify(task, byId),
-  }));
-  const pick = ({ id, task, title, status, recommendation, note }) => ({
-    id,
-    task: task ?? "",
-    title,
-    status,
-    recommendation: recommendation ?? "",
-    note: note ?? "",
-  });
-  const items = readInbox().items.filter((item) => item.status !== "closed");
-  console.log(
-    JSON.stringify({
-      updatedAt: new Date().toISOString(),
-      phase,
-      done: rows.filter((row) => row.state === "done").length,
-      total: rows.length,
-      needsYou: items.filter((item) => item.status === "escalated").map(pick),
-      active: rows.filter((row) => row.state !== "done" && !row.state.startsWith("waiting")),
-      recent: readResults()
-        .slice(-12)
-        .reverse()
-        .map(({ date, loop, id, metric, status, description }) => ({
-          date,
-          label: ["exp", "baseline", "deliver"].includes(id) ? loop.replace("metric:", "") : id,
-          metric: metric ?? "",
-          status,
-          description: oneLine(description, 160),
-        })),
-    }),
-  );
-  return new Result(0, "snapshot", `phase ${phase}`);
 }
 
 // --- inbox: what waits for the owner, and the owner's answers
@@ -769,8 +731,8 @@ function writeInbox(data) {
 }
 
 // What only the owner decides reaches the inbox here, from the runner itself:
-// a blocked task's question (kind "answer"), a plan or a userGate to approve
-// ("approve-plan", "approve-gate"), a metric batch that failed delivery. An
+// a blocked task's question (kind "answer"), a userGate to approve
+// ("approve-gate"), a metric batch that failed delivery. An
 // item is data the owner reads, never a command: bounded text, a known level,
 // a task id of the usual shape (SHARKLET-SECURITY §2). The caller commits.
 // ponytail: read-modify-write outside the docs lock; two writers in the same
@@ -1060,7 +1022,7 @@ function next(phase) {
 function startTask(phase, task) {
   const wt = worktree(task.branch, task.base ?? "custom");
   const start = git(wt, "rev-parse", "HEAD");
-  const plan = task.planFile ? fs.readFileSync(path.join(DOCS, task.planFile), "utf8") : "";
+  const plan = hasPlan(task) ? fs.readFileSync(path.join(DOCS, task.planFile), "utf8") : "";
   const answers = answersFor(task.prompt)
     .map((item) => `- ${item.closedAt?.slice(0, 10) ?? ""}, a "${item.title}": ${item.answer}`)
     .join("\n");
@@ -1077,7 +1039,7 @@ function startTask(phase, task) {
       ? `Un intento anterior dejó commits en la rama local loop-attempt/${task.prompt} (${earlier}). Si sirven, reutilízalos con git cherry-pick en vez de empezar de cero.`
       : "",
     promptBlock(task.prompt),
-    plan ? `\nPlan aprobado (${task.planApproved}), síguelo:\n\n${plan}` : "",
+    plan ? `\nPlan de la tarea, síguelo:\n\n${plan}` : "",
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -1137,8 +1099,14 @@ function check(phase, id) {
   if (after.status === "blocked") {
     return done("blocked", after.loopNote ?? "blocked without a note");
   }
-  if (head === st.start || after.status !== "completed") {
-    return done("crash", `no commit or not marked completed (status ${after.status})`);
+  if (head === st.start) {
+    return done("crash", "the attempt made no commit");
+  }
+  // New commits and no block mean the work is done: requiring the session to
+  // also flip status to "completed" turned four finished attempts into
+  // crashes (F2-02b, F2-03, F2-07, 2026-10-24).
+  if (after.status !== "completed") {
+    updateTask(phase, id, { status: "completed", done: today() });
   }
 
   const state = stateDir(wt);
@@ -1179,7 +1147,7 @@ function check(phase, id) {
   const fixFile = path.join(state, `fix-${id}-${st.fixes + 1}.md`);
   fs.writeFileSync(
     fixFile,
-    `Falló ${what}. Arregla solo eso en ${wt}, con un commit nuevo, y deja ${id} en "completed" en ${tasksFile(phase)}. Si un hallazgo de Codex es incorrecto, no cambies código por él: explícalo en "evidence". No toques ${PROTECTED.join(", ")}: si el arreglo los necesita, deja ${id} en "blocked" con un "loopNote" que lo explique, sin commit. Después vuelve a correr check.\n\n${asData(evidence)}\n`,
+    `Falló ${what}. Arregla solo eso en ${wt}, con un commit nuevo. Si un hallazgo de Codex es incorrecto, no cambies código por él: explícalo en "evidence". No toques ${PROTECTED.join(", ")}: si el arreglo los necesita, deja ${id} en "blocked" con un "loopNote" que empiece con "Acción del dueño:" y diga el cambio exacto, sin commit. Después vuelve a correr check.\n\n${asData(evidence)}\n`,
   );
   return new Result(
     10,
@@ -1188,58 +1156,15 @@ function check(phase, id) {
   );
 }
 
-function planNext(phase) {
-  const [task] = tasksIn(phase, "needs a plan");
-  if (!task) {
-    return new Result(3, "nothing", `no L1 task needs a plan in phase ${phase}`);
-  }
-  serverPreflight();
-  fetch();
-  // Planned ahead of its dependencies, a task's base branch may not exist yet:
-  // the plan reads custom, and the branch follows its base once that lands.
-  const base = task.base ?? "custom";
-  const known = refExists(`refs/remotes/origin/${base}`) || refExists(`refs/heads/${base}`);
-  const wt = worktree(task.branch, known ? base : "custom");
-  const planFile = path.join(DOCS, `docs/loops/plans/${task.prompt}.md`);
-  const brief = `${template("modo-plan.md", { ...taskVars(phase, task, wt), PLAN: planFile })}\n\n${promptBlock(task.prompt)}`;
-  const briefFile = path.join(stateDir(wt), `plan-${task.prompt}.md`);
-  fs.writeFileSync(briefFile, brief);
-  return new Result(0, "started", `${task.prompt} worktree=${wt} brief=${briefFile}`);
-}
-
-function planSave(phase, id) {
-  const rel = `docs/loops/plans/${id}.md`;
-  const file = path.join(DOCS, rel);
-  if (!fs.existsSync(file) || fs.readFileSync(file, "utf8").trim().length < 200) {
-    throw new Error(`${rel} is missing or too short to be a plan`);
-  }
-  // A new plan needs a new approval, whatever an earlier one said.
-  updateTask(phase, id, { planFile: rel, planApproved: undefined });
-  record({ loop: "plan", id, status: "plan", description: rel });
-  // The plan's "Decisiones para ti" section is what the owner reads first.
-  const asks = fs.readFileSync(file, "utf8").split(/^#+\s*Decisiones para ti/imu)[1] ?? "";
-  addInboxItem({
-    level: "decision",
-    kind: "approve-plan",
-    task: id,
-    title: `${id}: plan ready for your approval`,
-    detail: `${rel}${asks.trim() ? `. Decisiones para ti: ${oneLine(asks, 1500)}` : ""}`,
-  });
-  commitDocs(`Loop: plan for ${id}`, [tasksFile(phase), RESULTS, file, INBOX]);
-  return new Result(0, "saved", `${rel}; approve it with: approve ${phase} ${id}`);
-}
-
 function approve(phase, id) {
   const task = findTask(phase, id);
   const by = `usuario, ${today()}`;
-  if (hasPlan(task) && !task.planApproved) {
-    updateTask(phase, id, { planApproved: by });
-  } else if (task.status === "completed" && task.userGate && !task.approvedBy) {
+  if (task.status === "completed" && task.userGate && !task.approvedBy) {
     updateTask(phase, id, { approvedBy: by });
   } else {
-    throw new Error(`${id} has no plan or userGate awaiting approval`);
+    throw new Error(`${id} has no userGate awaiting approval`);
   }
-  closeInboxFor(id, ["approve-plan", "approve-gate"], `approved, ${today()}`);
+  closeInboxFor(id, ["approve-gate"], `approved, ${today()}`);
   commitDocs(`Loop: ${id} approved`, [tasksFile(phase), INBOX]);
   return new Result(0, "approved", id);
 }
@@ -1541,13 +1466,10 @@ try {
     ? null
     : resolvePhase(arg);
   const commands = {
-    status: () => status(phase, rest.includes("--json")),
-    snapshot: () => snapshot(phase),
+    status: () => status(phase),
     inbox: () => inbox(arg, rest),
     next: () => next(phase),
     check: () => check(phase, rest[0]),
-    "plan-next": () => planNext(phase),
-    "plan-save": () => planSave(phase, rest[0]),
     approve: () => approve(phase, rest[0]),
     retry: () => retry(phase, rest[0]),
     "metric-next": () => metricNext(arg),
