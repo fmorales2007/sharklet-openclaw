@@ -250,11 +250,10 @@ describe("chat transcript invalidation", () => {
           container.querySelector('[data-entry-id="settled-final"]'),
           "settled final reply",
         );
-        const workToggle = expectDefined(
-          finalBubble.closest(".chat-group")?.querySelector(".chat-work-group button"),
-          "completed work disclosure",
+        const workSummary = expectDefined(
+          finalBubble.closest(".chat-group")?.querySelector(".chat-work-group"),
+          "completed work summary",
         );
-        expect(workToggle.getAttribute("aria-expanded")).toBe("false");
         expect(container.querySelector(".chat-bubble.streaming")?.textContent).toContain(
           props.stream,
         );
@@ -269,7 +268,9 @@ describe("chat transcript invalidation", () => {
         );
         expect(container.querySelector('[data-entry-id="settled-final"]')).toBe(finalBubble);
         expect(finalBubble.textContent).toContain("Workspace checked");
-        expect(workToggle.getAttribute("aria-expanded")).toBe("false");
+        expect(finalBubble.closest(".chat-group")?.querySelector(".chat-work-group")).toBe(
+          workSummary,
+        );
         expect(renderGroup.mock.calls.filter(([group]) => group.runId === completedRunId)).toEqual(
           [],
         );
