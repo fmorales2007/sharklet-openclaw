@@ -434,6 +434,11 @@ function worktree(branch, base, { resetToRemote = true } = {}) {
       );
     }
   }
+  installIfStale(wt);
+  return wt;
+}
+
+function installIfStale(wt) {
   // A worktree whose lockfile moved since its last install (a base merge, a
   // dependency PR) installs again: phase-2-chat kept dompurify 3.4.14 after
   // its lockfile asked for 3.4.17 (2026-10-25).
@@ -448,7 +453,6 @@ function worktree(branch, base, { resetToRemote = true } = {}) {
     }
     fs.writeFileSync(marker, lock);
   }
-  return wt;
 }
 
 function stateDir(wt) {
@@ -1217,14 +1221,28 @@ function metricNext(name) {
   const wt = worktree(`loop/${name}`, program.base, { resetToRemote: false });
   const file = metricState(name);
   let ms = readState(file);
+  if (ms && git(wt, "rev-parse", "HEAD") !== ms.head) {
+    // The last session committed and never ran metric-check.
+    resetTo(wt, ms.head);
+  }
+  const base = refExists(`refs/remotes/origin/${program.base}`)
+    ? `origin/${program.base}`
+    : program.base;
+  // The base is merged whenever it moved, not only at a batch's start: a batch
+  // that spanned the dependency fix failed delivery on the old scan
+  // (2026-10-25). The kept commits stay; the best value is measured again.
+  const merged =
+    run("git", ["merge-base", "--is-ancestor", base, "HEAD"], { cwd: wt }).status === 0;
+  if (!merged && run("git", ["merge", "--no-edit", base], { cwd: wt }).status !== 0) {
+    run("git", ["merge", "--abort"], { cwd: wt });
+    throw new Error(`loop/${name} does not merge with ${base}; resolve it by hand`);
+  }
+  installIfStale(wt);
+  if (ms && !merged) {
+    ms.head = git(wt, "rev-parse", "HEAD");
+    ms.best = measure(wt, program.metric);
+  }
   if (!ms) {
-    const base = refExists(`refs/remotes/origin/${program.base}`)
-      ? `origin/${program.base}`
-      : program.base;
-    if (run("git", ["merge", "--no-edit", base], { cwd: wt }).status !== 0) {
-      run("git", ["merge", "--abort"], { cwd: wt });
-      throw new Error(`loop/${name} does not merge with ${base}; resolve it by hand`);
-    }
     const best = measure(wt, program.metric);
     if (Number.isNaN(best)) {
       throw new Error(`the metric does not run on ${base}: ${program.metric}`);
@@ -1238,9 +1256,6 @@ function metricNext(name) {
       status: "baseline",
       description: `start of run on ${base}`,
     });
-  } else if (git(wt, "rev-parse", "HEAD") !== ms.head) {
-    // The last session committed and never ran metric-check.
-    resetTo(wt, ms.head);
   }
   if (ms.idle >= MAX_IDLE) {
     return new Result(
