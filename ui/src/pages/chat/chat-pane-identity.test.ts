@@ -354,7 +354,13 @@ describe("chat pane approval requester identity", () => {
           .toBe(t("execApproval.requestedBySession", { session: title }));
       }
       container.querySelector<HTMLButtonElement>(".exec-approval-actions .primary")!.click();
-      expect(decideApproval).toHaveBeenCalledExactlyOnceWith("allow-once", approval.id, approval);
+      // The fourth argument is the Deny and explain note; a plain decision carries none.
+      expect(decideApproval).toHaveBeenCalledExactlyOnceWith(
+        "allow-once",
+        approval.id,
+        approval,
+        undefined,
+      );
     } finally {
       cancelChatStreamRenderFrame(state);
       render(html``, container);
