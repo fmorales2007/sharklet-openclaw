@@ -205,7 +205,6 @@ const COMMUNITY_LINKS: ReadonlyArray<{ href: string; icon: TemplateResult; label
       icon: brandIcons.discord,
       label: () => t("appsPage.linkDiscord"),
     },
-    { href: "https://docs.openclaw.ai", icon: icons.book, label: () => t("appsPage.linkDocs") },
   ];
 
 function renderCta(cta: AppCardCta, index: number, props: AppsProps) {

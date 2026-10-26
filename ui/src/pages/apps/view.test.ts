@@ -23,7 +23,6 @@ const EXPECTED_EXTERNAL_HREFS = [
   "https://docs.openclaw.ai/tools/chrome-extension",
   "https://clawhub.ai",
   "https://discord.gg/clawd",
-  "https://docs.openclaw.ai",
 ];
 
 describe("renderApps", () => {
