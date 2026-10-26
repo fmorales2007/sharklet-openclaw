@@ -22,7 +22,6 @@ import { fetchSessionMenuWork } from "../../components/session-menu-work.ts";
 import type { SessionMenuAction, SessionMenuWork } from "../../components/session-menu.ts";
 import "../../components/session-menu.ts";
 import { renderSessionsHubHeader } from "../../components/sessions-hub-header.ts";
-import { renderLearnMoreLink } from "../../components/settings-ui.ts";
 import { renderSettingsWorkspace } from "../../components/settings-workspace.ts";
 import { t } from "../../i18n/index.ts";
 import { watchAgentScope } from "../../lib/agents/index.ts";
@@ -80,7 +79,6 @@ import { loadStoredGroupBy, saveStoredGroupBy } from "./page-state.ts";
 import { sessionsPageListQuery, type SessionsRouteData } from "./route.ts";
 import { renderSessions, type SessionsProps } from "./view.ts";
 
-const SESSIONS_DOCS_URL = "https://docs.openclaw.ai/concepts/session";
 const SESSION_SEARCH_DEBOUNCE_MS = 200;
 
 type SessionsPageRequestScope = {
@@ -1581,7 +1579,7 @@ class SessionsPage extends OpenClawLightDomElement {
       ${renderSessionsHubHeader({
         active: "sessions",
         title: titleForRoute("sessions"),
-        subtitle: html`${subtitleForRoute("sessions")} ${renderLearnMoreLink(SESSIONS_DOCS_URL)}`,
+        subtitle: subtitleForRoute("sessions"),
         actions: renderAgentScopeControl({
           agents: context.agents.state.agentsList?.agents ?? [],
           selection: context.agentSelection,
