@@ -52,6 +52,7 @@ import {
   getCodeModeExecBeforeHookMetadataForToolKind,
   reconcileCodeModeExecBeforeHookParams,
 } from "./code-mode-control-tools.js";
+import { memorylessToolBlockReason } from "./memoryless.js";
 import { admitSingleToolCallLoop } from "./tool-loop-admission.js";
 import { normalizeToolPolicyName } from "./tool-policy.js";
 import { getGatewayToolCallerIdentity } from "./tools/gateway-caller-context.js";
@@ -118,6 +119,18 @@ export async function runBeforeToolCallHook(args: {
     return outcome;
   };
   let releaseArgumentChurnPolicyWait: (() => void) | undefined;
+
+  if (args.ctx?.memoryless) {
+    const reason = memorylessToolBlockReason({
+      toolName,
+      toolParams: params,
+      workspaceDir: args.ctx.workspaceDir,
+      cwd: args.ctx.cwd,
+    });
+    if (reason) {
+      return { blocked: true, deniedReason: "memoryless", reason, params };
+    }
+  }
 
   try {
     if (args.ctx?.sessionKey) {

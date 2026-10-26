@@ -32,6 +32,8 @@ export type ToolOutcomeObserver = (observation: ToolOutcomeObservation) => void;
 
 export type HookContext = {
   agentId?: string;
+  /** Memory-less run (F2-09): memory tools and memory file writes are vetoed. */
+  memoryless?: boolean;
   config?: OpenClawConfig;
   /** Tool execution cwd for host-derived path facts. */
   cwd?: string;
@@ -99,7 +101,8 @@ export type HookBlockedReason =
   | "plugin-before-tool-call"
   | "plugin-approval"
   | "plugin-approval-unavailable"
-  | "tool-loop";
+  | "tool-loop"
+  | "memoryless";
 
 type HookBlockedOutcome = {
   blocked: true;

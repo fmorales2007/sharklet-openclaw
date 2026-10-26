@@ -1293,6 +1293,8 @@ type BootstrapSessionContext = {
   sessionKey?: string;
   chatType?: ChatType;
   workspaceDir?: string;
+  /** Memory-less chat (F2-09): MEMORY.md stays out, like in a group or a subagent. */
+  memoryless?: boolean;
 };
 
 function resolveBootstrapSessionContext(
@@ -1331,15 +1333,17 @@ export function filterBootstrapFilesForSession(
   files: WorkspaceBootstrapFile[],
   session?: string | BootstrapSessionContext,
 ): WorkspaceBootstrapFile[] {
-  const { sessionKey, chatType, workspaceDir } = resolveBootstrapSessionContext(session);
+  const { sessionKey, chatType, workspaceDir, memoryless } =
+    resolveBootstrapSessionContext(session);
   const isSubagent = isSubagentSessionKey(sessionKey);
   const isCron = isCronSessionKey(sessionKey);
   const effectiveChatType = chatType ?? deriveSessionChatTypeFromKey(sessionKey);
   const isNonPrivate =
     isSubagent || isCron || effectiveChatType === "group" || effectiveChatType === "channel";
-  const privacyFilteredFiles = isNonPrivate
-    ? filterRootMemoryBootstrapFiles(files, workspaceDir)
-    : files;
+  const privacyFilteredFiles =
+    isNonPrivate || memoryless === true
+      ? filterRootMemoryBootstrapFiles(files, workspaceDir)
+      : files;
   if (isSubagent) {
     return privacyFilteredFiles.filter((file) => SUBAGENT_BOOTSTRAP_ALLOWLIST.has(file.name));
   }
