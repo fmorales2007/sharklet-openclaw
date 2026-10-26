@@ -108,6 +108,7 @@ describe("navigationIconForRoute", () => {
       connection: "radio",
       sessions: "fileText",
       usage: "coins",
+      you: "circleUser",
       cron: "calendarClock",
       tasks: "listChecks",
       agents: "bot",
@@ -214,6 +215,7 @@ describe("titleForRoute", () => {
       connection: "Gateway",
       sessions: "Sessions",
       usage: "Usage",
+      you: "You",
       cron: "Automations",
       tasks: "Tasks",
       agents: "Agents",
@@ -270,6 +272,7 @@ describe("subtitleForRoute", () => {
       connection: "Gateway endpoint, credentials, and handshake status.",
       sessions: "Active sessions and defaults.",
       usage: "API usage and costs.",
+      you: "What your agents know about you and how they should work with you.",
       cron: "Scheduled tasks and recurring agent runs.",
       tasks: "Background tasks: subagents, automation runs, CLI.",
       agents: "Workspaces, tools, identities.",
@@ -617,6 +620,7 @@ describe("SIDEBAR_NAV_ROUTES", () => {
       "plugins",
       "apps",
       "portals",
+      "you",
     ]);
   });
 
