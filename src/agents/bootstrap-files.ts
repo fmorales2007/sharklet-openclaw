@@ -21,6 +21,10 @@ import {
   resolveBootstrapMaxChars,
   resolveBootstrapTotalMaxChars,
 } from "./embedded-agent-helpers.js";
+import {
+  resolvePersonalContextToggles,
+  withoutDisabledPersonalContext,
+} from "./personal-context.js";
 import type { AgentRunSessionTarget } from "./run-session-target.js";
 import {
   DEFAULT_BOOTSTRAP_FILENAME,
@@ -393,7 +397,11 @@ async function resolveBootstrapFiles(
     workspaceSetupCompleted,
     params.workspaceDir,
   );
-  return sanitizeBootstrapFiles(filteredUpdated, params.workspaceDir, params.warn);
+  // After the whole pipeline: a switched-off piece is left out only of what the agent reads.
+  return withoutDisabledPersonalContext(
+    sanitizeBootstrapFiles(filteredUpdated, params.workspaceDir, params.warn),
+    resolvePersonalContextToggles(params.config, params.agentId),
+  );
 }
 
 /** Resolves both raw bootstrap metadata and bounded context files for a run. */

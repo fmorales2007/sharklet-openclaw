@@ -33,6 +33,36 @@ const enYou = {
       also: "Also save to",
       alsoHint: "Writes the same changes to these agents' files.",
     },
+    context: {
+      title: "What this agent reads",
+      description:
+        "Switch a piece off to leave it out of this agent's chats. The text stays in its file.",
+      pieces: {
+        aboutYou: { title: "About you", description: "From USER.md" },
+        responseStyle: { title: "Response style", description: "From USER.md" },
+        skillRules: { title: "Skill rules", description: "From AGENTS.md" },
+        memory: { title: "Memory", description: "From MEMORY.md" },
+      },
+      switchedOn: "{agent} reads {piece} again",
+      switchedOff: "{agent} no longer reads {piece}",
+      switchFailed: "Couldn't change this for {agent}. Check the connection, then try again.",
+      size: {
+        title: "How full the files are",
+        description: "Agents read only what fits. These sizes come from the gateway.",
+        used: "{used} of {max} characters",
+        files: {
+          user: "USER.md",
+          agents: "AGENTS.md",
+          memory: "MEMORY.md",
+          total: "All three together",
+        },
+        near: "{file} is nearly full. Trim it before it passes the limit.",
+        over: "{file} is over its limit. The end of it won't reach the agent.",
+        memoryOver: "MEMORY.md is past the size we advise. Shorter notes keep chats focused.",
+        totalOver:
+          "Together these files pass what an agent reads at the start. Trim the longest one.",
+      },
+    },
     about: {
       title: "About you",
       description: "Who you are and what you do. Agents read this at the start of every chat.",

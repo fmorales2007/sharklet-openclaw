@@ -16,6 +16,7 @@ import type {
   BootstrapPromptWarningMode,
   BootstrapTruncationCause,
 } from "./bootstrap-budget.types.js";
+import { bootstrapContentChars } from "./bootstrap-chars.js";
 import type { EmbeddedContextFile } from "./embedded-agent-helpers.js";
 import {
   resolveBootstrapMaxChars,
@@ -98,7 +99,7 @@ export function buildBootstrapInjectionStats(params: {
     const name =
       normalizeOptionalString(file.name) ??
       (normalizedPath ? path.posix.basename(normalizedPath) : "bootstrap");
-    const rawChars = file.missing ? 0 : (file.content ?? "").trimEnd().length;
+    const rawChars = file.missing ? 0 : bootstrapContentChars(file.content ?? "");
     const injected = pathValue ? injectedByPath.get(pathValue) : undefined;
     const injectedChars = injected ? injected.length : 0;
     const truncated = !file.missing && injectedChars < rawChars;

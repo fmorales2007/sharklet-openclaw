@@ -9,14 +9,21 @@ import {
   parseResponseStyle,
   parseSkillRules,
   readBlock,
-  USER_FILE_MAX_CHARS,
   validateAboutYou,
   validateResponseStyle,
   validateSkillRules,
   writeBlock,
 } from "./files.ts";
+import type { YouLimits } from "./limits.ts";
 
 const style = { tone: "warm", length: "brief", notes: "Use plain words." } as const;
+
+const LIMITS: YouLimits = {
+  fileMaxChars: 5_000,
+  totalMaxChars: 12_000,
+  userMaxChars: 900,
+  memoryAdvisoryChars: 700,
+};
 
 describe("marked blocks", () => {
   it("appends after existing text and replaces in place without touching the rest", () => {
@@ -39,9 +46,9 @@ describe("marked blocks", () => {
 describe("About you and Response style share USER.md", () => {
   it("round-trips both and keeps hand-written text", () => {
     const base = "# USER\nPrefers tea.\n";
-    const a = applyAboutYou(base, { text: "I run a bakery." });
+    const a = applyAboutYou(base, { text: "I run a bakery." }, LIMITS);
     expect(a.ok).toBe(true);
-    const b = applyResponseStyle(a.ok ? a.value : "", style);
+    const b = applyResponseStyle(a.ok ? a.value : "", style, LIMITS);
     expect(b.ok).toBe(true);
     const file = b.ok ? b.value : "";
     expect(file).toContain("Prefers tea.");
@@ -50,7 +57,7 @@ describe("About you and Response style share USER.md", () => {
   });
 
   it("writes the tone where the agent reads it", () => {
-    const result = applyResponseStyle("", style);
+    const result = applyResponseStyle("", style, LIMITS);
     expect(result.ok && result.value).toContain("- Tone: warm");
   });
 
@@ -62,8 +69,8 @@ describe("About you and Response style share USER.md", () => {
   });
 
   it("refuses a write that would pass the USER.md cap", () => {
-    const big = "x".repeat(USER_FILE_MAX_CHARS - 10);
-    const result = applyAboutYou(big, { text: "y".repeat(100) });
+    const big = "x".repeat(LIMITS.userMaxChars - 10);
+    const result = applyAboutYou(big, { text: "y".repeat(100) }, LIMITS);
     expect(result.ok).toBe(false);
   });
 });
@@ -71,21 +78,21 @@ describe("About you and Response style share USER.md", () => {
 describe("Skill rules in AGENTS.md", () => {
   it("writes the 'When I … → use …' line and reads it back", () => {
     const rules = { rules: [{ when: "propose a project", skill: "grilling" }] };
-    const result = applySkillRules("# AGENTS\n", rules);
+    const result = applySkillRules("# AGENTS\n", rules, LIMITS);
     expect(result.ok && result.value).toContain("- When I propose a project → use grilling");
     expect(parseSkillRules(result.ok ? result.value : "")).toEqual(rules.rules);
   });
 
   it("an empty list removes the block", () => {
-    const first = applySkillRules("# AGENTS\n", { rules: [{ when: "a", skill: "b" }] });
-    const cleared = applySkillRules(first.ok ? first.value : "", { rules: [] });
+    const first = applySkillRules("# AGENTS\n", { rules: [{ when: "a", skill: "b" }] }, LIMITS);
+    const cleared = applySkillRules(first.ok ? first.value : "", { rules: [] }, LIMITS);
     expect(cleared.ok && cleared.value).toBe("# AGENTS\n");
   });
 });
 
 describe("Memory in MEMORY.md", () => {
   it("round-trips notes", () => {
-    const result = applyMemoryNotes("", { notes: "Birthday is in May." });
+    const result = applyMemoryNotes("", { notes: "Birthday is in May." }, LIMITS);
     expect(parseMemoryNotes(result.ok ? result.value : "")).toEqual({
       notes: "Birthday is in May.",
     });

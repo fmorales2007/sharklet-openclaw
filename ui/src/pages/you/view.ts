@@ -2,15 +2,19 @@
 // whole screen (Save changes); every section is a plain form block with its label
 // above and its help below (design-system components.md, Fields).
 import { html, nothing, type TemplateResult } from "lit";
+import type { PersonalContextSwitches } from "../../api/rpc.ts";
 import {
   renderSettingsPage,
   renderSettingsRow,
   renderSettingsSection,
   renderSettingsSegmented,
+  renderSettingsToggleRow,
 } from "../../components/settings-ui.ts";
 import { t } from "../../i18n/index.ts";
 import type { YouDraft } from "../../lib/you/draft.ts";
 import { SKILL_RULES_MAX, type SkillRule } from "../../lib/you/files.ts";
+import type { FileUsage } from "../../lib/you/limits.ts";
+import type { YouUsage } from "../../lib/you/usage.ts";
 
 export const YOU_ABOUT_MAX = 1200;
 export const YOU_NOTES_MAX = 400;
@@ -30,6 +34,12 @@ export type YouViewProps = {
   /** Per-section problems the draft cannot be saved with, by section id. */
   problems: Readonly<Record<string, string>>;
   status: { kind: "saved" | "error"; lines: string[] } | null;
+  /** Sizes of the files with the form as it stands; null until the gateway has answered. */
+  usage: YouUsage | null;
+  /** Which pieces this agent reads; null until the gateway has answered. */
+  switches: PersonalContextSwitches | null;
+  canWrite: boolean;
+  onSwitch: (piece: keyof PersonalContextSwitches, on: boolean) => void;
   onAgent: (agentId: string) => void;
   onTarget: (agentId: string, on: boolean) => void;
   onDraft: (patch: Partial<YouDraft>) => void;
@@ -149,6 +159,87 @@ function renderRules(props: YouViewProps, busy: boolean) {
   `;
 }
 
+const PIECES = ["aboutYou", "responseStyle", "skillRules", "memory"] as const;
+
+function meter(label: string, usage: FileUsage, warning: string | null) {
+  const state = usage.over ? "over" : usage.near ? "near" : "ok";
+  const percent = Math.min(100, Math.round(usage.ratio * 100));
+  return renderSettingsRow({
+    title: label,
+    description: warning
+      ? html`<span class="you-meter__warning" role="status">${warning}</span>`
+      : undefined,
+    stacked: true,
+    control: html`<div class="you-meter" data-state=${state}>
+      <div
+        class="you-meter__bar"
+        role="meter"
+        aria-label=${label}
+        aria-valuemin="0"
+        aria-valuemax=${String(usage.limit)}
+        aria-valuenow=${String(usage.chars)}
+      >
+        <div class="you-meter__fill" style=${`width:${percent}%`}></div>
+      </div>
+      <span class="you-meter__text"
+        >${t("youPage.context.size.used", {
+          used: usage.chars.toLocaleString(),
+          max: usage.limit.toLocaleString(),
+        })}</span
+      >
+    </div>`,
+  });
+}
+
+function renderContext(props: YouViewProps, busy: boolean) {
+  const { usage, switches } = props;
+  if (!usage || !switches) {
+    return nothing;
+  }
+  const file = (key: "user" | "agents" | "memory" | "total") =>
+    t(`youPage.context.size.files.${key}`);
+  const near = (key: "user" | "agents", u: FileUsage) =>
+    u.over
+      ? t("youPage.context.size.over", { file: file(key) })
+      : u.near
+        ? t("youPage.context.size.near", { file: file(key) })
+        : null;
+  return html`
+    ${renderSettingsSection(
+      { title: t("youPage.context.title"), description: t("youPage.context.description") },
+      PIECES.map((piece) =>
+        renderSettingsToggleRow({
+          title: t(`youPage.context.pieces.${piece}.title`),
+          description: t(`youPage.context.pieces.${piece}.description`),
+          checked: switches[piece],
+          disabled: busy || !props.canWrite,
+          onChange: (on) => props.onSwitch(piece, on),
+        }),
+      ),
+    )}
+    ${renderSettingsSection(
+      {
+        title: t("youPage.context.size.title"),
+        description: t("youPage.context.size.description"),
+      },
+      html`
+        ${meter(file("user"), usage.user, near("user", usage.user))}
+        ${meter(file("agents"), usage.agents, near("agents", usage.agents))}
+        ${meter(
+          file("memory"),
+          usage.memory,
+          usage.memory.over ? t("youPage.context.size.memoryOver") : null,
+        )}
+        ${meter(
+          file("total"),
+          usage.total,
+          usage.total.over ? t("youPage.context.size.totalOver") : null,
+        )}
+      `,
+    )}
+  `;
+}
+
 export function renderYou(props: YouViewProps) {
   const busy = props.loading || props.saving;
   const d = props.draft;
@@ -232,6 +323,7 @@ export function renderYou(props: YouViewProps) {
           }
         `,
       )}
+      ${renderContext(props, busy)}
       ${
         props.loadError
           ? html`<div class="you-status you-status--error" role="alert">

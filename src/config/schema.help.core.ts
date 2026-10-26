@@ -301,6 +301,8 @@ export const CORE_FIELD_HELP: Record<string, string> = {
     "Per-agent override for max characters of each workspace bootstrap file injected into this agent's system prompt. Omit to inherit agents.defaults.bootstrapMaxChars.",
   "agents.entries.*.bootstrapTotalMaxChars":
     "Per-agent override for max total characters across all workspace bootstrap files injected into this agent's system prompt. Omit to inherit agents.defaults.bootstrapTotalMaxChars.",
+  "agents.entries.*.personalContext":
+    "Switches for the personal context the You page writes (aboutYou, responseStyle, skillRules, memory). Set a piece to false to leave it out of this agent's prompt; the text stays in its file. Omitted pieces stay on.",
   "agents.entries.*.experimental":
     "Per-agent experimental flags. Omitted fields inherit agents.defaults.experimental.",
   "agents.entries.*.experimental.localModelLean":

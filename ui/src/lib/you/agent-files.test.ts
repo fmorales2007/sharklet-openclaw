@@ -16,6 +16,20 @@ function fakeGateway(initial: Files) {
     const agentId = params.agentId as string;
     const name = params.name as string;
     const content = files[agentId]?.[name];
+    if (method === "agents.files.list") {
+      return {
+        agentId,
+        workspace: "/ws",
+        files: [],
+        limits: {
+          fileMaxChars: 5_000,
+          totalMaxChars: 12_000,
+          userMaxChars: 900,
+          memoryAdvisoryChars: 700,
+        },
+        personalContext: { aboutYou: true, responseStyle: true, skillRules: true, memory: true },
+      };
+    }
     if (method === "agents.files.get") {
       return {
         agentId,

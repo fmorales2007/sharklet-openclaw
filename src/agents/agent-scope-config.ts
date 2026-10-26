@@ -72,6 +72,7 @@ export type ResolvedAgentConfig = {
   contextInjection?: AgentEntry["contextInjection"];
   bootstrapMaxChars?: AgentEntry["bootstrapMaxChars"];
   bootstrapTotalMaxChars?: AgentEntry["bootstrapTotalMaxChars"];
+  personalContext?: AgentEntry["personalContext"];
   experimental?: AgentDefaultsConfig["experimental"];
   skills?: AgentEntry["skills"];
   memory?: AgentEntry["memory"];
@@ -440,6 +441,7 @@ export function resolveAgentConfig(
     contextInjection: entry.contextInjection,
     bootstrapMaxChars: entry.bootstrapMaxChars,
     bootstrapTotalMaxChars: entry.bootstrapTotalMaxChars,
+    personalContext: entry.personalContext,
     experimental:
       typeof entry.experimental === "object" && entry.experimental
         ? { ...agentDefaults?.experimental, ...entry.experimental }

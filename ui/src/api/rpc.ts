@@ -66,7 +66,8 @@ export type ChatSessionsCreateResult = {
 //   thinkingDefault to the method so one validated call owns both overrides.
 // - B: USER.md, AGENTS.md, MEMORY.md: agents.files.get / agents.files.set (expectedHash),
 //   with their own params ceiling in rpc-schemas.ts.
-// - B: size limits: defined by F2-08, outside this contract.
+// - B: size limits and per-agent switches: agents.files.list (limits, personalContext);
+//   a switch is saved with agents.update (personalContext). F2-08.
 
 /** The three agent files You reads and writes; `hash` is what `expectedHash` expects back. */
 export type AgentFileName = "USER.md" | "AGENTS.md" | "MEMORY.md";
@@ -81,11 +82,34 @@ export type AgentFilesSetParams = {
   expectedHash?: string;
 };
 
-/** `agents.update` as You → Defaults sends it: model and thinking level, null clears the override. */
+/** The pieces of personal context an agent can be switched off from reading (F2-08). */
+export type PersonalContextSwitches = {
+  aboutYou: boolean;
+  responseStyle: boolean;
+  skillRules: boolean;
+  memory: boolean;
+};
+
+/** What the gateway truncates an agent's files by, as `agents.files.list` reports it. */
+export type AgentFilesLimits = {
+  fileMaxChars: number;
+  totalMaxChars: number;
+  userMaxChars: number;
+  memoryAdvisoryChars: number;
+};
+
+export type AgentFilesListResult = {
+  agentId: string;
+  limits: AgentFilesLimits;
+  personalContext: PersonalContextSwitches;
+};
+
+/** `agents.update` as You sends it: model, thinking level (null clears) and context switches. */
 export type AgentsUpdateOverridesParams = {
   agentId: string;
   model?: string | null;
   thinkingDefault?: string | null;
+  personalContext?: Partial<PersonalContextSwitches>;
 };
 
 /** Gateway methods the typed layer knows. Later phases add rows here. */
@@ -96,6 +120,7 @@ export type RpcMethodMap = {
   "usage.cost": { params: UsageCostParams; result: CostUsageSummary };
   "agents.list": { params: AgentsListParams; result: AgentsListResult };
   "pages.state": { params: Record<string, never>; result: PagesStateResult };
+  "agents.files.list": { params: { agentId: string }; result: AgentFilesListResult };
   "agents.files.get": {
     params: { agentId: string; name: AgentFileName };
     result: AgentFileResult;

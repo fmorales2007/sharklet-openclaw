@@ -89,6 +89,16 @@ export const AgentEntryBaseSchema = z
     bootstrapMaxChars: z.number().int().positive().optional(),
     bootstrapTotalMaxChars: z.number().int().positive().optional(),
     experimental: z.object({ localModelLean: z.boolean().optional() }).strict().optional(),
+    // F2-08: false leaves that piece of the You page's personal context out of this agent.
+    personalContext: z
+      .object({
+        aboutYou: z.boolean().optional(),
+        responseStyle: z.boolean().optional(),
+        skillRules: z.boolean().optional(),
+        memory: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
     skills: z.array(z.string()).optional(),
     subagents: z
       .object({

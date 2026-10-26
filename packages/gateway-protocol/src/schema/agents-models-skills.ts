@@ -184,6 +184,15 @@ export const AgentsUpdateParamsSchema = closedObject({
   workspace: Type.Optional(NonEmptyString),
   model: Type.Optional(Type.Union([NonEmptyString, Type.Null()])),
   thinkingDefault: Type.Optional(Type.Union([NonEmptyString, Type.Null()])),
+  /** F2-08: a piece set to false is left out of this agent's context; true restores it. */
+  personalContext: Type.Optional(
+    closedObject({
+      aboutYou: Type.Optional(Type.Boolean()),
+      responseStyle: Type.Optional(Type.Boolean()),
+      skillRules: Type.Optional(Type.Boolean()),
+      memory: Type.Optional(Type.Boolean()),
+    }),
+  ),
   emoji: Type.Optional(Type.String()),
   avatar: Type.Optional(Type.String()),
 });
@@ -255,6 +264,20 @@ export const AgentsFilesListResultSchema = closedObject({
   agentId: NonEmptyString,
   workspace: NonEmptyString,
   files: Type.Array(AgentsFileEntrySchema),
+  /** What the runtime truncates this agent's files by (F2-08). */
+  limits: closedObject({
+    fileMaxChars: Type.Integer({ minimum: 1 }),
+    totalMaxChars: Type.Integer({ minimum: 1 }),
+    userMaxChars: Type.Integer({ minimum: 1 }),
+    memoryAdvisoryChars: Type.Integer({ minimum: 1 }),
+  }),
+  /** Which pieces of personal context this agent reads (F2-08); false is left out. */
+  personalContext: closedObject({
+    aboutYou: Type.Boolean(),
+    responseStyle: Type.Boolean(),
+    skillRules: Type.Boolean(),
+    memory: Type.Boolean(),
+  }),
 });
 
 /** Reads one editable agent file by name. */

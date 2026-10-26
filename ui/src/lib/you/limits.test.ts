@@ -36,7 +36,7 @@ describe("saving against the limits the gateway reported", () => {
 
   it("uses the per-file limit for AGENTS.md and MEMORY.md", () => {
     const rules = {
-      rules: Array.from({ length: 10 }, (_, i) => ({
+      rules: Array.from({ length: 5 }, (_, i) => ({
         when: `case number ${i}`,
         skill: `skill-${i}`,
       })),

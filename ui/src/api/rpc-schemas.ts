@@ -23,9 +23,9 @@ const RESULT_LIMITS = { maxString: 65_536, maxArray: 2000, maxDepth: 16 };
 type Limits = typeof PARAMS_LIMITS;
 
 // Agent files carry whole documents, so their calls get their own ceilings. They
-// stay finite: AGENTS.md and MEMORY.md are capped at the runtime's per-file
-// bootstrap size (20,000 characters) and the slack covers a file edited by hand.
-const AGENT_FILE_PARAMS_LIMITS: Limits = { ...PARAMS_LIMITS, maxString: 24_000 };
+// stay finite and only bound one call: the size an agent truncates by comes from the
+// gateway (agents.files.list), never from here.
+const AGENT_FILE_PARAMS_LIMITS: Limits = { ...PARAMS_LIMITS, maxString: 262_144 };
 const AGENT_FILE_RESULT_LIMITS: Limits = { ...RESULT_LIMITS, maxString: 262_144 };
 const PARAMS_LIMITS_BY_METHOD: Partial<Record<RpcMethod, Limits>> = {
   "agents.files.set": AGENT_FILE_PARAMS_LIMITS,
@@ -311,7 +311,8 @@ const AgentFilesGetParamsSchema = closed({ agentId: agentId(), name: YouFileName
 const AgentFilesSetParamsSchema = closed({
   agentId: agentId(),
   name: YouFileNameSchema,
-  content: Type.String({ maxLength: 20_000 }),
+  // An edge guard on what one call may carry; the limit an agent truncates by comes from the gateway.
+  content: Type.String({ maxLength: 262_144 }),
   expectedHash: Type.Optional(Type.String({ pattern: "^[0-9a-fA-F]{64}$", maxLength: 64 })),
 });
 
@@ -340,10 +341,44 @@ function projectAgentFile(value: unknown): unknown {
   };
 }
 
+const AgentFilesListParamsSchema = closed({ agentId: agentId() });
+// Limits and switches ride along with the file list; the list itself is not needed here.
+const AgentFilesListResultSchema = Type.Object(
+  {
+    agentId: agentId(),
+    limits: closed({
+      fileMaxChars: Type.Integer({ minimum: 1 }),
+      totalMaxChars: Type.Integer({ minimum: 1 }),
+      userMaxChars: Type.Integer({ minimum: 1 }),
+      memoryAdvisoryChars: Type.Integer({ minimum: 1 }),
+    }),
+    personalContext: closed({
+      aboutYou: Type.Boolean(),
+      responseStyle: Type.Boolean(),
+      skillRules: Type.Boolean(),
+      memory: Type.Boolean(),
+    }),
+  },
+  { additionalProperties: true },
+);
+
+function projectAgentFilesList(value: unknown): unknown {
+  const result = value as Record<string, unknown>;
+  return pick(result, ["agentId", "limits", "personalContext"]);
+}
+
 const AgentsUpdateParamsSchema = closed({
   agentId: agentId(),
   model: Type.Optional(Type.Union([str(), Type.Null()])),
   thinkingDefault: Type.Optional(Type.Union([str(32), Type.Null()])),
+  personalContext: Type.Optional(
+    closed({
+      aboutYou: Type.Optional(Type.Boolean()),
+      responseStyle: Type.Optional(Type.Boolean()),
+      skillRules: Type.Optional(Type.Boolean()),
+      memory: Type.Optional(Type.Boolean()),
+    }),
+  ),
 });
 const AgentsUpdateResultSchema = closed({ ok: Type.Literal(true), agentId: agentId() });
 
@@ -366,6 +401,11 @@ const METHOD_SCHEMAS = {
   "usage.cost": { params: UsageCostParamsSchema, result: UsageCostResultSchema },
   "agents.list": { params: AgentsListParamsSchema, result: AgentsListResultSchema },
   "pages.state": { params: closed({}), result: PagesStateResultSchema },
+  "agents.files.list": {
+    params: AgentFilesListParamsSchema,
+    result: AgentFilesListResultSchema,
+    project: projectAgentFilesList,
+  },
   "agents.files.get": {
     params: AgentFilesGetParamsSchema,
     result: AgentFileResultSchema,

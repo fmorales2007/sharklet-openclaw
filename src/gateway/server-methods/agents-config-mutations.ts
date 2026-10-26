@@ -36,6 +36,7 @@ export async function updateAgentConfigEntry(params: {
   workspace?: string;
   model?: string | null;
   thinkingDefault?: AgentThinkingLevel | null;
+  personalContext?: AgentConfig["personalContext"];
   identity?: IdentityConfig;
 }): Promise<void> {
   await mutateConfigFileWithRetry({
@@ -54,6 +55,7 @@ export async function updateAgentConfigEntry(params: {
         ...(params.thinkingDefault !== undefined
           ? { thinkingDefault: params.thinkingDefault }
           : {}),
+        ...(params.personalContext ? { personalContext: params.personalContext } : {}),
         ...(params.identity ? { identity: params.identity } : {}),
       });
       Object.assign(draft, latestNextConfig);

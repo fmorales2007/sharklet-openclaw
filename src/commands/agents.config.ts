@@ -112,6 +112,7 @@ export function applyAgentConfig(
     agentDir?: string;
     model?: string | null;
     thinkingDefault?: AgentThinkingLevel | null;
+    personalContext?: AgentEntry["personalContext"];
     identity?: IdentityConfig;
   },
 ): OpenClawConfig {
@@ -139,6 +140,16 @@ export function applyAgentConfig(
     delete nextEntry.thinkingDefault;
   } else if (params.thinkingDefault !== undefined) {
     nextEntry.thinkingDefault = params.thinkingDefault;
+  }
+  // Pieces are on by default: only a false is stored, and a true clears an earlier false.
+  if (params.personalContext) {
+    const merged = { ...base.personalContext, ...params.personalContext };
+    const off = Object.fromEntries(Object.entries(merged).filter(([, value]) => value === false));
+    if (Object.keys(off).length > 0) {
+      nextEntry.personalContext = off;
+    } else {
+      delete nextEntry.personalContext;
+    }
   }
   const nextList = [...list];
   if (index >= 0) {

@@ -69,6 +69,10 @@ import {
 } from "../../agents/identity-file.js";
 import { resolveAgentIdentity } from "../../agents/identity.js";
 import {
+  resolveBootstrapLimits,
+  resolvePersonalContextToggles,
+} from "../../agents/personal-context.js";
+import {
   prepareLegacyWorkspaceStateReset,
   removeLegacyWorkspaceStateForReset,
 } from "../../agents/workspace-legacy-state.js";
@@ -963,6 +967,7 @@ export const agentsHandlers: GatewayRequestHandlers = {
       ...(workspaceDir ? { workspace: workspaceDir } : {}),
       ...(model !== undefined ? { model } : {}),
       ...(thinkingDefault !== undefined ? { thinkingDefault } : {}),
+      ...(params.personalContext ? { personalContext: params.personalContext } : {}),
       ...(identity ? { identity } : {}),
     };
     const nextConfig = applyAgentConfig(cfg, agentConfigUpdate);
@@ -1556,7 +1561,17 @@ export const agentsHandlers: GatewayRequestHandlers = {
       // Fall back to showing BOOTSTRAP if workspace state cannot be read.
     }
     const files = await listAgentFiles(workspaceDir, { hideBootstrap });
-    respond(true, { agentId, workspace: workspaceDir, files }, undefined);
+    respond(
+      true,
+      {
+        agentId,
+        workspace: workspaceDir,
+        files,
+        limits: resolveBootstrapLimits(cfg, agentId),
+        personalContext: resolvePersonalContextToggles(cfg, agentId),
+      },
+      undefined,
+    );
   },
   "agents.files.get": async ({ params, respond, context }) => {
     if (!assertValidParams(params, validateAgentsFilesGetParams, "agents.files.get", respond)) {

@@ -11,12 +11,9 @@
 import { err, ok, type Result } from "@openclaw/normalization-core/result";
 import { Type, type Static, type TSchema } from "typebox";
 import { Value } from "typebox/value";
+import { readBlock, writeBlock } from "../../../../src/agents/personal-context-blocks.ts";
 import { findKeyShapedField, firstSchemaError } from "../../api/rpc-schemas.ts";
-
-/** Same number as USER_BOOTSTRAP_MAX_CHARS in the gateway, which refuses a longer write. */
-export const USER_FILE_MAX_CHARS = 4000;
-export const AGENTS_FILE_MAX_CHARS = 20_000;
-export const MEMORY_FILE_MAX_CHARS = 20_000;
+import type { YouLimits } from "./limits.ts";
 
 export const RESPONSE_TONES = ["direct", "warm", "formal"] as const;
 export const RESPONSE_LENGTHS = ["brief", "balanced", "detailed"] as const;
@@ -66,48 +63,12 @@ export const DEFAULT_RESPONSE_STYLE: ResponseStyle = {
 
 // ---- marked blocks ----------------------------------------------------------
 
-export type BlockId = "about-you" | "response-style" | "skill-rules" | "memory";
-const open = (id: BlockId) => `<!-- sharklet:${id} -->`;
-const close = (id: BlockId) => `<!-- /sharklet:${id} -->`;
+export {
+  readBlock,
+  writeBlock,
+  type BlockId,
+} from "../../../../src/agents/personal-context-blocks.ts";
 const MARKER_TEXT = /<!--\s*\/?sharklet:/i;
-
-/** Text between the markers, or null when the block is absent. */
-export function readBlock(content: string, id: BlockId): string | null {
-  const start = content.indexOf(open(id));
-  if (start < 0) {
-    return null;
-  }
-  const bodyStart = start + open(id).length;
-  const end = content.indexOf(close(id), bodyStart);
-  return end < 0
-    ? null
-    : content
-        .slice(bodyStart, end)
-        .replace(/^\r?\n/, "")
-        .replace(/\r?\n$/, "");
-}
-
-/** Replaces the block in place, or appends it after the existing text. Empty body removes it. */
-export function writeBlock(content: string, id: BlockId, body: string | null): string {
-  const start = content.indexOf(open(id));
-  const end = start < 0 ? -1 : content.indexOf(close(id), start);
-  const block = body === null ? "" : `${open(id)}\n${body}\n${close(id)}`;
-  if (start >= 0 && end >= 0) {
-    const after = content.slice(end + close(id).length);
-    if (block) {
-      return `${content.slice(0, start)}${block}${after}`;
-    }
-    const before = content.slice(0, start).replace(/\s+$/, "");
-    const rest = after.replace(/^\s+/, "");
-    const joined = before && rest ? `${before}\n\n${rest}` : before || rest;
-    return joined ? `${joined.replace(/\s+$/, "")}\n` : "";
-  }
-  if (!block) {
-    return content;
-  }
-  const trimmed = content.replace(/\s+$/, "");
-  return trimmed ? `${trimmed}\n\n${block}\n` : `${block}\n`;
-}
 
 // ---- validation -------------------------------------------------------------
 
@@ -179,63 +140,68 @@ function fit(content: string, max: number, file: string): Result<string, string>
     : ok(content);
 }
 
-export function applyAboutYou(userMd: string, value: AboutYou): Result<string, string> {
-  const bad = validateAboutYou(value);
-  if (bad) {
-    return err(bad);
-  }
+// What each section makes of its file. The meters use these as they are, over the
+// limit or not; saving refuses a result that does not fit the agent's limit.
+export function previewAboutYou(userMd: string, value: AboutYou): string {
   const text = value.text.trim();
-  return fit(
-    writeBlock(userMd, "about-you", text ? `## About you\n${text}` : null),
-    USER_FILE_MAX_CHARS,
-    "USER.md",
-  );
+  return writeBlock(userMd, "about-you", text ? `## About you\n${text}` : null);
 }
 
-export function applyResponseStyle(userMd: string, value: ResponseStyle): Result<string, string> {
-  const bad = validateResponseStyle(value);
-  if (bad) {
-    return err(bad);
-  }
+export function previewResponseStyle(userMd: string, value: ResponseStyle): string {
   const notes = value.notes.trim();
   const lines = ["## Response style", `- Tone: ${value.tone}`, `- Length: ${value.length}`];
-  return fit(
-    writeBlock(
-      userMd,
-      "response-style",
-      notes ? `${lines.join("\n")}\n${notes}` : lines.join("\n"),
-    ),
-    USER_FILE_MAX_CHARS,
-    "USER.md",
-  );
+  const body = lines.join("\n");
+  return writeBlock(userMd, "response-style", notes ? `${body}\n${notes}` : body);
 }
 
-export function applySkillRules(agentsMd: string, value: SkillRules): Result<string, string> {
-  const bad = validateSkillRules(value);
-  if (bad) {
-    return err(bad);
-  }
+export function previewSkillRules(agentsMd: string, value: SkillRules): string {
   const lines = value.rules.map((rule) => `- When I ${rule.when.trim()} → use ${rule.skill}`);
-  return fit(
-    writeBlock(
-      agentsMd,
-      "skill-rules",
-      lines.length ? `## Skill rules\n${lines.join("\n")}` : null,
-    ),
-    AGENTS_FILE_MAX_CHARS,
-    "AGENTS.md",
+  return writeBlock(
+    agentsMd,
+    "skill-rules",
+    lines.length ? `## Skill rules\n${lines.join("\n")}` : null,
   );
 }
 
-export function applyMemoryNotes(memoryMd: string, value: MemoryNotes): Result<string, string> {
-  const bad = validateMemoryNotes(value);
-  if (bad) {
-    return err(bad);
-  }
+export function previewMemoryNotes(memoryMd: string, value: MemoryNotes): string {
   const notes = value.notes.trim();
-  return fit(
-    writeBlock(memoryMd, "memory", notes ? `## Notes from the owner\n${notes}` : null),
-    MEMORY_FILE_MAX_CHARS,
-    "MEMORY.md",
-  );
+  return writeBlock(memoryMd, "memory", notes ? `## Notes from the owner\n${notes}` : null);
+}
+
+export function applyAboutYou(
+  userMd: string,
+  value: AboutYou,
+  limits: YouLimits,
+): Result<string, string> {
+  const bad = validateAboutYou(value);
+  return bad ? err(bad) : fit(previewAboutYou(userMd, value), limits.userMaxChars, "USER.md");
+}
+
+export function applyResponseStyle(
+  userMd: string,
+  value: ResponseStyle,
+  limits: YouLimits,
+): Result<string, string> {
+  const bad = validateResponseStyle(value);
+  return bad ? err(bad) : fit(previewResponseStyle(userMd, value), limits.userMaxChars, "USER.md");
+}
+
+export function applySkillRules(
+  agentsMd: string,
+  value: SkillRules,
+  limits: YouLimits,
+): Result<string, string> {
+  const bad = validateSkillRules(value);
+  return bad ? err(bad) : fit(previewSkillRules(agentsMd, value), limits.fileMaxChars, "AGENTS.md");
+}
+
+export function applyMemoryNotes(
+  memoryMd: string,
+  value: MemoryNotes,
+  limits: YouLimits,
+): Result<string, string> {
+  const bad = validateMemoryNotes(value);
+  return bad
+    ? err(bad)
+    : fit(previewMemoryNotes(memoryMd, value), limits.fileMaxChars, "MEMORY.md");
 }

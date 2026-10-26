@@ -118,3 +118,39 @@
     width: 100%;
   }
 }
+
+/* Size meters (F2-08): a bar and the count; amber near the limit, red past it. */
+.you-meter {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+}
+
+.you-meter__bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.you-meter__fill {
+  height: 100%;
+  background: var(--accent);
+}
+
+.you-meter[data-state="near"] .you-meter__fill {
+  background: var(--warn);
+}
+
+.you-meter[data-state="over"] .you-meter__fill {
+  background: var(--danger);
+}
+
+.you-meter__text {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.you-meter__warning {
+  color: var(--danger);
+}

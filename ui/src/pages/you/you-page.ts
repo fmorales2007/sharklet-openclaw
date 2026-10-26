@@ -1,11 +1,18 @@
 import { consume } from "@lit/context";
 import { state } from "lit/decorators.js";
+import type { PersonalContextSwitches } from "../../api/rpc.ts";
 import type { AgentsListResult } from "../../api/types.ts";
 import { applicationContext, type ApplicationContext } from "../../app/context.ts";
 import { hasOperatorWriteAccess } from "../../app/operator-access.ts";
 import { t } from "../../i18n/index.ts";
 import { registerYouEnglish } from "../../i18n/locales/en-you.ts";
-import { readYou, saveYouSection, type YouSaveFailure } from "../../lib/you/agent-files.ts";
+import {
+  readYou,
+  saveYouSection,
+  setPersonalContextSwitch,
+  type YouSaveFailure,
+  type YouSnapshot,
+} from "../../lib/you/agent-files.ts";
 import { saveYouDefaults, selectComposerDefaults } from "../../lib/you/defaults.ts";
 import {
   draftFromSnapshot,
@@ -15,6 +22,7 @@ import {
   type YouDraft,
 } from "../../lib/you/draft.ts";
 import type { SkillRule } from "../../lib/you/files.ts";
+import { projectUsage } from "../../lib/you/usage.ts";
 import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
 import "../../styles/settings-controls.css";
 import "../../styles/settings.css";
@@ -55,6 +63,7 @@ class YouPage extends OpenClawLightDomElement {
   @state() private loading = true;
   @state() private loadError: string | null = null;
   @state() private saving = false;
+  @state() private snapshot: YouSnapshot | null = null;
   @state() private status: YouViewProps["status"] = null;
 
   private client: ApplicationContext["gateway"]["snapshot"]["client"] = null;
@@ -130,6 +139,7 @@ class YouPage extends OpenClawLightDomElement {
       return;
     }
     const defaults = selectComposerDefaults(list, null, this.agentId);
+    this.snapshot = result.value;
     this.base = draftFromSnapshot(result.value, defaults);
     this.draft = { ...this.base, rules: this.base.rules.map((rule) => ({ ...rule })) };
   }
@@ -191,6 +201,37 @@ class YouPage extends OpenClawLightDomElement {
     }
   }
 
+  /** A switch saves on its own: it is not part of the draft and needs no Save. */
+  private async switchPiece(piece: keyof PersonalContextSwitches, on: boolean) {
+    const client = this.client;
+    const snapshot = this.snapshot;
+    if (!client || !snapshot || !this.canWrite) {
+      return;
+    }
+    const agent = this.agentLabel(snapshot.agentId);
+    const result = await setPersonalContextSwitch(client, snapshot.agentId, piece, on);
+    if (snapshot !== this.snapshot) {
+      return;
+    }
+    if (!result.ok) {
+      this.status = { kind: "error", lines: [t("youPage.context.switchFailed", { agent })] };
+      // The control shows what the gateway holds, not the click that did not land.
+      this.snapshot = { ...snapshot };
+      return;
+    }
+    this.snapshot = { ...snapshot, switches: { ...snapshot.switches, [piece]: on } };
+    const name = t(`youPage.context.pieces.${piece}.title`);
+    this.status = {
+      kind: "saved",
+      lines: [
+        t(on ? "youPage.context.switchedOn" : "youPage.context.switchedOff", {
+          agent,
+          piece: name,
+        }),
+      ],
+    };
+  }
+
   private async reloadKeepingStatus() {
     const status = this.status;
     await this.load();
@@ -212,6 +253,12 @@ class YouPage extends OpenClawLightDomElement {
       saving: this.saving,
       problems: draftProblems(this.draft, t),
       status: this.status,
+      usage: this.snapshot
+        ? projectUsage(this.snapshot.files, this.draft, this.snapshot.limits)
+        : null,
+      switches: this.snapshot?.switches ?? null,
+      canWrite: this.canWrite,
+      onSwitch: (piece, on) => void this.switchPiece(piece, on),
       onAgent: (agentId) => this.selectAgent(agentId),
       onTarget: (agentId, on) => {
         const next = new Set(this.targets);

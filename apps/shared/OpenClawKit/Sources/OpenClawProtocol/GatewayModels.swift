@@ -16048,6 +16048,7 @@ public struct AgentsUpdateParams: Codable, Sendable {
     public let modelvalue: AnyCodable?
     public var model: String? { modelvalue?.value as? String }
     public let thinkingdefault: AnyCodable?
+    public let personalcontext: [String: AnyCodable]?
     public let emoji: String?
     public let avatar: String?
 
@@ -16057,6 +16058,7 @@ public struct AgentsUpdateParams: Codable, Sendable {
         workspace: String? = nil,
         modelvalue: AnyCodable?,
         thinkingdefault: AnyCodable? = nil,
+        personalcontext: [String: AnyCodable]? = nil,
         emoji: String? = nil,
         avatar: String? = nil)
     {
@@ -16065,6 +16067,7 @@ public struct AgentsUpdateParams: Codable, Sendable {
         self.workspace = workspace
         self.modelvalue = modelvalue
         self.thinkingdefault = thinkingdefault
+        self.personalcontext = personalcontext
         self.emoji = emoji
         self.avatar = avatar
     }
@@ -16075,6 +16078,7 @@ public struct AgentsUpdateParams: Codable, Sendable {
         workspace: String? = nil,
         model: String? = nil,
         thinkingdefault: AnyCodable? = nil,
+        personalcontext: [String: AnyCodable]? = nil,
         emoji: String? = nil,
         avatar: String? = nil)
     {
@@ -16084,6 +16088,7 @@ public struct AgentsUpdateParams: Codable, Sendable {
             workspace: workspace,
             modelvalue: model.map { AnyCodable($0) },
             thinkingdefault: thinkingdefault,
+            personalcontext: personalcontext,
             emoji: emoji,
             avatar: avatar)
     }
@@ -16094,6 +16099,7 @@ public struct AgentsUpdateParams: Codable, Sendable {
         case workspace
         case modelvalue = "model"
         case thinkingdefault = "thinkingDefault"
+        case personalcontext = "personalContext"
         case emoji
         case avatar
     }
@@ -16107,6 +16113,7 @@ public struct AgentsUpdateParams: Codable, Sendable {
             ? try container.decode(AnyCodable.self, forKey: .modelvalue)
             : nil
         self.thinkingdefault = try container.decodeIfPresent(AnyCodable.self, forKey: .thinkingdefault)
+        self.personalcontext = try container.decodeIfPresent([String: AnyCodable].self, forKey: .personalcontext)
         self.emoji = try container.decodeIfPresent(String.self, forKey: .emoji)
         self.avatar = try container.decodeIfPresent(String.self, forKey: .avatar)
     }
@@ -16118,6 +16125,7 @@ public struct AgentsUpdateParams: Codable, Sendable {
         try container.encodeIfPresent(workspace, forKey: .workspace)
         try container.encodeIfPresent(modelvalue, forKey: .modelvalue)
         try container.encodeIfPresent(thinkingdefault, forKey: .thinkingdefault)
+        try container.encodeIfPresent(personalcontext, forKey: .personalcontext)
         try container.encodeIfPresent(emoji, forKey: .emoji)
         try container.encodeIfPresent(avatar, forKey: .avatar)
     }
@@ -16253,21 +16261,29 @@ public struct AgentsFilesListResult: Codable, Sendable {
     public let agentid: String
     public let workspace: String
     public let files: [AgentsFileEntry]
+    public let limits: [String: AnyCodable]
+    public let personalcontext: [String: AnyCodable]
 
     public init(
         agentid: String,
         workspace: String,
-        files: [AgentsFileEntry])
+        files: [AgentsFileEntry],
+        limits: [String: AnyCodable],
+        personalcontext: [String: AnyCodable])
     {
         self.agentid = agentid
         self.workspace = workspace
         self.files = files
+        self.limits = limits
+        self.personalcontext = personalcontext
     }
 
     private enum CodingKeys: String, CodingKey {
         case agentid = "agentId"
         case workspace
         case files
+        case limits
+        case personalcontext = "personalContext"
     }
 }
 

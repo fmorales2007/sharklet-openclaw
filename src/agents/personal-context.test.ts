@@ -4,6 +4,7 @@ import fs from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { writeBlock } from "../../ui/src/lib/you/files.ts";
+import { applyAgentConfig } from "../commands/agents.config.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { resolveBootstrapFilesForRun } from "./bootstrap-files.js";
 import {
@@ -123,6 +124,26 @@ describe("personal context switches", () => {
     expect(contentOf(forMain, "AGENTS.md")).not.toContain("grilling");
     expect(contentOf(forWriter, "USER.md")).toContain("bakery");
     expect(contentOf(forWriter, "AGENTS.md")).toContain("grilling");
+  });
+});
+
+describe("saving a switch", () => {
+  const cfg = { agents: { list: [{ id: "main", default: true }] } } as unknown as OpenClawConfig;
+
+  it("stores only what is off, and a switch turned back on clears itself", () => {
+    const off = applyAgentConfig(cfg, { agentId: "main", personalContext: { memory: false } });
+    expect(resolvePersonalContextToggles(off, "main").memory).toBe(false);
+    expect(off.agents?.entries?.main?.personalContext).toEqual({ memory: false });
+
+    const more = applyAgentConfig(off, { agentId: "main", personalContext: { aboutYou: false } });
+    expect(more.agents?.entries?.main?.personalContext).toEqual({ memory: false, aboutYou: false });
+
+    const back = applyAgentConfig(more, {
+      agentId: "main",
+      personalContext: { memory: true, aboutYou: true },
+    });
+    expect(back.agents?.entries?.main?.personalContext).toBeUndefined();
+    expect(resolvePersonalContextToggles(back, "main").memory).toBe(true);
   });
 });
 

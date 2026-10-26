@@ -15,14 +15,53 @@ const suite = createControlUiE2eSuite({
 });
 
 /** Installs in-page handlers that behave like agents.files.get/set with expectedHash. */
-function installFileHandlers(page: import("playwright").Page) {
-  return page.evaluate(() => {
+function installFileHandlers(
+  page: import("playwright").Page,
+  options: { userMaxChars?: number; userMd?: string } = {},
+) {
+  return page.evaluate((opts) => {
     const fixture = (window as Window & { openclawControlUiE2eGateway?: ControlUiMockGateway })
       .openclawControlUiE2eGateway;
     if (!fixture) {
       throw new Error("Mock Gateway is not installed");
     }
     const files = new Map<string, { content: string; version: number }>();
+    if (opts.userMd) {
+      files.set("main/USER.md", { content: opts.userMd, version: 1 });
+    }
+    const switches = new Map<string, Record<string, boolean>>();
+    const updates: Array<Record<string, unknown>> = [];
+    (window as unknown as { youE2eUpdates: typeof updates }).youE2eUpdates = updates;
+    fixture.setRequestHandler("agents.files.list", ({ params, respond }) => {
+      const { agentId } = params as { agentId: string };
+      respond({
+        agentId,
+        workspace: `/tmp/openclaw-e2e/${agentId}`,
+        files: [],
+        limits: {
+          fileMaxChars: 5000,
+          totalMaxChars: 12000,
+          userMaxChars: opts.userMaxChars ?? 900,
+          memoryAdvisoryChars: 700,
+        },
+        personalContext: {
+          aboutYou: true,
+          responseStyle: true,
+          skillRules: true,
+          memory: true,
+          ...switches.get(agentId),
+        },
+      });
+    });
+    fixture.setRequestHandler("agents.update", ({ params, respond }) => {
+      const { agentId, personalContext } = params as {
+        agentId: string;
+        personalContext?: Record<string, boolean>;
+      };
+      updates.push(params as Record<string, unknown>);
+      switches.set(agentId, { ...switches.get(agentId), ...personalContext });
+      respond({ ok: true, agentId });
+    });
     const hashOf = (version: number) => version.toString(16).padStart(64, "0");
     const writes: Array<{ agentId: string; name: string; content: string }> = [];
     (window as unknown as { youE2eWrites: typeof writes }).youE2eWrites = writes;
@@ -60,7 +99,7 @@ function installFileHandlers(page: import("playwright").Page) {
         file: { name, path: `/tmp/openclaw-e2e/${agentId}/${name}`, missing: false, content },
       });
     });
-  });
+  }, options);
 }
 
 suite.define(() => {
@@ -69,7 +108,13 @@ suite.define(() => {
       { locale: "en-US", serviceWorkers: "block", viewport: { height: 900, width: 1440 } },
       async ({ page }) => {
         const gateway = await installMockGateway(page, {
-          featureMethods: ["agents.files.get", "agents.files.set", "agents.list"],
+          featureMethods: [
+            "agents.files.get",
+            "agents.files.set",
+            "agents.files.list",
+            "agents.update",
+            "agents.list",
+          ],
           methodResponses: { "agents.list": CHAT_YOU_AGENTS_LIST },
           operatorScopes: ["operator.admin", "operator.read", "operator.write"],
         });
@@ -109,7 +154,13 @@ suite.define(() => {
       { locale: "en-US", serviceWorkers: "block", viewport: { height: 900, width: 1440 } },
       async ({ page }) => {
         const gateway = await installMockGateway(page, {
-          featureMethods: ["agents.files.get", "agents.files.set", "agents.list"],
+          featureMethods: [
+            "agents.files.get",
+            "agents.files.set",
+            "agents.files.list",
+            "agents.update",
+            "agents.list",
+          ],
           methodResponses: { "agents.list": CHAT_YOU_AGENTS_LIST },
           operatorScopes: ["operator.admin", "operator.read", "operator.write"],
         });
@@ -129,6 +180,91 @@ suite.define(() => {
           (request) => (request.params as { agentId: string }).agentId,
         );
         expect(agents.toSorted()).toEqual(["main", "writer"]);
+      },
+    );
+  });
+
+  const STATIC_FEATURES = [
+    "agents.files.get",
+    "agents.files.set",
+    "agents.files.list",
+    "agents.update",
+    "agents.list",
+  ];
+  const staticList = (userMaxChars: number) => ({
+    agentId: "main",
+    workspace: "/tmp/openclaw-e2e/main",
+    files: [],
+    limits: { fileMaxChars: 5000, totalMaxChars: 12000, userMaxChars, memoryAdvisoryChars: 700 },
+    personalContext: { aboutYou: true, responseStyle: true, skillRules: true, memory: true },
+  });
+  // Answers that exist from the first request: the page loads before a test can install handlers.
+  const staticFile = (content?: string) => ({
+    agentId: "main",
+    workspace: "/tmp/openclaw-e2e/main",
+    file: content
+      ? { name: "USER.md", path: "/tmp/openclaw-e2e/main/USER.md", missing: false, content }
+      : { name: "USER.md", path: "/tmp/openclaw-e2e/main/USER.md", missing: true },
+  });
+
+  it("warns when a file is over the limit the gateway reported", async () => {
+    await suite.withPage(
+      { locale: "en-US", serviceWorkers: "block", viewport: { height: 900, width: 1440 } },
+      async ({ page }) => {
+        await installMockGateway(page, {
+          featureMethods: STATIC_FEATURES,
+          methodResponses: {
+            "agents.list": CHAT_YOU_AGENTS_LIST,
+            "agents.files.list": staticList(80),
+            "agents.files.get": staticFile(`# USER
+${"x".repeat(120)}`),
+          },
+          operatorScopes: ["operator.admin", "operator.read", "operator.write"],
+        });
+        await page.goto(`${suite.server.baseUrl}you`);
+
+        const userMeter = page.getByRole("meter", { name: "USER.md" });
+        await expect.poll(() => userMeter.count(), { timeout: 30_000 }).toBe(1);
+        expect(await userMeter.getAttribute("aria-valuemax")).toBe("80");
+        await expect
+          .poll(() =>
+            page
+              .getByText("USER.md is over its limit. The end of it won't reach the agent.")
+              .count(),
+          )
+          .toBe(1);
+      },
+    );
+  });
+
+  it("switches a piece off for one agent without touching the text", async () => {
+    await suite.withPage(
+      { locale: "en-US", serviceWorkers: "block", viewport: { height: 900, width: 1440 } },
+      async ({ page }) => {
+        const gateway = await installMockGateway(page, {
+          featureMethods: STATIC_FEATURES,
+          methodResponses: {
+            "agents.list": CHAT_YOU_AGENTS_LIST,
+            "agents.files.list": staticList(900),
+            "agents.files.get": staticFile(),
+            "agents.update": { ok: true, agentId: "main" },
+          },
+          operatorScopes: ["operator.admin", "operator.read", "operator.write"],
+        });
+        await page.goto(`${suite.server.baseUrl}you`);
+
+        const memory = page.getByRole("switch", { name: "Memory" });
+        await memory.waitFor({ timeout: 30_000 });
+        // The native input is visually hidden: click the switch itself (Memory is the fourth).
+        await page.locator("wa-switch").nth(3).click();
+        const update = await gateway.waitForRequest("agents.update");
+        expect(update.params).toEqual({ agentId: "main", personalContext: { memory: false } });
+        await expect
+          .poll(() => page.getByText("Example assistant no longer reads Memory").count())
+          .toBe(1);
+        // A switch is not part of the draft: nothing to save, no file written.
+        expect(await page.locator('[data-test-id="you-save"]').isDisabled()).toBe(true);
+        expect(await gateway.getRequests("agents.files.set")).toHaveLength(0);
       },
     );
   });

@@ -9,12 +9,18 @@ import {
   applyAboutYou,
   applyResponseStyle,
   applySkillRules,
-  USER_FILE_MAX_CHARS,
 } from "../../../ui/src/lib/you/files.ts";
-import { buildBootstrapContextFiles } from "../../agents/embedded-agent-helpers/bootstrap.js";
+import {
+  buildBootstrapContextFiles,
+  USER_BOOTSTRAP_MAX_CHARS,
+} from "../../agents/embedded-agent-helpers/bootstrap.js";
+import { resolveBootstrapLimits } from "../../agents/personal-context.js";
 import { buildAgentSystemPrompt } from "../../agents/system-prompt.js";
 import { loadWorkspaceBootstrapFiles } from "../../agents/workspace.js";
 import { agentsHandlers } from "./agents.js";
+
+// The page saves against the limits the gateway reports; the test asks for the same ones.
+const LIMITS = resolveBootstrapLimits({}, "main");
 
 type HandlerCall = { ok: boolean; payload?: unknown; error?: unknown };
 
@@ -31,7 +37,7 @@ describe("You page → agent files", () => {
   });
 
   async function call(
-    method: "agents.files.get" | "agents.files.set",
+    method: "agents.files.get" | "agents.files.set" | "agents.files.list",
     params: Record<string, unknown>,
   ): Promise<HandlerCall> {
     const calls: HandlerCall[] = [];
@@ -49,7 +55,12 @@ describe("You page → agent files", () => {
             defaults: { workspace: workspaces.main },
             list: [
               { id: "main", default: true, workspace: workspaces.main },
-              { id: "writer", workspace: workspaces.writer },
+              {
+                id: "writer",
+                workspace: workspaces.writer,
+                bootstrapMaxChars: 7_000,
+                personalContext: { memory: false },
+              },
               { id: "other", workspace: workspaces.other },
             ],
           },
@@ -86,7 +97,9 @@ describe("You page → agent files", () => {
 
   it("global writes USER.md into each chosen agent's own workspace and no other", async () => {
     for (const agentId of ["main", "writer"]) {
-      await saveSection(agentId, "USER.md", (c) => applyAboutYou(c, { text: "I run a bakery." }));
+      await saveSection(agentId, "USER.md", (c) =>
+        applyAboutYou(c, { text: "I run a bakery." }, LIMITS),
+      );
     }
     expect(fs.readFileSync(path.join(workspaces.main, "USER.md"), "utf8")).toContain(
       "I run a bakery.",
@@ -101,7 +114,7 @@ describe("You page → agent files", () => {
     const tooLong = await call("agents.files.set", {
       agentId: "main",
       name: "USER.md",
-      content: "x".repeat(USER_FILE_MAX_CHARS + 1),
+      content: "x".repeat(USER_BOOTSTRAP_MAX_CHARS + 1),
     });
     expect(tooLong.ok).toBe(false);
     expect(fs.existsSync(path.join(workspaces.main, "USER.md"))).toBe(false);
@@ -109,7 +122,7 @@ describe("You page → agent files", () => {
     const exact = await call("agents.files.set", {
       agentId: "main",
       name: "USER.md",
-      content: "x".repeat(USER_FILE_MAX_CHARS),
+      content: "x".repeat(USER_BOOTSTRAP_MAX_CHARS),
     });
     expect(exact.ok).toBe(true);
   });
@@ -133,10 +146,14 @@ describe("You page → agent files", () => {
 
   it("a saved Response style and a Skill rule reach the next system prompt", async () => {
     await saveSection("main", "USER.md", (c) =>
-      applyResponseStyle(c, { tone: "formal", length: "brief", notes: "Sign off with Regards." }),
+      applyResponseStyle(
+        c,
+        { tone: "formal", length: "brief", notes: "Sign off with Regards." },
+        LIMITS,
+      ),
     );
     await saveSection("main", "AGENTS.md", (c) =>
-      applySkillRules(c, { rules: [{ when: "propose a project", skill: "grilling" }] }),
+      applySkillRules(c, { rules: [{ when: "propose a project", skill: "grilling" }] }, LIMITS),
     );
 
     // The turn after the save: load the workspace as the runner does, build the prompt.
@@ -160,14 +177,30 @@ describe("You page → agent files", () => {
       });
     };
     await saveSection("main", "USER.md", (c) =>
-      applyResponseStyle(c, { tone: "formal", length: "brief", notes: "" }),
+      applyResponseStyle(c, { tone: "formal", length: "brief", notes: "" }, LIMITS),
     );
     expect(await promptFor()).toContain("- Tone: formal");
     await saveSection("main", "USER.md", (c) =>
-      applyResponseStyle(c, { tone: "warm", length: "brief", notes: "" }),
+      applyResponseStyle(c, { tone: "warm", length: "brief", notes: "" }, LIMITS),
     );
     const after = await promptFor();
     expect(after).toContain("- Tone: warm");
     expect(after).not.toContain("- Tone: formal");
+  });
+
+  it("reports each agent's own limits and switches for the page's meters", async () => {
+    const main = await call("agents.files.list", { agentId: "main" });
+    const writer = await call("agents.files.list", { agentId: "writer" });
+
+    expect(main.payload).toMatchObject({
+      agentId: "main",
+      limits: { ...LIMITS },
+      personalContext: { aboutYou: true, responseStyle: true, skillRules: true, memory: true },
+    });
+    expect(writer.payload).toMatchObject({
+      agentId: "writer",
+      limits: { ...LIMITS, fileMaxChars: 7_000 },
+      personalContext: { aboutYou: true, responseStyle: true, skillRules: true, memory: false },
+    });
   });
 });
