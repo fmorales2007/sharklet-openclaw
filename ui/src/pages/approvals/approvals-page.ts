@@ -21,7 +21,6 @@ import {
 import { parseApprovalResolvedEvent } from "../../app/exec-approval.ts";
 import { readGatewayOperatorAccess } from "../../app/operator-access.ts";
 import {
-  renderLearnMoreLink,
   renderSettingsGroup,
   renderSettingsLoadingSkeleton,
   renderSettingsPage,
@@ -68,7 +67,6 @@ function grantIsActive(grant: StandingGrantRow, nowMs: number): boolean {
   return grant.revokedAtMs === null && (grant.expiresAtMs === null || grant.expiresAtMs > nowMs);
 }
 const APPROVAL_HISTORY_REQUIRED_SCOPE = "operator.approvals";
-const APPROVALS_DOCS_URL = "https://docs.openclaw.ai/tools/exec-approvals";
 
 function formatResolvedAt(timestampMs: number): string {
   return new Intl.DateTimeFormat(i18n.getLocale(), {
@@ -572,8 +570,7 @@ class ApprovalsPage extends OpenClawLightDomElement {
     return html`
       ${renderSettingsPageHeader({
         title: titleForRoute("approvals"),
-        subtitle: html`${t("approvalHistory.description")}
-        ${renderLearnMoreLink(APPROVALS_DOCS_URL)}`,
+        subtitle: t("approvalHistory.description"),
       })}
       ${renderSettingsWorkspace(body)}
     `;
