@@ -165,7 +165,8 @@ export async function prepareEmbeddedAttemptSystemPrompt(params: {
       context: promptContributionContext,
     });
   const includeMemorySection =
-    !params.activeContextEngine || params.activeContextEngine.info.id === "legacy";
+    !attempt.memoryless &&
+    (!params.activeContextEngine || params.activeContextEngine.info.id === "legacy");
   const prepareToolContextSections = async (
     tools: PromptTools,
     capabilityToolNames: Iterable<string>,

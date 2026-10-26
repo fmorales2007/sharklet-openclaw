@@ -298,6 +298,8 @@ export type PluginHookToolAuthority = {
 };
 
 export type PluginHookAgentContext = {
+  /** Sharklet Memory-less run (F2-09): hooks of memory plugins do not run. */
+  memoryless?: boolean;
   runId?: string;
   jobId?: string;
   trace?: DiagnosticTraceContext;
@@ -1399,6 +1401,8 @@ export type PluginHookRegistration<K extends PluginHookName = PluginHookName> = 
   eligibleTriggers?: readonly PluginHookAgentTrigger[];
   eligibleDispatchKinds?: readonly PluginHookReplyDispatchKind[];
   requiresToolAuthority?: true;
+  /** The plugin declares the "memory" category: its hooks do not run in a Memory-less chat. */
+  memoryPlugin?: true;
   source: string;
 };
 /* oxlint-disable max-lines -- TODO: split this grandfathered oversized file. */

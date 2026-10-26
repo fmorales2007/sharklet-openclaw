@@ -38,6 +38,7 @@ import { resolveConversationCapabilityProfile } from "../conversation-capability
 import { formatDateStamp, resolveUserTimezone } from "../date-time.js";
 import { resolveOpenClawReferencePaths } from "../docs-path.js";
 import { prepareAgentMemoryPrompt } from "../memory-prompt-prepare.js";
+import { isMemorylessEntry } from "../memoryless.js";
 import {
   applyAuthHeaderOverride,
   applyLocalNoAuthHeaderOverride,
@@ -175,6 +176,7 @@ export async function buildPreparedCompactionRuntime(
             sessionId: params.sessionId,
             chatType: params.chatType,
             agentId: sessionAgentId,
+            memoryless: isMemorylessEntry(params.sessionEntry),
             warn: makeBootstrapWarn({
               sessionLabel,
               warn: (message) => log.warn(message),

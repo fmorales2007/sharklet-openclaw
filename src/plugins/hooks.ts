@@ -244,7 +244,24 @@ type SyncHookContext<K extends SyncHookName> = Parameters<SyncHookHandler<K>>[1]
 type SyncHookMessage = PluginHookToolResultPersistEvent["message"];
 type SyncMessageHookStepResult = { message?: SyncHookMessage; block?: true };
 
+function isMemorylessRunContext(ctx: unknown): boolean {
+  return (
+    typeof ctx === "object" && ctx !== null && (ctx as { memoryless?: unknown }).memoryless === true
+  );
+}
+
+/** A Memory-less run never reaches a plugin that declares the "memory" manifest category. */
+function withoutMemoryPluginsForRun<T extends PluginHookRegistration>(
+  hooks: T[],
+  ctx: unknown,
+): T[] {
+  return isMemorylessRunContext(ctx) ? hooks.filter((hook) => hook.memoryPlugin !== true) : hooks;
+}
+
 function isHookContextEligible(hook: PluginHookRegistration, ctx?: unknown): boolean {
+  if (hook.memoryPlugin === true && isMemorylessRunContext(ctx)) {
+    return false;
+  }
   if (hook.hookName === "reply_dispatch" && hook.eligibleDispatchKinds !== undefined) {
     const kind =
       typeof ctx === "object" && ctx !== null && "dispatchKind" in ctx
@@ -755,7 +772,7 @@ export function createHookRunner(
     event: SyncHookEvent<K> & { message: SyncHookMessage },
     ctx: SyncHookContext<K>,
   ): { message: SyncHookMessage; block?: true } | undefined => {
-    const hooks = getHooksForName(registry, hookName);
+    const hooks = withoutMemoryPluginsForRun(getHooksForName(registry, hookName), ctx);
     if (hooks.length === 0) {
       return undefined;
     }
@@ -784,7 +801,10 @@ export function createHookRunner(
     optionsValue: VoidHookRunOptions = {},
     matcherToolName?: string,
   ): Promise<void> {
-    const hooks = getHooksForName(registry, hookName, undefined, matcherToolName);
+    const hooks = withoutMemoryPluginsForRun(
+      getHooksForName(registry, hookName, undefined, matcherToolName),
+      ctx,
+    );
     if (hooks.length === 0) {
       return;
     }
@@ -828,7 +848,10 @@ export function createHookRunner(
     policy: ModifyingHookPolicy<K, TResult> = {},
     matcherToolName?: string,
   ): Promise<TResult | undefined> {
-    const hooks = getHooksForName(registry, hookName, undefined, matcherToolName);
+    const hooks = withoutMemoryPluginsForRun(
+      getHooksForName(registry, hookName, undefined, matcherToolName),
+      ctx,
+    );
     const selectedHooks = policy.includeRegistration
       ? hooks.filter(policy.includeRegistration)
       : hooks;

@@ -128,7 +128,7 @@ export async function runBeforeToolCallHook(args: {
       cwd: args.ctx.cwd,
     });
     if (reason) {
-      return { blocked: true, deniedReason: "memoryless", reason, params };
+      return { blocked: true, kind: "veto", deniedReason: "memoryless", reason, params };
     }
   }
 

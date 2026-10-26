@@ -292,6 +292,7 @@ function createManifestPluginRecord(params: {
   const { candidate, manifestRecord } = params;
   return createPluginRecord({
     id: manifestRecord.id,
+    categories: manifestRecord.categories,
     nativeSessionCatalog:
       manifestRecord.setup?.nativeSessionCatalog ??
       shippedNativeSessionCatalogs.find(({ pluginId }) => pluginId === manifestRecord.id),

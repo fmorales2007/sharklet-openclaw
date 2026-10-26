@@ -30,6 +30,7 @@ type AttemptToolRunFacts = Pick<
   | "senderIsOwner"
   | "scheduledToolPolicy"
   | "approvalReviewerDeviceId"
+  | "memoryless"
   | "currentChannelId"
   | "currentMessagingTarget"
   | "currentThreadTs"
@@ -88,6 +89,7 @@ export function buildEmbeddedAttemptToolRunContext(
     senderIsOwner: params.senderIsOwner,
     scheduledToolPolicy: params.scheduledToolPolicy,
     approvalReviewerDeviceId: params.approvalReviewerDeviceId,
+    memoryless: params.memoryless,
     currentChannelId: params.currentChannelId,
     currentMessagingTarget: params.currentMessagingTarget,
     currentThreadTs: params.currentThreadTs,

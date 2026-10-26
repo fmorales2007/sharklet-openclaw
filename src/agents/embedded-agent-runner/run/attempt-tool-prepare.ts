@@ -27,6 +27,7 @@ import {
   isLocalModelLeanEnabled,
   resolveLocalModelLeanPreserveToolNames,
 } from "../../local-model-lean.js";
+import { MEMORYLESS_DENIED_TOOL_NAMES } from "../../memoryless.js";
 import { resolveModelAuthMode } from "../../model-auth.js";
 import { supportsModelTools } from "../../model-tool-support.js";
 import { recordAgentCleanupFailure } from "../../run-cleanup-timeout.js";
@@ -347,9 +348,15 @@ export async function prepareEmbeddedAttemptToolBase(params: {
           params.markCoreToolStage("attempt:tools-allow");
           return filteredTools;
         })();
-    const toolsRaw = attempt.forceRestartSafeTools
-      ? constructedToolsRaw.filter((tool) => isAgentToolRestartSafe(tool, restartSafetyOptions))
+    // A Memory-less run never sees a memory tool, so the model cannot ask for one.
+    const memoryAwareTools = attempt.memoryless
+      ? constructedToolsRaw.filter(
+          (tool) => !(MEMORYLESS_DENIED_TOOL_NAMES as readonly string[]).includes(tool.name),
+        )
       : constructedToolsRaw;
+    const toolsRaw = attempt.forceRestartSafeTools
+      ? memoryAwareTools.filter((tool) => isAgentToolRestartSafe(tool, restartSafetyOptions))
+      : memoryAwareTools;
     if (attempt.forceRestartSafeTools) {
       log.info(
         `restart-safe recovery tool policy retained ${toolsRaw.length}/${constructedToolsRaw.length} concrete tools`,

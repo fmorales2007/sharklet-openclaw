@@ -424,6 +424,8 @@ export function createToolHookRegistrars(state: PluginRegistryState) {
       ...(hookName === "before_prompt_build" && opts?.requiresToolAuthority === true
         ? { requiresToolAuthority: true }
         : {}),
+      // Read from the manifest category, so no memory plugin has to know about Memory-less.
+      ...(record.categories?.includes("memory") ? { memoryPlugin: true as const } : {}),
       source: record.source,
     } as TypedPluginHookRegistration);
   };

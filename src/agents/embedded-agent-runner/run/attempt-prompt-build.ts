@@ -143,6 +143,7 @@ export async function prepareEmbeddedAttemptPromptAssembly(input: {
     effectivePrompt = effectivePrompt.slice(originContext.text.length).replace(/^\n/, "");
   }
   const hookCtx = {
+    ...(attempt.memoryless ? { memoryless: true } : {}),
     runId: attempt.runId,
     trace: freezeDiagnosticTraceContext(input.diagnosticTrace),
     agentId: input.hookAgentId,

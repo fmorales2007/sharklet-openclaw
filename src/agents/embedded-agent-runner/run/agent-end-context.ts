@@ -112,6 +112,8 @@ export function buildEmbeddedAgentEndContext(params: {
 }): AgentEndContext {
   const run = params.run;
   return {
+    // Memory plugins' agent_end hooks (capture, summaries) skip a Memory-less run.
+    ...(run.memoryless ? { memoryless: true } : {}),
     runId: run.runId,
     trace: params.trace,
     agentId: params.agentId,

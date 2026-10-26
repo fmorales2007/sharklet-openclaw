@@ -346,6 +346,8 @@ type PluginConversationBindingResolvedHandlerRegistration = PluginRegistrationOw
 
 export type PluginRecord = {
   id: string;
+  /** Manifest categories; "memory" marks a plugin a Memory-less run skips (F2-09). */
+  categories?: readonly string[];
   nativeSessionCatalog?: PluginManifestNativeSessionCatalogSetup;
   name: string;
   packageVersion?: string;

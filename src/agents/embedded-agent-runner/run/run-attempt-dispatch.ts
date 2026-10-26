@@ -12,6 +12,7 @@ import { resolveDelegationCapability } from "../../delegation-capability.js";
 import { resolveSessionGitCoauthorPrompt } from "../../git-coauthor-prompt.js";
 import { agentHarnessBuildsOpenClawTools } from "../../harness/selection.js";
 import { appendIncognitoSystemPrompt } from "../../incognito-system-prompt.js";
+import { resolveMemorylessForRun } from "../../memoryless.js";
 import { applyAuthHeaderOverride, applyLocalNoAuthHeaderOverride } from "../../model-auth.js";
 import { recordAdmittedModelRoutingDecision } from "../../model-routing-decision.js";
 import { appendProgressCardSystemPrompt } from "../../progress-card-system-prompt.js";
@@ -316,6 +317,13 @@ export async function prepareAndDispatchEmbeddedRunAttempt(input: {
     throw new Error("embedded attempt reached dispatch without an admitted run context");
   }
   const admittedRunContext = params.admittedRunContext;
+  // The mark is fixed at creation: read it once here and carry it with the run.
+  params.memoryless = resolveMemorylessForRun({
+    config: params.config,
+    agentId: workspaceResolution.agentId,
+    sessionKey: params.sessionKey,
+    storePath: params.sessionTarget?.storePath,
+  });
   if (params.permissionMode) {
     // Attempts narrow this shared run-owned policy before recovery can reuse it.
     params.execOverrides ??= {};

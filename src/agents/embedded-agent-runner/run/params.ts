@@ -237,6 +237,8 @@ export type RunEmbeddedAgentParams = {
   /** Refuse an enabled sandbox that would redirect a review away from its workspace. */
   requireWritableSandbox?: true;
   permissionMode?: SessionEntry["permissionMode"];
+  /** Memory-less run (F2-09), read once at dispatch from the session; never changes mid-run. */
+  memoryless?: boolean;
   sessionRoot?: string;
   agentDir?: string;
   /**

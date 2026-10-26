@@ -58,6 +58,7 @@ export async function prepareEmbeddedAttemptBootstrap(params: {
       sessionId: attempt.sessionId,
       chatType: attempt.chatType,
       agentId: params.setup.sessionAgentId,
+      memoryless: attempt.memoryless,
       warn: bootstrapWarn,
       contextMode: attempt.bootstrapContextMode,
       runKind: attempt.bootstrapContextRunKind,

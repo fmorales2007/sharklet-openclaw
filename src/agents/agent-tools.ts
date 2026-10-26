@@ -243,6 +243,8 @@ type OpenClawCodingToolsOptions = {
   pairedNodeComputerUse?: import("./computer-use-node-capabilities.js").PreparedPairedComputerUse;
   /** Device-scoped operator session allowed to review approvals initiated by this run. */
   approvalReviewerDeviceId?: string;
+  /** Memory-less run (F2-09): the step before each tool call vetoes memory tools and writes. */
+  memoryless?: boolean;
   /** Diagnostic trace context for hook/log correlation during this run. */
   trace?: DiagnosticTraceContext;
   /** What initiated this run (for trigger-specific tool restrictions). */
@@ -1138,6 +1140,7 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
     runId: options?.runId,
     trigger: options?.trigger,
     approvalReviewerDeviceId: options?.approvalReviewerDeviceId,
+    ...(options?.memoryless ? { memoryless: true } : {}),
     channelId: options?.hookChannelId ?? options?.currentChannelId,
     ...(hasRequester ? { requester } : {}),
     ...(turnSourceChannel ? { turnSourceChannel } : {}),

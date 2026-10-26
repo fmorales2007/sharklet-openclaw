@@ -301,6 +301,8 @@ type BootstrapFileResolutionParams = {
   sessionId?: string;
   chatType?: ChatType;
   agentId?: string;
+  /** Memory-less run (F2-09): MEMORY.md stays out of the context. */
+  memoryless?: boolean;
   warn?: (message: string) => void;
   contextMode?: BootstrapContextMode;
   runKind?: BootstrapContextRunKind;
@@ -332,6 +334,7 @@ async function resolveBootstrapFiles(
     sessionKey,
     chatType: params.chatType,
     workspaceDir: params.workspaceDir,
+    memoryless: params.memoryless,
   };
   const workspaceSetupCompleted = await isWorkspaceSetupCompletedForContext(
     params.workspaceDir,
@@ -412,6 +415,7 @@ export async function resolveBootstrapContextForRun(params: {
   sessionId?: string;
   chatType?: ChatType;
   agentId?: string;
+  memoryless?: boolean;
   warn?: (message: string) => void;
   contextMode?: BootstrapContextMode;
   runKind?: BootstrapContextRunKind;

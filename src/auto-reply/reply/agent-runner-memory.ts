@@ -19,6 +19,7 @@ import { runEmbeddedAgentEntry } from "../../agents/embedded-agent-runner/run-en
 import { createDeferredEmbeddedRunLifecycleManager } from "../../agents/embedded-agent-runner/run/deferred-lifecycle-owner.js";
 import type { RunEmbeddedAgentInternalParams } from "../../agents/embedded-agent-runner/run/internal-params.js";
 import { createToolResultPromptProjectionState } from "../../agents/embedded-agent-runner/session-prompt-state.js";
+import { isMemorylessEntry } from "../../agents/memoryless.js";
 import { findModelInCatalog } from "../../agents/model-catalog-lookup.js";
 import { isCliRuntimeAliasForProvider } from "../../agents/model-runtime-aliases.js";
 import { isCliProvider } from "../../agents/model-selection.js";
@@ -1313,7 +1314,11 @@ export async function runMemoryFlushIfNeeded(params: {
   let entry =
     params.sessionEntry ??
     (params.sessionKey ? params.sessionStore?.[params.sessionKey] : undefined);
-  if (entry?.incognito === true || isIncognitoSessionKey(params.sessionKey)) {
+  if (
+    entry?.incognito === true ||
+    isMemorylessEntry(entry) ||
+    isIncognitoSessionKey(params.sessionKey)
+  ) {
     return { sessionEntry: entry, outcome: "skipped" };
   }
   const runtimeParams = {
