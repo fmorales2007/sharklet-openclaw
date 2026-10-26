@@ -1503,6 +1503,7 @@
   "ui/src/lib/sessions/github-publication-controller.ts",
   "ui/src/lib/sessions/grouping.ts",
   "ui/src/lib/sessions/index.ts",
+  "ui/src/lib/sessions/memoryless.ts",
   "ui/src/lib/sessions/navigation-handoff.ts",
   "ui/src/lib/sessions/navigation.ts",
   "ui/src/lib/sessions/paged-session-rows.ts",
