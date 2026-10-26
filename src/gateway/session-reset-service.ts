@@ -1759,6 +1759,8 @@ export async function performGatewaySessionReset(params: {
             category: currentEntry?.category,
             boardFace: currentEntry?.boardFace,
             visibility: currentEntry?.visibility,
+            // Fixed at creation: a reset or /new keeps the mark (F2-09).
+            memoryless: currentEntry?.memoryless,
             displayName: currentEntry?.displayName,
             delivery: currentEntry?.delivery,
             pendingDeliveryNotice: currentEntry?.pendingDeliveryNotice,

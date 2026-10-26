@@ -301,6 +301,8 @@ export async function createGatewaySession(params: {
   pendingProjectGitUrl?: string;
   pendingWorktree?: InternalSessionEntry["pendingWorktree"];
   incognito?: boolean;
+  /** Memory-less chat (F2-09): fixed at creation, inherited by forks and children. */
+  memoryless?: boolean;
   visibility?: SessionVisibility;
   /** Trusted catalog-owned model/runtime pair, persisted and locked together. */
   catalogTarget?: TrustedCatalogSessionTarget;
@@ -659,6 +661,26 @@ export async function createGatewaySession(params: {
   const parentIncognito =
     parentSessionEntry?.incognito === true || isIncognitoSessionKey(canonicalParentSessionKey);
   const incognito = params.incognito === true || parentIncognito;
+  const memoryless = params.memoryless === true || parentSessionEntry?.memoryless === true;
+  if (memoryless && incognito) {
+    return {
+      ok: false,
+      error: errorShape(ErrorCodes.INVALID_REQUEST, "memoryless and incognito cannot be combined"),
+    };
+  }
+  if (
+    params.memoryless === true &&
+    explicitTargetKey &&
+    loadGatewaySessionEntryReadOnly(explicitTargetKey).entry
+  ) {
+    return {
+      ok: false,
+      error: errorShape(
+        ErrorCodes.INVALID_REQUEST,
+        "memoryless is immutable and requires a new session key",
+      ),
+    };
+  }
   if (
     incognito &&
     params.requestingOperatorScopes !== undefined &&
@@ -1329,6 +1351,7 @@ export async function createGatewaySession(params: {
               }
             : {}),
           ...(existingEntry === undefined && incognito ? { incognito: true as const } : {}),
+          ...(existingEntry === undefined && memoryless ? { memoryless: true as const } : {}),
         };
         const initialized = { ...patched, entry: initializedEntry };
         const explicitParentSessionKey =

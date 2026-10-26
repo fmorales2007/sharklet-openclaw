@@ -1318,12 +1318,47 @@ test("concurrent sessions.create requests adopt one canonical keyed session", as
   ).toBe(canonicalSessionId);
 });
 
-test("sessions.create rejects memoryless until F2-09", async () => {
+test("sessions.create creates a memoryless session that lists as memoryless", async () => {
   await createSessionStoreDir();
-  const created = await directSessionReq("sessions.create", { agentId: "main", memoryless: true });
+  const created = await directSessionReq<{ key: string; entry: { memoryless?: true } }>(
+    "sessions.create",
+    { agentId: "main", memoryless: true },
+  );
+  expect(created.ok).toBe(true);
+  expect(created.payload?.entry.memoryless).toBe(true);
+  const listed = await directSessionReq<{ sessions: Array<{ key: string; memoryless?: true }> }>(
+    "sessions.list",
+    {},
+  );
+  expect(listed.payload?.sessions.find((row) => row.key === created.payload?.key)?.memoryless).toBe(
+    true,
+  );
+});
+
+test("sessions.create refuses memoryless together with incognito", async () => {
+  await createSessionStoreDir();
+  const created = await directSessionReq("sessions.create", {
+    agentId: "main",
+    memoryless: true,
+    incognito: true,
+  });
   expect(created.ok).toBe(false);
-  expect(created.error?.message).toContain("not implemented");
-  expect(created.error?.message).toContain("F2-09");
+  expect(created.error?.message).toContain("cannot be combined");
+});
+
+test("sessions.create gives a fork of a memoryless session the same mark", async () => {
+  await createSessionStoreDir();
+  const parent = await directSessionReq<{ key: string }>("sessions.create", {
+    agentId: "main",
+    memoryless: true,
+  });
+  expect(parent.ok).toBe(true);
+  const child = await directSessionReq<{ entry: { memoryless?: true } }>("sessions.create", {
+    agentId: "main",
+    parentSessionKey: parent.payload?.key,
+  });
+  expect(child.ok).toBe(true);
+  expect(child.payload?.entry.memoryless).toBe(true);
 });
 
 test("sessions.create keeps incognito rows process-local through list, spawn, reset, and delete", async () => {
