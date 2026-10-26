@@ -5041,6 +5041,7 @@ export const en: TranslationMap & {
       copyBranch: "Copy branch name",
       copied: "Copied",
       incognito: "Incognito session",
+      memoryless: "Memory-less",
       branches: "Session branches",
       branchSwitchUnavailable: "Branch switch is unavailable while the agent is working.",
       untitledBranch: "Untitled branch",
@@ -5736,6 +5737,7 @@ export const en: TranslationMap & {
     composer: {
       composerInput: "Chat composer",
       placeholder: "Message {name}",
+      memorylessHint: "Memory-less: this chat doesn't read or save memory",
       emptyHint: "Write a message to send.",
       placeholderWithAttachments: "Add a message or paste more images...",
       offlineHint: "Offline — messages will be queued and sent when the connection returns.",

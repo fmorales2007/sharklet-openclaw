@@ -348,6 +348,18 @@ openclaw-chat-pane {
   color: var(--muted);
 }
 
+/* Memory-less chats say so in words, always: a mark that needs a hover is not a mark. */
+.chat-pane__memoryless {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .chat-pane__incognito svg,
 .chat-pane__workspace-chip svg {
   width: 14px;

@@ -28,6 +28,7 @@ import "../../../components/workspace-icon.ts";
 import { t } from "../../../i18n/index.ts";
 import { formatRelativeTimestamp } from "../../../lib/format.ts";
 import { resolveSessionDisplayName } from "../../../lib/session-display.ts";
+import { isMemorylessSession } from "../../../lib/sessions/memoryless.ts";
 import {
   areUiSessionKeysEquivalent,
   resolveUiSessionNavigationParentKey,
@@ -439,6 +440,16 @@ export function renderChatPaneHeader(props: ChatPaneHeaderProps) {
                 aria-label=${t("chat.sessionHeader.incognito")}
                 title=${t("chat.sessionHeader.incognito")}
                 >${icons.lock}</span
+              >`
+            : nothing
+        }
+        ${
+          isMemorylessSession(props.session)
+            ? html`<span
+                class="chat-pane__memoryless"
+                data-test-id="memoryless-mark"
+                title=${t("chat.composer.memorylessHint")}
+                >${t("chat.sessionHeader.memoryless")}</span
               >`
             : nothing
         }
