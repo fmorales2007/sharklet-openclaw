@@ -159,9 +159,7 @@ suite.define(() => {
       await page.goto(`${suite.server.baseUrl}meetings`);
       const view = page.locator("openclaw-meetings-page");
       await view.getByRole("heading", { name: "Your meeting notes, together" }).waitFor();
-      expect(
-        await view.getByRole("link", { name: "Set up meeting transcripts" }).getAttribute("href"),
-      ).toBe("https://docs.openclaw.ai/cli/transcripts");
+      expect(await view.getByRole("link", { name: "Set up meeting transcripts" }).count()).toBe(0);
       await gateway.setMethodResponse("transcripts.list", {
         __mockError: { code: "UNAVAILABLE", message: "Meetings temporarily unavailable" },
       });
