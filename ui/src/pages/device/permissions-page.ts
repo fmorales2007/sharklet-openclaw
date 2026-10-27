@@ -4,7 +4,6 @@ import { titleForRoute } from "../../app-navigation.ts";
 import { applicationContext, type ApplicationContext } from "../../app/context.ts";
 import type { NativeDeviceSettingsSnapshot } from "../../app/native-device-settings.ts";
 import {
-  renderLearnMoreLink,
   renderSettingsEmpty,
   renderSettingsPage,
   renderSettingsPageHeader,
@@ -128,8 +127,11 @@ class DevicePermissionsPage extends OpenClawLightDomElement {
     return html`
       ${renderSettingsPageHeader({
         title: titleForRoute("device-permissions"),
-        subtitle: html`${t(snapshot?.device.platform === "ios" ? "configPage.deviceSettings.permissionsIntroIos" : "configPage.deviceSettings.permissionsIntro")}
-        ${renderLearnMoreLink(snapshot?.device.platform === "ios" ? "https://docs.openclaw.ai/platforms/ios" : "https://docs.openclaw.ai/platforms/macos")}`,
+        subtitle: t(
+          snapshot?.device.platform === "ios"
+            ? "configPage.deviceSettings.permissionsIntroIos"
+            : "configPage.deviceSettings.permissionsIntro",
+        ),
       })}
       ${renderSettingsWorkspace(renderSettingsPage(body))}
     `;
