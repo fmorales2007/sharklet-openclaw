@@ -4,7 +4,6 @@ import { state } from "lit/decorators.js";
 import { titleForRoute } from "../../app-navigation.ts";
 import { applicationContext, type ApplicationContext } from "../../app/context.ts";
 import {
-  renderLearnMoreLink,
   renderSettingsPage,
   renderSettingsPageHeader,
   renderSettingsRow,
@@ -172,8 +171,7 @@ class LabsPage extends OpenClawLightDomElement {
     return html`
       ${renderSettingsPageHeader({
         title: titleForRoute("labs"),
-        subtitle: html`${t("labsPage.intro")}
-        ${renderLearnMoreLink("https://docs.openclaw.ai/concepts/experimental-features")}`,
+        subtitle: t("labsPage.intro"),
       })}
       ${renderSettingsWorkspace(body)}
     `;
