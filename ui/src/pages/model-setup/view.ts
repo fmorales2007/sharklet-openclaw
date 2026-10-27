@@ -2,7 +2,6 @@ import { html, nothing, type TemplateResult } from "lit";
 import type { SystemAgentSetupDetectResult } from "../../api/types.ts";
 import { subtitleForRoute, titleForRoute } from "../../app-navigation.ts";
 import { icons } from "../../components/icons.ts";
-import { renderLearnMoreLink } from "../../components/settings-ui.ts";
 import { renderSettingsWorkspace } from "../../components/settings-workspace.ts";
 import { t } from "../../i18n/index.ts";
 import { formatUiExternalText } from "../../lib/format-error.ts";
@@ -20,8 +19,6 @@ import type {
 import { activationTargetId } from "./state.ts";
 import { renderModelSetupSuccessDialog } from "./success-dialog.ts";
 import { renderModelSetupWizard } from "./wizard-view.ts";
-
-const MODEL_SETUP_DOCS_URL = "https://docs.openclaw.ai/concepts/model-providers";
 
 type Candidate = SystemAgentSetupDetectResult["candidates"][number];
 type AuthOption = NonNullable<SystemAgentSetupDetectResult["authOptions"]>[number];
@@ -682,9 +679,7 @@ export function renderModelSetup(props: ModelSetupViewProps): TemplateResult {
     <section class="content-header">
       <div>
         <div class="page-title">${titleForRoute("model-setup")}</div>
-        <div class="page-subtitle">
-          ${subtitleForRoute("model-setup")} ${renderLearnMoreLink(MODEL_SETUP_DOCS_URL)}
-        </div>
+        <div class="page-subtitle">${subtitleForRoute("model-setup")}</div>
       </div>
     </section>
     ${renderSettingsWorkspace(content)}
