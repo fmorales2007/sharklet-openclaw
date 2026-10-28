@@ -6,8 +6,6 @@ import { titleForRoute } from "../../app-navigation.ts";
 import { applicationContext, type ApplicationContext } from "../../app/context.ts";
 import { showConfirmDialog } from "../../components/confirm-dialog.ts";
 import {
-  renderDocsLink,
-  renderLearnMoreLink,
   renderSettingsEmpty,
   renderSettingsPage,
   renderSettingsPageHeader,
@@ -43,7 +41,6 @@ import "./cloud-worker-snapshots.ts";
 
 registerSettingsEnglish();
 
-const CLOUD_WORKERS_DOCS_URL = "https://docs.openclaw.ai/gateway/cloud-workers";
 type ProfileSummary = NonNullable<EnvironmentsListResult["profiles"]>[number];
 type EditorState = { kind: "add" } | { kind: "edit"; profileId: string } | null;
 
@@ -426,8 +423,7 @@ class CloudWorkersPage extends OpenClawLightDomElement {
         }),
         renderSettingsRow({
           title: t("cloudWorkersPage.fields.backend"),
-          description: html`${t("cloudWorkersPage.fields.backendHelp")}
-          ${renderDocsLink(CLOUD_WORKERS_DOCS_URL, t("cloudWorkersPage.providerList"))}`,
+          description: t("cloudWorkersPage.fields.backendHelp"),
           control: html`<input
             class="settings-input mono"
             aria-label=${t("cloudWorkersPage.fields.backend")}
@@ -681,7 +677,7 @@ class CloudWorkersPage extends OpenClawLightDomElement {
     return html`
       ${renderSettingsPageHeader({
         title: titleForRoute("cloud-workers"),
-        subtitle: html`${t("cloudWorkersPage.intro")} ${renderLearnMoreLink(CLOUD_WORKERS_DOCS_URL)}`,
+        subtitle: t("cloudWorkersPage.intro"),
       })}
       ${renderSettingsWorkspace(html`
         ${renderSettingsPage(
