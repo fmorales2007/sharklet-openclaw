@@ -232,19 +232,6 @@ export function renderAgentChannels(params: {
               title: entry.label,
               description: metaParts.join(" · "),
               control: html`
-                ${
-                  summary.configured === 0
-                    ? html`
-                        <a
-                          class="settings-row__value"
-                          href="https://docs.openclaw.ai/channels"
-                          target="_blank"
-                          rel="noopener"
-                          >${t("agents.channels.setupGuide")}</a
-                        >
-                      `
-                    : nothing
-                }
                 ${renderSettingsStatus({
                   kind: summary.connected > 0 ? "ok" : summary.total ? "warn" : "muted",
                   label: status,
