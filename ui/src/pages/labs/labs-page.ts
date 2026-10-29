@@ -13,7 +13,6 @@ import {
 import { renderSettingsWorkspace } from "../../components/settings-workspace.ts";
 import { t } from "../../i18n/index.ts";
 import { resolveEditableSnapshotConfig } from "../../lib/config/config-state-model.ts";
-import { buildExternalLinkRel, EXTERNAL_LINK_TARGET } from "../../lib/external-link.ts";
 import { formatUiError } from "../../lib/format-error.ts";
 import { GatewayPageController } from "../../lit/gateway-page-controller.ts";
 import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
@@ -135,9 +134,7 @@ class LabsPage extends OpenClawLightDomElement {
     );
     const description = html`
       ${feature.description()}
-      <a href=${feature.docsUrl} target=${EXTERNAL_LINK_TARGET} rel=${buildExternalLinkRel()}
-        >${t("labsPage.documentation")}</a
-      >${feature.restartHint ? html` <span>${feature.restartHint()}</span>` : nothing}
+      ${feature.restartHint ? html` <span>${feature.restartHint()}</span>` : nothing}
       <span>${defaultDescription}</span>
     `;
     return renderSettingsToggleRow({
