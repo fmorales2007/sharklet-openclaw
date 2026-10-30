@@ -476,16 +476,23 @@ function writeState(file, state) {
 // Vitest too: --changed on a shared file runs nearly the whole UI suite here
 // (6 min) and about 8 tests fail only on Windows, so every UI task blocked;
 // sharklet-ui-tests.yml runs them on Linux each keep (owner's call, 2026-10-24).
+// With CI off (out of Actions minutes, 2026-10-26) they run here again: no
+// other place checks types and tests then.
 const CI_MIRROR = ["corepack pnpm lint:sharklet"];
 const CI_ONLY = /^\s*(corepack pnpm tsgo:|node scripts\/run-vitest\.mjs )/u;
 function fastGateOf(task) {
   const own = (task.fastGate ?? "")
     .split("&&")
-    .filter((step) => step.trim() && !CI_ONLY.test(step))
+    .filter((step) => step.trim() && (CI === "off" || !CI_ONLY.test(step)))
     .join("&&")
     .trim();
   return [own, ...CI_MIRROR.filter((step) => !own.includes(step))].filter(Boolean).join(" && ");
 }
+
+// A gate's vitest can stay silent for over 5 minutes on this PC while it runs
+// a large --changed set (the whole UI suite took 35 min on 2026-10-30), and
+// run-vitest's default watchdog killed such runs as stalls.
+const GATE_ENV = { OPENCLAW_VITEST_NO_OUTPUT_TIMEOUT_MS: "1200000" };
 
 // On this Windows host vitest sometimes fails to start its worker pool or
 // stalls with no output until run-vitest kills it (F2-07 and F2-02 discards,
@@ -505,10 +512,10 @@ function gate(wt, command, start, logFile) {
   }
   // One rerun on a vitest fault; if it stalls again the task waits for a
   // person instead of being handed a fix it cannot make.
-  let result = sh(wt, checkCommand(command, "fastGate"), { LOOP_START: start });
+  let result = sh(wt, checkCommand(command, "fastGate"), { ...GATE_ENV, LOOP_START: start });
   if (toolFault(result)) {
     console.log("[loop] vitest stalled or could not start; running the gate once more");
-    result = sh(wt, checkCommand(command, "fastGate"), { LOOP_START: start });
+    result = sh(wt, checkCommand(command, "fastGate"), { ...GATE_ENV, LOOP_START: start });
   }
   fs.writeFileSync(logFile, `${result.stdout}\n${result.stderr}`);
   if (toolFault(result)) {
@@ -1314,7 +1321,8 @@ function metricCheck(name) {
     });
     return new Result(20, "crash", "the experiment left uncommitted changes");
   }
-  const runGuard = () => sh(wt, checkCommand(program.guard, "guard"), { LOOP_START: ms.start });
+  const runGuard = () =>
+    sh(wt, checkCommand(program.guard, "guard"), { ...GATE_ENV, LOOP_START: ms.start });
   let guard = touchesProtected(wt, ms.start) ? { status: 1 } : runGuard();
   if (toolFault(guard)) {
     console.log("[loop] vitest stalled or could not start; running the guard once more");
