@@ -576,12 +576,15 @@ describe("Control UI Vite config", () => {
     const netPolicyPackageIndex = aliases.findIndex(
       (alias) => alias.find === "@openclaw/net-policy",
     );
+    // Replacements are OS paths; compare them with forward slashes on Windows too.
+    const posix = (replacement: string) => replacement.replaceAll("\\", "/");
     const netPolicyWildcardIndex = aliases.findIndex(
       (alias) =>
-        alias.find instanceof RegExp && alias.replacement.includes("packages/net-policy/src/$1"),
+        alias.find instanceof RegExp &&
+        posix(alias.replacement).includes("packages/net-policy/src/$1"),
     );
     const broadOpenClawWildcardIndex = aliases.findIndex(
-      (alias) => alias.find instanceof RegExp && alias.replacement.includes("extensions/$1"),
+      (alias) => alias.find instanceof RegExp && posix(alias.replacement).includes("extensions/$1"),
     );
 
     expect(netPolicyIpIndex).toBeGreaterThanOrEqual(0);
