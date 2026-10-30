@@ -32,7 +32,8 @@ describe("isKnownWorkspacePath", () => {
     const canonicalWorkspace = path.join(container, "canonical-workspace");
     const workspaceAlias = path.join(container, "workspace-alias");
     await fs.mkdir(path.join(canonicalWorkspace, "packages", "app"), { recursive: true });
-    await fs.symlink(canonicalWorkspace, workspaceAlias);
+    // A junction needs no symlink privilege on Windows; other platforms ignore the type.
+    await fs.symlink(canonicalWorkspace, workspaceAlias, "junction");
 
     const approvedCanonicalRoot = await fs.realpath(workspaceAlias);
     const canonicalFolder = path.join(approvedCanonicalRoot, "packages", "app");
