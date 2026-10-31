@@ -8,17 +8,10 @@ import { renderApps } from "./view.ts";
 
 const EXPECTED_EXTERNAL_HREFS = [
   "https://apps.apple.com/app/openclaw-ai-that-does-things/id6780396132",
-  "https://docs.openclaw.ai/platforms/ios",
   "https://play.google.com/store/apps/details?id=ai.openclaw.app",
-  "https://docs.openclaw.ai/platforms/android",
-  "https://docs.openclaw.ai/platforms/ios",
-  "https://docs.openclaw.ai/platforms/android",
   "https://github.com/openclaw/openclaw/releases",
-  "https://docs.openclaw.ai/platforms/macos",
   "https://github.com/openclaw/openclaw-windows-node/releases/latest",
-  "https://docs.openclaw.ai/platforms/windows",
   "https://github.com/openclaw/openclaw/releases",
-  "https://docs.openclaw.ai/platforms/linux",
   "https://chromewebstore.google.com/detail/openclaw/kcdjddhmeafeomebliikmbpblkmkfoig",
   "https://clawhub.ai",
   "https://discord.gg/clawd",
