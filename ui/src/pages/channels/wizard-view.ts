@@ -8,7 +8,6 @@ import {
 } from "../../components/wizard-step-controls.ts";
 import { t } from "../../i18n/index.ts";
 import "../../components/modal-dialog.ts";
-import { channelDocsUrl } from "./hub-meta.ts";
 import type { ChannelWizardState, ChannelWizardStep } from "./wizard-controller.ts";
 
 type ChannelWizardViewProps = {
@@ -268,17 +267,6 @@ export function renderChannelWizard(
             <h2>${t("channels.setup.title", { channel: label })}</h2>
             <div class="muted channels-wizard__subtitle">
               <span>${t("channels.setup.subtitle")}</span>
-              ${
-                channel
-                  ? html`<a
-                      class="channels-wizard__link"
-                      href=${channelDocsUrl(channel)}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                      >${t("channels.setup.viewDocs")}</a
-                    >`
-                  : nothing
-              }
             </div>
           </div>
         </div>
