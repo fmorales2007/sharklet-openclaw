@@ -172,11 +172,6 @@ const APP_SECTIONS: readonly AppSection[] = [
             href: "https://chromewebstore.google.com/detail/openclaw/kcdjddhmeafeomebliikmbpblkmkfoig",
             label: () => t("appsPage.ctaChromeWebStore"),
           },
-          {
-            kind: "external",
-            href: "https://docs.openclaw.ai/tools/chrome-extension",
-            label: () => t("appsPage.ctaSetupGuide"),
-          },
         ],
       },
       {
