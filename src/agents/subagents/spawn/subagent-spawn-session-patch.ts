@@ -195,6 +195,8 @@ export async function createInitialSubagentSession(params: {
             }
           : {}),
         ...childSessionIdentity,
+        // Memory-less is fixed for the chat's whole tree (ADR-006 §7).
+        ...(parentEntry?.memoryless === true ? { memoryless: true as const } : {}),
         ...(parentEntry?.skillLibrarySelections
           ? {
               skillLibrarySelections: parentEntry.skillLibrarySelections.map((selection) => ({
