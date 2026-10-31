@@ -56,3 +56,10 @@ describe("isMemorylessEntry", () => {
     expect(isMemorylessEntry(undefined)).toBe(false);
   });
 });
+
+// ADR-006 §7 / F2-09 decision 3: memory-core's "sessions" source indexes transcripts without
+// reading session entries (incognito is not excluded there either), so excluding Memory-less
+// transcripts needs a new SDK surface. Deferred to F2-16, which already skips Memory-less for dreaming.
+describe("memory-core sessions source", () => {
+  it.skip("does not index transcripts of Memory-less sessions (F2-16)", () => {});
+});
