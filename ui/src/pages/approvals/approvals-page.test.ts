@@ -120,10 +120,8 @@ describe("ApprovalsPage", () => {
     await settle(page);
 
     expect(request).toHaveBeenNthCalledWith(1, "approval.history", { limit: 50 });
-    const docsLink = page.querySelector<HTMLAnchorElement>(".page-subtitle a");
-    expect(docsLink?.textContent?.trim()).toBe("Learn more");
+    expect(page.querySelector(".page-subtitle a")).toBeNull();
     expect(page.querySelector(".settings-page__intro")).toBeNull();
-    expect(docsLink?.href).toBe("https://docs.openclaw.ai/tools/exec-approvals");
     expect(page.querySelectorAll(".approval-history-table tbody tr")).toHaveLength(1);
     expect(page.querySelector(".approval-history-table")?.textContent).toContain("agent:main:test");
     expect(page.querySelector(".approval-history-table")?.textContent).toContain("echo first");

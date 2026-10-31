@@ -4,7 +4,6 @@ import type { SecretStoreEntry } from "../../../../packages/gateway-protocol/src
 import { icon } from "../../components/icons.ts";
 import "../../components/modal-dialog.ts";
 import {
-  renderDocsLink,
   renderSettingsEmpty,
   renderSettingsLoadingSkeleton,
   renderSettingsPage,
@@ -53,7 +52,6 @@ type SecretsStoreViewProps = {
   onDelete: (entry: SecretStoreEntry) => void;
 };
 
-const DOCS_URL = "https://docs.openclaw.ai/gateway/secrets#shared-secret-store";
 const SECRET_MASK = "••••••••";
 
 function updatedLabel(entry: SecretStoreEntry): string {
@@ -114,9 +112,7 @@ function renderTable(props: SecretsStoreViewProps): TemplateResult {
   }
   if (!props.entries.length) {
     return html`
-      <div class="secrets-store__empty">
-        ${renderSettingsEmpty(t("tabs.secrets"))} ${renderDocsLink(DOCS_URL, t("common.docs"))}
-      </div>
+      <div class="secrets-store__empty">${renderSettingsEmpty(t("tabs.secrets"))}</div>
     `;
   }
   return html`

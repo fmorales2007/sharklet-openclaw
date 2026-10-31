@@ -222,12 +222,7 @@ describe("AppSidebar footer identity menu", () => {
       [...(helpRow?.querySelectorAll('wa-dropdown-item[slot="submenu"] a[href]') ?? [])].map(
         (link) => link.getAttribute("href"),
       ),
-    ).toEqual([
-      "https://docs.openclaw.ai",
-      "https://docs.openclaw.ai/help",
-      "https://discord.gg/clawd",
-      "https://docs.openclaw.ai/releases",
-    ]);
+    ).toEqual(["https://discord.gg/clawd"]);
 
     expect(helpRow?.textContent).toContain("Docs & community");
 

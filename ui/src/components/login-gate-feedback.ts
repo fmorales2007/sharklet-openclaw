@@ -69,7 +69,6 @@ export type LoginFailureFeedback = {
   primaryCommand?: string;
   refreshAction?: { label: string };
   steps: LoginFailureStep[];
-  docsHref: string;
   rawError: string;
 };
 
@@ -85,7 +84,6 @@ function buildFeedback(params: {
   tone?: LoginFailureTone;
   field?: LoginFormField;
   rawError: string;
-  docsHref?: string;
   titleKey: string;
   summaryKey?: string;
   primaryCommand?: string;
@@ -93,7 +91,6 @@ function buildFeedback(params: {
   stepParams?: Record<string, string>;
   refreshAction?: { label: string };
 }): LoginFailureFeedback {
-  const docsHref = params.docsHref ?? "https://docs.openclaw.ai/web/dashboard";
   const rawError = redactLoginFailureError(params.rawError);
   return {
     kind: params.kind,
@@ -109,7 +106,6 @@ function buildFeedback(params: {
         ? { text: t(step, params.stepParams), commands: [] }
         : { text: t(step.key, params.stepParams), commands: step.commands },
     ),
-    docsHref,
     rawError,
   };
 }
@@ -136,7 +132,6 @@ export function resolveLoginFailureFeedback(
         "login.failure.profileUnavailable.stepRetry",
         "login.failure.profileUnavailable.stepAdmin",
       ],
-      docsHref: "https://docs.openclaw.ai/concepts/user-model#gateway-profile-and-github-credit",
     });
   }
 
@@ -150,7 +145,6 @@ export function resolveLoginFailureFeedback(
         "login.failure.verifiedUserRequired.stepIdentity",
         "login.failure.verifiedUserRequired.stepSharedSecret",
       ],
-      docsHref: "https://docs.openclaw.ai/gateway/operator-scopes",
     });
   }
 
@@ -163,7 +157,6 @@ export function resolveLoginFailureFeedback(
       summaryKey: "chat.sidebar.serverUpdatedRefresh",
       refreshAction: { label: t("login.failure.protocol.refresh") },
       stepKeys: [],
-      docsHref: "https://docs.openclaw.ai/web/control-ui",
     });
   }
 
@@ -173,7 +166,6 @@ export function resolveLoginFailureFeedback(
       kind: "pairing-required",
       tone: "pending",
       rawError,
-      docsHref: "https://docs.openclaw.ai/web/control-ui#device-pairing-first-connection",
       titleKey:
         pairing.kind === "scope-upgrade-pending"
           ? "login.failure.pairing.scopeTitle"
@@ -223,7 +215,6 @@ export function resolveLoginFailureFeedback(
     return buildFeedback({
       kind: "insecure-context",
       rawError,
-      docsHref: "https://docs.openclaw.ai/web/control-ui#insecure-http",
       titleKey: "login.failure.insecure.title",
       summaryKey: "login.failure.insecure.summary",
       stepKeys: ["login.failure.insecure.stepHttps", "login.failure.insecure.stepAvoidDisable"],
@@ -237,8 +228,6 @@ export function resolveLoginFailureFeedback(
     return buildFeedback({
       kind: "origin-not-allowed",
       rawError,
-      docsHref:
-        "https://docs.openclaw.ai/web/control-ui/development#debugging%2Ftesting%3A-dev-server-%2B-remote-gateway",
       titleKey: "login.failure.origin.title",
       summaryKey: "login.failure.origin.summary",
       stepKeys: [
@@ -253,8 +242,6 @@ export function resolveLoginFailureFeedback(
     return buildFeedback({
       kind: "protocol-mismatch",
       rawError,
-      docsHref:
-        "https://docs.openclaw.ai/web/control-ui/development#debugging%2Ftesting%3A-dev-server-%2B-remote-gateway",
       titleKey: "login.failure.protocol.title",
       summaryKey: "login.failure.protocol.summary",
       refreshAction: { label: t("login.failure.protocol.refresh") },
@@ -279,7 +266,6 @@ export function resolveLoginFailureFeedback(
         "login.failure.trustedProxy.stepHeaders",
         "login.failure.trustedProxy.stepNoToken",
       ],
-      docsHref: "https://docs.openclaw.ai/gateway/trusted-proxy-auth",
     });
   }
   if (authHintKind === "required") {

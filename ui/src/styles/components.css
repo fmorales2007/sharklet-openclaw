@@ -709,10 +709,6 @@ openclaw-session-owner-chip {
   color: var(--muted);
 }
 
-.login-gate__failure-docs {
-  flex: 0 0 auto;
-}
-
 /* ── First-run help (no failure yet) ── */
 
 .login-gate__help {
@@ -740,11 +736,6 @@ openclaw-session-owner-chip {
 
 .login-gate__steps li:last-child {
   margin-bottom: 0;
-}
-
-.login-gate__docs {
-  margin-top: 10px;
-  font-size: 12px;
 }
 
 /* Phones (matches the layout.mobile.css breakpoint). The gate renders outside

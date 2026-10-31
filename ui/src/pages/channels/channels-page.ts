@@ -11,7 +11,6 @@ import { applicationContext, type ApplicationContext } from "../../app/context.t
 import { resolveControlUiAuthHeader } from "../../app/control-ui-auth.ts";
 import { hasOperatorAdminAccess, hasOperatorPairingAccess } from "../../app/operator-access.ts";
 import { loadSettings, patchSettings } from "../../app/settings.ts";
-import { renderLearnMoreLink } from "../../components/settings-ui.ts";
 import { renderSettingsWorkspace } from "../../components/settings-workspace.ts";
 import { t } from "../../i18n/index.ts";
 import { resolveChannelPairingAuthSignature } from "../../lib/channels/index.ts";
@@ -35,7 +34,6 @@ import { ChannelWizardHost } from "./wizard-host.ts";
 
 type NostrProfileFormState = ReturnType<typeof createNostrProfileFormState> | null;
 const CHANNEL_PAIRING_POLL_INTERVAL_MS = 30_000;
-const CHANNELS_DOCS_URL = "https://docs.openclaw.ai/channels";
 
 type NostrOperation = {
   scope: GatewayConnectionScope;
@@ -653,9 +651,7 @@ class ChannelsPage extends OpenClawLightDomElement {
       <section class="content-header">
         <div>
           <div class="page-title">${titleForRoute("channels")}</div>
-          <div class="page-subtitle">
-            ${subtitleForRoute("channels")} ${renderLearnMoreLink(CHANNELS_DOCS_URL)}
-          </div>
+          <div class="page-subtitle">${subtitleForRoute("channels")}</div>
         </div>
       </section>
       ${renderSettingsWorkspace(

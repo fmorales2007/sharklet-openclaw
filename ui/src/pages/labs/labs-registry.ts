@@ -9,7 +9,6 @@ export type LabFeature = {
   id: string;
   title: () => string;
   description: () => string;
-  docsUrl: string;
   /** Leaf whose value decides whether the row reads as on. */
   configPath: readonly [string, ...string[]];
   /**
@@ -75,7 +74,6 @@ export const LAB_FEATURES = [
     id: "codeMode",
     title: () => t("labsPage.codeMode.title"),
     description: () => t("labsPage.codeMode.description"),
-    docsUrl: "https://docs.openclaw.ai/tools/code-mode",
     configPath: ["tools", "codeMode", "enabled"],
     // The on position writes the "auto" tier, never `true`: Labs offers
     // Auto/Off, and force-on for unevaluated models stays a config-only choice.
@@ -91,7 +89,6 @@ export const LAB_FEATURES = [
     id: "swarm",
     title: () => t("labsPage.swarm.title"),
     description: () => t("labsPage.swarm.description"),
-    docsUrl: "https://docs.openclaw.ai/tools/swarm",
     configPath: ["tools", "swarm", "enabled"],
     onValue: true,
     offValue: false,
@@ -107,7 +104,6 @@ export const LAB_FEATURES = [
     id: "toolSearch",
     title: () => t("labsPage.toolSearch.title"),
     description: () => t("labsPage.toolSearch.description"),
-    docsUrl: "https://docs.openclaw.ai/tools/tool-search",
     configPath: ["tools", "toolSearch", "enabled"],
     onValue: true,
     offValue: false,
@@ -128,7 +124,6 @@ export const LAB_FEATURES = [
     id: "loopDetection",
     title: () => t("labsPage.loopDetection.title"),
     description: () => t("labsPage.loopDetection.description"),
-    docsUrl: "https://docs.openclaw.ai/tools/loop-detection",
     configPath: ["tools", "loopDetection", "enabled"],
     onValue: true,
     offValue: false,
@@ -144,7 +139,6 @@ export const LAB_FEATURES = [
     id: "localModelLean",
     title: () => t("labsPage.localModelLean.title"),
     description: () => t("labsPage.localModelLean.description"),
-    docsUrl: "https://docs.openclaw.ai/gateway/local-models",
     configPath: ["agents", "defaults", "experimental", "localModelLean"],
     onValue: true,
     offValue: false,
@@ -158,7 +152,6 @@ export const LAB_FEATURES = [
     id: "cliAgents",
     title: () => t("labsPage.cliAgents.title"),
     description: () => t("labsPage.cliAgents.description"),
-    docsUrl: "https://docs.openclaw.ai/gateway/configuration-reference#gateway",
     configPath: ["gateway", "cliAgents", "enabled"],
     onValue: true,
     offValue: false,
@@ -172,7 +165,6 @@ export const LAB_FEATURES = [
     id: "customPluginUi",
     title: () => t("labsPage.customPluginUi.title"),
     description: () => t("labsPage.customPluginUi.description"),
-    docsUrl: "https://docs.openclaw.ai/plugins/feature-plugins",
     configPath: ["gateway", "controlUi", "experimental", "customPlugins"],
     onValue: true,
     offValue: false,
@@ -186,7 +178,6 @@ export const LAB_FEATURES = [
     id: "auditMessages",
     title: () => t("labsPage.auditMessages.title"),
     description: () => t("labsPage.auditMessages.description"),
-    docsUrl: "https://docs.openclaw.ai/gateway/audit",
     // Not a boolean: `off` | `direct` | `all`. Labs offers the conservative
     // `direct`, so turning it on cannot start recording group or unknown
     // conversations that the operator never opted into.
@@ -205,7 +196,6 @@ export const LAB_FEATURES = [
     id: "hostDesktop",
     title: () => t("labsPage.hostDesktop.title"),
     description: () => t("labsPage.hostDesktop.description"),
-    docsUrl: "https://docs.openclaw.ai/gateway/configuration-reference#desktop",
     configPath: ["desktop", "host", "enabled"],
     onValue: true,
     offValue: false,
@@ -220,7 +210,6 @@ export const LAB_FEATURES = [
     id: "workerDesktop",
     title: () => t("labsPage.workerDesktop.title"),
     description: () => t("labsPage.workerDesktop.description"),
-    docsUrl: "https://docs.openclaw.ai/gateway/cloud-workers#desktop-interactive",
     configPath: ["cloudWorkers", "desktop"],
     onValue: true,
     offValue: false,

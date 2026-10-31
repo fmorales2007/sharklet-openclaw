@@ -202,13 +202,6 @@ describe("renderMemoryOverview", () => {
       "promotes the keepers into long-term memory (MEMORY.md), and writes the dream diary",
     );
     expect(phaseRows.every((row) => row.textContent?.includes("0 3 * * *"))).toBe(true);
-
-    const docs = container.querySelector<HTMLAnchorElement>(
-      'a[href="https://docs.openclaw.ai/concepts/dreaming"]',
-    );
-    expect(docs?.textContent).toContain("Open dreaming guide");
-    expect(docs?.target).toBe("_blank");
-    expect(docs?.rel).toBe("noreferrer noopener");
   });
 
   it("reports an enabled phase without its managed cron as not scheduled", () => {

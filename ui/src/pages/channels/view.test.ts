@@ -600,34 +600,6 @@ describe("channel detail", () => {
     },
   );
 
-  it("links every channel to its docs page", () => {
-    const props = createProps({
-      ts: Date.now(),
-      channelOrder: ["telegram"],
-      channelLabels: { telegram: "Telegram" },
-      channels: { telegram: { configured: true } },
-      channelAccounts: {},
-      channelDefaultAccountId: {},
-    });
-
-    const container = document.createElement("div");
-    render(
-      renderChannelDetail({
-        channelId: "telegram",
-        label: "Telegram",
-        props,
-        data: {},
-        onClose: () => {},
-        onSetup: () => {},
-      }),
-      container,
-    );
-
-    const docs = container.querySelector<HTMLAnchorElement>(".channels-detail__header-actions a");
-    expect(docs?.href).toBe("https://docs.openclaw.ai/channels/telegram");
-    expect(docs?.textContent?.trim()).toBe("Docs");
-  });
-
   it.each([
     ["discord", "Discord", []],
     ["slack", "Slack", []],

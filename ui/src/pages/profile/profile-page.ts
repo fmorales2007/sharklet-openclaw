@@ -24,7 +24,6 @@ import { hasOperatorWriteAccess } from "../../app/operator-access.ts";
 import type { AuthenticatedUser } from "../../app/user-profile.ts";
 import { resolveCurrentSelfUser } from "../../app/user-profile.ts";
 import {
-  renderLearnMoreLink,
   renderSettingsEmpty,
   renderSettingsGroup,
   renderSettingsLoadingSkeleton,
@@ -48,8 +47,6 @@ import { userProfileAvatarUrl } from "./profile-avatar-url.ts";
 import { renderProfileHero } from "./profile-hero.ts";
 
 registerModelAccountsEnglish();
-
-const PROFILE_DOCS_URL = "https://docs.openclaw.ai/concepts/user-model";
 
 type IdentityChange =
   | { kind: "display-name" }
@@ -412,9 +409,7 @@ export class ProfilePage extends OpenClawLightDomElement {
       <section class="content-header">
         <div>
           <div class="page-title">${titleForRoute("profile")}</div>
-          <div class="page-subtitle">
-            ${subtitleForRoute("profile")} ${renderLearnMoreLink(PROFILE_DOCS_URL)}
-          </div>
+          <div class="page-subtitle">${subtitleForRoute("profile")}</div>
         </div>
         ${
           this.selfUser
