@@ -315,15 +315,6 @@ function renderFormBody(params: { props: LoginGateProps; feedback: LoginFailureF
                   </li>
                   <li>${t("connection.help.step3")}</li>
                 </ol>
-                <div class="login-gate__docs">
-                  <a
-                    class="session-link"
-                    href="https://docs.openclaw.ai/web/dashboard"
-                    target=${EXTERNAL_LINK_TARGET}
-                    rel=${buildExternalLinkRel()}
-                    >${t("connection.help.docsLink")}</a
-                  >
-                </div>
               </details>
             `
       }

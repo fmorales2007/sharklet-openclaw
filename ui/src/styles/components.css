@@ -742,11 +742,6 @@ openclaw-session-owner-chip {
   margin-bottom: 0;
 }
 
-.login-gate__docs {
-  margin-top: 10px;
-  font-size: 12px;
-}
-
 /* Phones (matches the layout.mobile.css breakpoint). The gate renders outside
    the shell, so it needs its own safe-area padding for notch/home-bar overlap
    with viewport-fit=cover. */
