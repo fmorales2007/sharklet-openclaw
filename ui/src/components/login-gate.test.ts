@@ -106,9 +106,6 @@ describe("login gate failure recovery", () => {
     );
     expect(steps).toMatch(/trusted proxy or Tailscale/iu);
     expect(steps).toMatch(/shared Gateway token or password/iu);
-    expect(failure?.querySelector(".login-gate__failure-docs")?.getAttribute("href")).toBe(
-      "https://docs.openclaw.ai/gateway/operator-scopes",
-    );
   });
 
   it.each([
@@ -131,9 +128,6 @@ describe("login gate failure recovery", () => {
     );
     expect(steps).toMatch(/forward/iu);
     expect(steps).toMatch(/WebSocket upgrade/iu);
-    expect(failure?.querySelector(".login-gate__failure-docs")?.getAttribute("href")).toBe(
-      "https://docs.openclaw.ai/gateway/trusted-proxy-auth",
-    );
     expect(failure?.querySelector(".login-gate__failure-raw")?.textContent).toBe("unauthorized");
     expect(failure?.querySelectorAll(".login-gate__failure-steps code")).toHaveLength(0);
     expect(steps).not.toMatch(/generate.*?token|replace.*?(?:token|password)|Gateway is running/iu);
@@ -266,7 +260,6 @@ describe("login gate failure recovery", () => {
 
     expect(refresh?.textContent?.trim()).toBe("Refresh page");
     expect(failure?.querySelector(".login-gate__failure-steps")).not.toBeNull();
-    expect(failure?.querySelector(".login-gate__failure-docs")).not.toBeNull();
 
     refresh?.click();
     expect(reload).toHaveBeenCalledOnce();

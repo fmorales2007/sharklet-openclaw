@@ -7,7 +7,6 @@ import { controlUiPublicAssetPath } from "../app/public-assets.ts";
 import { t } from "../i18n/index.ts";
 import "../lib/toast.ts";
 import { registerLoginEnglish } from "../i18n/locales/en-login.ts";
-import { buildExternalLinkRel, EXTERNAL_LINK_TARGET } from "../lib/external-link.ts";
 import { formatGatewayHost } from "../lib/gateway-host.ts";
 import { classifyGatewaySecret } from "../lib/gateway-secret-shape.ts";
 import { OpenClawLightDomContentsElement } from "../lit/openclaw-element.ts";
@@ -92,13 +91,6 @@ function renderFailureFooter(feedback: LoginFailureFeedback) {
         <summary>${t("login.failure.rawError")}</summary>
         <div class="login-gate__failure-raw mono">${feedback.rawError}</div>
       </details>
-      <a
-        class="session-link login-gate__failure-docs"
-        href=${feedback.docsHref}
-        target=${EXTERNAL_LINK_TARGET}
-        rel=${buildExternalLinkRel()}
-        >${t("common.learnMore")}</a
-      >
     </footer>
   `;
 }

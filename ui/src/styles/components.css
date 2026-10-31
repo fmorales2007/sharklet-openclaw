@@ -709,10 +709,6 @@ openclaw-session-owner-chip {
   color: var(--muted);
 }
 
-.login-gate__failure-docs {
-  flex: 0 0 auto;
-}
-
 /* ── First-run help (no failure yet) ── */
 
 .login-gate__help {
