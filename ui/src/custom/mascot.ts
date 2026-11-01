@@ -1,4 +1,4 @@
-// Sharklet's shark in place of OpenClaw's canvas mascot.
+// Sharklet's shark replaces the upstream canvas mascot.
 //
 // Upstream draws its mascot on a <canvas> with colors hardcoded in
 // mascot-pose.ts:47-57, so no token reaches it. Replacing it does not need a
