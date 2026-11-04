@@ -25,7 +25,6 @@ import {
   formatDistinctCollapsedToolSummaryText,
   formatCollapsedToolPreviewText,
   formatCollapsedToolSummaryText,
-  isToolCardError,
 } from "../../../lib/chat/tool-cards.ts";
 import { type EmbedSandboxMode, resolveToolDisplay } from "../../../lib/chat/tool-display.ts";
 import "../../../styles/chat/reply-preview.css";
@@ -65,9 +64,9 @@ import {
   syncToolDisclosureOverflow,
 } from "./chat-tool-cards.ts";
 import {
-  renderExpandedToolCardContent,
   renderRawOutputToggle,
-  renderToolOutcome,
+  toolCardSidebarContent,
+  toolOutputSidebarContent,
 } from "./chat-tool-content.ts";
 import { renderWorkspaceConflictTranscriptMessage } from "./chat-workspace-conflict.ts";
 
@@ -88,27 +87,9 @@ function imageMessageIdentity(message: unknown, sessionKey: string | undefined) 
     : { canonicalMessageKey: JSON.stringify([sessionKey, identity.id, identity.sequence]) };
 }
 
-function renderInlineToolCards(
-  toolCards: ToolCard[],
-  opts: Omit<Parameters<typeof renderToolCard>[1], "expanded" | "onToggleExpanded"> & {
-    isToolExpanded?: (toolCardId: string) => boolean;
-    onToggleToolExpanded?: (toolCardId: string, expanded?: boolean) => void;
-  },
-) {
+function renderInlineToolCards(toolCards: ToolCard[], opts: Parameters<typeof renderToolCard>[1]) {
   return html`
-    <div class="chat-tools-inline">
-      ${toolCards.map((card, index) => {
-        const disclosureId = `${opts.messageKey}:toolcard:${index}`;
-        const expanded = opts.isToolExpanded?.(disclosureId) ?? false;
-        return renderToolCard(card, {
-          ...opts,
-          expanded,
-          onToggleExpanded: opts.onToggleToolExpanded
-            ? () => opts.onToggleToolExpanded?.(disclosureId, expanded)
-            : () => undefined,
-        });
-      })}
-    </div>
+    <div class="chat-tools-inline">${toolCards.map((card) => renderToolCard(card, opts))}</div>
   `;
 }
 
@@ -227,14 +208,10 @@ export function renderGroupedMessage(
     showToolCalls?: boolean;
     runActive?: boolean;
     autoExpandToolCalls?: boolean;
-    isToolMessageExpanded?: (messageId: string) => boolean | undefined;
-    onToggleToolMessageExpanded?: (messageId: string, expanded?: boolean) => void;
     isUserMessageExpanded?: (messageId: string) => boolean;
     onToggleUserMessageExpanded?: (messageId: string) => void;
     assistantMessageDisclosure?: AssistantMessageDisclosure;
     messageActions?: MessageActionDetails | null;
-    isToolExpanded?: (toolCardId: string) => boolean;
-    onToggleToolExpanded?: (toolCardId: string, expanded?: boolean) => void;
     onRequestUpdate?: () => void;
     canvasPluginSurfaceUrl?: string | null;
     resourceBasePath?: string;
@@ -362,8 +339,6 @@ export function renderGroupedMessage(
     return nothing;
   }
 
-  const toolMessageDisclosureId = `toolmsg:${messageKey}`;
-  const toolMessageExpanded = opts.isToolMessageExpanded?.(toolMessageDisclosureId) ?? false;
   const toolNames = [...new Set(toolCards.map((c) => c.name))];
   const singleToolCard = toolCards.length === 1 ? toolCards[0] : null;
   const standaloneToolPayload =
@@ -373,11 +348,6 @@ export function renderGroupedMessage(
     !hasImages &&
     singleToolCard?.outputText?.trim() === markdown?.trim();
   const bodyMarkdown = standaloneToolPayload ? null : markdown;
-  // One expanded card already closes with its own outcome line; every other
-  // shape renders inline rows only, so the message body records the failure.
-  const expandsSingleToolCard =
-    Boolean(singleToolCard) && (!markdown || standaloneToolPayload) && !hasImages;
-  const failedToolCard = expandsSingleToolCard ? undefined : toolCards.find(isToolCardError);
   const singleToolDisplay = singleToolCard
     ? resolveToolDisplay({
         name: singleToolCard.name,
@@ -444,11 +414,11 @@ export function renderGroupedMessage(
       : undefined;
 
   // Pure tool messages (no text/images/attachments) skip the "Tool output"
-  // shell and render as flat kind-aware rows, one disclosure level deep.
+  // line and render as flat kind-aware rows.
   const onlyToolCards =
     isStandaloneToolMessage &&
     hasToolCards &&
-    !markdown &&
+    (!markdown || standaloneToolPayload) &&
     !hasImages &&
     expiredPairingQrCount === 0 &&
     omittedMedia.length === 0 &&
@@ -522,20 +492,64 @@ export function renderGroupedMessage(
     }
     ${
       hasToolCards
-        ? isStandaloneToolMessage && expandsSingleToolCard && singleToolCard
-          ? renderExpandedToolCardContent(singleToolCard, toolRenderOptions)
-          : renderInlineToolCards(toolCards, {
-              ...toolRenderOptions,
-              showApprovalReviews: isStandaloneToolMessage ? false : undefined,
-            })
-        : nothing
-    }
-    ${
-      isStandaloneToolMessage && failedToolCard
-        ? renderToolOutcome("failed", failedToolCard.exitCode)
+        ? renderInlineToolCards(toolCards, {
+            ...toolRenderOptions,
+            showApprovalReviews: isStandaloneToolMessage ? false : undefined,
+          })
         : nothing
     }
   `;
+  // Output that belongs to no step row: one line that opens it in the detail
+  // panel. Media renders in the thread, where it can be seen.
+  const standaloneToolSidebar: SidebarContent | null = singleToolCard
+    ? toolCardSidebarContent(singleToolCard)
+    : markdown
+      ? toolOutputSidebarContent(markdown)
+      : null;
+  const hasStandaloneToolMedia =
+    hasImages || visibleAttachments.length > 0 || expiredPairingQrCount > 0;
+  const renderStandaloneToolLine = (sidebar: SidebarContent) => {
+    const lineContent = html`
+      <span class="chat-tool-msg-summary__icon">${toolMessageIcon}</span>
+      <span class="chat-tool-disclosure__content">
+        <span class="chat-tool-msg-summary__label">${toolMessageLabel}</span>
+        ${
+          toolSummaryLabel
+            ? html`<span class="chat-tool-msg-summary__names">${toolSummaryLabel}</span>`
+            : toolPreview
+              ? html`<span class="chat-tool-msg-summary__preview">${toolPreview}</span>`
+              : nothing
+        }
+      </span>
+    `;
+    return renderPluginToolResult(
+      singleToolCard,
+      toolRenderOptions,
+      html`
+        <div class="chat-tool-msg-collapse">
+          ${
+            onOpenSidebar
+              ? html`<button
+                  class="chat-tool-msg-summary chat-tool-row chat-tool-row--link"
+                  type="button"
+                  @pointerenter=${syncToolDisclosureOverflow}
+                  @focus=${syncToolDisclosureOverflow}
+                  @click=${(event: MouseEvent) => {
+                    if (shouldToggleSelectableDisclosure(event)) {
+                      onOpenSidebar(sidebar);
+                    }
+                  }}
+                >
+                  ${lineContent}
+                </button>`
+              : html`<div class="chat-tool-msg-summary chat-tool-row">${lineContent}</div>`
+          }
+          ${renderOmittedMedia(omittedMedia)}
+          ${toolCards.map((card) => renderToolApprovalReviews(card))}
+        </div>
+      `,
+    );
+  };
 
   return html`
     <div
@@ -559,59 +573,8 @@ export function renderGroupedMessage(
       ${
         onlyToolCards
           ? renderInlineToolCards(toolCards, toolRenderOptions)
-          : isStandaloneToolMessage
-            ? renderPluginToolResult(
-                singleToolCard,
-                { ...toolRenderOptions, expanded: toolMessageExpanded },
-                html`
-                  <div
-                    class="chat-tool-msg-collapse chat-tool-msg-collapse--manual ${
-                      toolMessageExpanded ? "is-open" : ""
-                    }"
-                  >
-                    <button
-                      class="chat-inline-disclosure chat-tool-msg-summary"
-                      type="button"
-                      aria-expanded=${String(toolMessageExpanded)}
-                      @pointerenter=${syncToolDisclosureOverflow}
-                      @focus=${syncToolDisclosureOverflow}
-                      @click=${(event: MouseEvent) => {
-                        if (shouldToggleSelectableDisclosure(event)) {
-                          opts.onToggleToolMessageExpanded?.(
-                            toolMessageDisclosureId,
-                            toolMessageExpanded,
-                          );
-                        }
-                      }}
-                    >
-                      <span class="chat-tool-msg-summary__icon">${toolMessageIcon}</span>
-                      <span class="chat-tool-disclosure__content">
-                        <span class="chat-tool-msg-summary__label">${toolMessageLabel}</span>
-                        ${
-                          toolSummaryLabel
-                            ? html`<span class="chat-tool-msg-summary__names"
-                                >${toolSummaryLabel}</span
-                              >`
-                            : toolPreview
-                              ? html`<span class="chat-tool-msg-summary__preview"
-                                  >${toolPreview}</span
-                                >`
-                              : nothing
-                        }
-                      </span>
-                      <span class="chat-tool-row__chevron" aria-hidden="true"
-                        >${icons.chevronRight}</span
-                      >
-                    </button>
-                    ${
-                      toolMessageExpanded
-                        ? html`<div class="chat-tool-msg-body">${renderBody()}</div>`
-                        : renderOmittedMedia(omittedMedia)
-                    }
-                    ${toolCards.map((card) => renderToolApprovalReviews(card))}
-                  </div>
-                `,
-              )
+          : isStandaloneToolMessage && standaloneToolSidebar && !hasStandaloneToolMedia
+            ? renderStandaloneToolLine(standaloneToolSidebar)
             : renderBody()
       }
       ${

@@ -451,8 +451,8 @@ export function titleForRoute(routeId: NavigationRouteId): string {
 
 /** Window/tab title, markers leftmost because tabs truncate from the right.
  * A disconnected Gateway replaces the approval count (a stale queue is not
- * actionable) and carries the pending-outbox total; titles already ending in the brand
- * ("Ask OpenClaw") skip the suffix so it never reads "… OpenClaw — OpenClaw". */
+ * actionable) and carries the pending-outbox total; titles already ending in a product name
+ * skip the suffix so it never reads "… Sharklet — Sharklet". */
 export function formatDocumentTitle(options: {
   context: string;
   attentionCount?: number;

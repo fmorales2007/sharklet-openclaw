@@ -2947,17 +2947,6 @@
   padding-bottom: 9px;
 }
 
-.chat-controls__permission-learn-more {
-  color: var(--muted);
-  font-weight: 500;
-  letter-spacing: normal;
-  text-transform: none;
-}
-
-.chat-controls__permission-learn-more:hover {
-  color: var(--text-strong);
-}
-
 .chat-controls__permission-option {
   display: flex;
   align-items: center;

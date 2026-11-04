@@ -52,7 +52,7 @@ export type ChatComposerMenuSkill = {
   blocked?: boolean;
 };
 
-type ChatComposerRootToggle = {
+export type ChatComposerRootToggle = {
   value: string;
   label: string;
   icon?: TemplateResult;

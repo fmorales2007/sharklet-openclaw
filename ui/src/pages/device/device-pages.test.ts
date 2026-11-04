@@ -114,7 +114,7 @@ describe("native device settings pages", () => {
     "shows an app-only state without a bridge and waits for the initial snapshot on %s",
     async (tag) => {
       const browserPage = await mount(tag, null);
-      expect(browserPage.textContent).toContain("only available inside the OpenClaw app");
+      expect(browserPage.textContent).toContain("only available inside the Sharklet app");
       expect(browserPage.querySelector("wa-switch")).toBeNull();
       const { capability } = createCapability(null);
       const waitingPage = await mount(tag, capability);
@@ -131,9 +131,7 @@ describe("native device settings pages", () => {
     const { capability } = createCapability(snapshot);
     const page = await mount("openclaw-device-page", capability);
     expect(page.querySelector(".page-title")?.textContent).toContain("This Mac");
-    expect(page.querySelector<HTMLAnchorElement>(".page-subtitle a")?.href).toBe(
-      "https://docs.openclaw.ai/platforms/macos",
-    );
+    expect(page.querySelector(".page-subtitle a")).toBeNull();
     expect(row(page, "Quick Chat shortcut").textContent).toContain("Not set");
     const iconStyles = row(page, "Dock icon").querySelector<HTMLSelectElement>("select")!;
     expect(iconStyles.value).toBe("paper");

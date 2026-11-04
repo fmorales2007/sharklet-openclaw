@@ -1,235 +1,138 @@
-import { css, html, LitElement, type PropertyValues } from "lit";
-import { property } from "lit/decorators.js";
-import { MascotAnimator } from "./mascot-animator.ts";
-import { drawMascot } from "./mascot-canvas.ts";
-import {
-  mascotPalette,
-  staticMascotPose,
-  type MascotMood,
-  type MascotPose,
-} from "./mascot-pose.ts";
+// Sharklet's shark, the app's mascot. It replaces OpenClaw's canvas mascot (the
+// canvas drew with colors hardcoded in the component, so no theme token could
+// reach it); the element keeps the name and the public surface the places that
+// mount it already use:
+//   mood  (reflected attribute; upstream's nine moods), size (px), tease.
+//
+// What it draws (motion.md): the shark swims while something is being worked
+// on — the thinking and working moods — and is still otherwise. Upstream's
+// other moods have no Sharklet counterpart and show the still mark. While it
+// swims, data-effort sets the speed of the cycle (motion.md, "Effort sets the
+// speed"); without it the swim runs at the default level.
+//
+// Light DOM, not a shadow root: initMotion() watches the document for SMIL it
+// has to pause under reduced motion, and it cannot see inside shadow roots.
+
+import { SHARKLET_MARK_SVG } from "../custom/brand/mark.js";
 
 const DEFAULT_SIZE = 120;
-const MASCOT_MOODS = new Set<MascotMood>([
-  "idle",
-  "curious",
-  "thinking",
-  "working",
-  "happy",
-  "celebrating",
-  "sad",
-  "sleepy",
-  "attentive",
-]);
+const SWIMMING_MOODS = new Set(["thinking", "working"]);
 
-function currentSeconds(): number {
-  return performance.now() / 1_000;
+// 57 KB of path data, plus the motion runtime: loaded the first time any mascot
+// swims, not at startup. The swim is the app's only SMIL, so the runtime that
+// pauses SMIL under reduced motion is only needed from that moment, and it is
+// started before the first swimming SVG is inserted, so its observer sees it.
+// Keeping both out of the startup graph is what keeps upstream's startup budget
+// (scripts/check-control-ui-performance.mts) intact.
+type SwimRuntime = {
+  svg: string;
+  applyEffort: (el: Element, level: string) => void;
+};
+let swimRuntime: Promise<SwimRuntime> | undefined;
+function loadSwimRuntime(): Promise<SwimRuntime> {
+  swimRuntime ??= Promise.all([
+    import("../custom/brand/swim.js"),
+    import("../custom/motion.js"),
+  ]).then(([art, motion]) => {
+    motion.initMotion();
+    return { svg: art.SHARKLET_SWIM_SVG, applyEffort: motion.applyEffort };
+  });
+  return swimRuntime;
 }
 
-class OpenClawMascot extends LitElement {
-  static override styles = css`
-    :host {
-      display: inline-block;
-      width: var(--openclaw-mascot-size, 120px);
-      height: var(--openclaw-mascot-size, 120px);
-      overflow: visible;
-      contain: layout style;
-      pointer-events: none;
-      line-height: 0;
-    }
+// Node-environment tests import the icon set, which mounts this element.
+const ElementBase = (
+  typeof HTMLElement === "undefined" ? Object : HTMLElement
+) as typeof HTMLElement;
 
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      will-change: transform;
-    }
-  `;
+class OpenClawMascot extends ElementBase {
+  static readonly observedAttributes = ["mood"];
 
-  @property({ reflect: true }) mood: MascotMood = "idle";
-  @property({ type: Number }) size = DEFAULT_SIZE;
-  @property({ type: Boolean }) tease = false;
+  #size = DEFAULT_SIZE;
+  #drawn: "mark" | "swim" | "" = "";
+  tease = false;
 
-  private readonly animator = new MascotAnimator();
-  private animationFrame = 0;
-  private visible = true;
-  private reducedMotion = false;
-  private lastPose: MascotPose = staticMascotPose("idle");
-  private intersectionObserver: IntersectionObserver | null = null;
-  private themeObserver: MutationObserver | null = null;
-  private motionQuery: MediaQueryList | null = null;
-
-  private readonly handleVisibilityChange = () => this.syncPlayback();
-
-  private readonly handleMotionChange = (event: MediaQueryListEvent) => {
-    this.reducedMotion = event.matches;
-    this.syncPlayback();
-  };
-
-  override connectedCallback(): void {
-    super.connectedCallback();
-    this.setAttribute("aria-hidden", "true");
-    document.addEventListener("visibilitychange", this.handleVisibilityChange);
-
-    this.motionQuery = window.matchMedia?.("(prefers-reduced-motion: reduce)") ?? null;
-    this.reducedMotion = this.motionQuery?.matches ?? false;
-    this.motionQuery?.addEventListener("change", this.handleMotionChange);
-
-    if (typeof IntersectionObserver !== "undefined") {
-      this.intersectionObserver = new IntersectionObserver((entries) => {
-        this.visible = entries.some((entry) => entry.isIntersecting);
-        this.syncPlayback();
-      });
-      this.intersectionObserver.observe(this);
-    }
-
-    if (typeof MutationObserver !== "undefined") {
-      this.themeObserver = new MutationObserver(() => this.drawPose(this.lastPose));
-      this.themeObserver.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ["data-theme-mode"],
-      });
+  constructor() {
+    super();
+    // A property set before the element upgraded lives on the instance and
+    // would shadow the accessors; re-apply it through them.
+    for (const key of ["mood", "size", "tease"] as const) {
+      if (Object.hasOwn(this, key)) {
+        const value = (this as Record<string, unknown>)[key];
+        delete (this as Record<string, unknown>)[key];
+        (this as Record<string, unknown>)[key] = value;
+      }
     }
   }
 
-  override disconnectedCallback(): void {
-    this.stopAnimation();
-    document.removeEventListener("visibilitychange", this.handleVisibilityChange);
-    this.motionQuery?.removeEventListener("change", this.handleMotionChange);
-    this.motionQuery = null;
-    this.intersectionObserver?.disconnect();
-    this.intersectionObserver = null;
-    this.themeObserver?.disconnect();
-    this.themeObserver = null;
-    super.disconnectedCallback();
+  get mood(): string {
+    return this.getAttribute("mood") ?? "idle";
   }
 
-  protected override firstUpdated(): void {
-    // Seed the animator's mood before the first pose so `begin()` schedules
-    // for the real mood; `updated()` runs after this and would be too late.
-    this.animator.setMood(this.resolvedMood, currentSeconds());
-    this.animator.setTease(this.tease, currentSeconds());
-    this.drawCurrentFrame(currentSeconds());
-    this.syncPlayback();
+  set mood(value: string) {
+    this.setAttribute("mood", value || "idle");
   }
 
-  protected override updated(changed: PropertyValues<this>): void {
-    if (changed.has("size")) {
-      this.style.setProperty("--openclaw-mascot-size", `${this.resolvedSize}px`);
-    }
-    if (changed.has("mood")) {
-      this.animator.setMood(this.resolvedMood, currentSeconds());
-    }
-    if (changed.has("tease")) {
-      this.animator.setTease(this.tease, currentSeconds());
-    }
-    if (changed.has("size") || changed.has("mood") || changed.has("tease")) {
-      this.drawCurrentFrame(currentSeconds());
-      this.syncPlayback();
-    }
+  get size(): number {
+    return this.#size;
   }
 
-  catchOnce(): void {
-    if (!this.isConnected || this.reducedMotion) {
+  set size(value: number) {
+    this.#size = Number.isFinite(value) && value > 0 ? value : DEFAULT_SIZE;
+    this.style.setProperty("--openclaw-mascot-size", `${this.#size}px`);
+  }
+
+  connectedCallback(): void {
+    if (!this.hasAttribute("mood")) {
+      // A glyph standing in for a status icon swims, except in the recap row,
+      // which reports a turn that already finished.
+      const glyph = this.hasAttribute("data-glyph");
+      this.setAttribute("mood", glyph && !this.closest(".chat-turn-recap") ? "working" : "idle");
+    }
+    this.style.setProperty("--openclaw-mascot-size", `${this.#size}px`);
+    this.#render();
+  }
+
+  attributeChangedCallback(): void {
+    this.#render();
+  }
+
+  /** The shark has no catch animation; the welcome screen calls this on a file drop. */
+  catchOnce(): void {}
+
+  #render(): void {
+    if (!this.isConnected) {
       return;
     }
-    const time = currentSeconds();
-    this.animator.playCatch(time);
-    this.drawCurrentFrame(time);
-    this.syncPlayback();
-  }
-
-  override render() {
-    return html`<canvas></canvas>`;
-  }
-
-  private get resolvedMood(): MascotMood {
-    return MASCOT_MOODS.has(this.mood) ? this.mood : "idle";
-  }
-
-  private get resolvedSize(): number {
-    return Number.isFinite(this.size) && this.size > 0 ? this.size : DEFAULT_SIZE;
-  }
-
-  private get shouldAnimate(): boolean {
-    return (
-      this.isConnected &&
-      this.visible &&
-      !this.reducedMotion &&
-      document.visibilityState !== "hidden"
-    );
-  }
-
-  private readonly renderAnimationFrame = (timestamp: number) => {
-    this.animationFrame = 0;
-    if (!this.shouldAnimate) {
+    if (!SWIMMING_MOODS.has(this.mood)) {
+      this.#draw("mark", SHARKLET_MARK_SVG);
       return;
     }
-    this.drawCurrentFrame(timestamp / 1_000);
-    this.animationFrame = window.requestAnimationFrame(this.renderAnimationFrame);
-  };
-
-  private syncPlayback(): void {
-    if (!this.renderRoot.querySelector("canvas")) {
+    if (this.#drawn === "swim") {
       return;
     }
-    if (this.reducedMotion) {
-      this.stopAnimation();
-      this.lastPose = staticMascotPose(this.resolvedMood);
-      this.drawPose(this.lastPose);
-      return;
+    // Still mark until the swim arrives, so the slot is never empty.
+    if (this.#drawn === "") {
+      this.#draw("mark", SHARKLET_MARK_SVG);
     }
-    if (!this.shouldAnimate) {
-      this.stopAnimation();
-      return;
-    }
-    if (this.animationFrame === 0) {
-      this.animationFrame = window.requestAnimationFrame(this.renderAnimationFrame);
-    }
+    void loadSwimRuntime().then(({ svg, applyEffort }) => {
+      if (this.isConnected && SWIMMING_MOODS.has(this.mood)) {
+        this.#draw("swim", svg);
+        applyEffort(this, this.dataset.effort ?? "");
+      }
+    });
   }
 
-  private stopAnimation(): void {
-    if (this.animationFrame !== 0) {
-      window.cancelAnimationFrame(this.animationFrame);
-      this.animationFrame = 0;
-    }
-  }
-
-  private drawCurrentFrame(time: number): void {
-    this.lastPose = this.reducedMotion
-      ? staticMascotPose(this.resolvedMood)
-      : this.animator.poseAt(time);
-    this.drawPose(this.lastPose);
-  }
-
-  private drawPose(pose: MascotPose): void {
-    const canvas = this.renderRoot.querySelector("canvas");
-    if (!(canvas instanceof HTMLCanvasElement) || typeof Path2D === "undefined") {
+  #draw(kind: "mark" | "swim", svg: string): void {
+    if (this.#drawn === kind) {
       return;
     }
-    const context = canvas.getContext("2d");
-    if (!context) {
-      return;
-    }
-    const size = this.resolvedSize;
-    const pixelRatio = Math.max(1, window.devicePixelRatio || 1);
-    const pixelSize = Math.round(size * pixelRatio);
-    if (canvas.width !== pixelSize || canvas.height !== pixelSize) {
-      canvas.width = pixelSize;
-      canvas.height = pixelSize;
-    }
-    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-    context.clearRect(0, 0, size, size);
-    drawMascot(
-      pose,
-      mascotPalette(document.documentElement.dataset.themeMode === "light"),
-      context,
-      size,
-    );
-    canvas.style.transform = `translate3d(0, ${(pose.floatOffset * size) / 120}px, 0)`;
+    this.#drawn = kind;
+    // The markup is our own generated art (custom/brand/*.js), never user input.
+    this.innerHTML = svg;
   }
 }
 
-if (!customElements.get("openclaw-mascot")) {
+if (typeof customElements !== "undefined" && !customElements.get("openclaw-mascot")) {
   customElements.define("openclaw-mascot", OpenClawMascot);
 }

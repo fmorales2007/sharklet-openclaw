@@ -2,6 +2,7 @@ import type { ChatFollowUpMode, ChatSendShortcut } from "../../../app/settings.t
 import { steerableQueuedMessage } from "../chat-queue.ts";
 import { restoreHistoryCaret } from "./chat-composer-dom.ts";
 import type { GoalComposerController } from "./chat-composer-goal-mode.ts";
+import { handleHomeEnter } from "./chat-composer-home.ts";
 import type { HumanMentionMenuHost } from "./chat-composer-mention-menu.ts";
 import { handleSkillMenuKeydown, type SkillMenuHost } from "./chat-composer-skill-menu.ts";
 import {
@@ -52,6 +53,12 @@ export function createComposerKeyDownHandler({
     if (state.composerComposing || event.isComposing || event.keyCode === 229) {
       return;
     }
+    const home = props.home;
+    if (home?.dictation.active) {
+      return;
+    }
+    // Home has no connected-session gate: its menus depend on the draft owner instead.
+    const menusEnabled = home ? !home.nativeTerminal : props.connected;
 
     if (state.mentionMenu.handleKeydown(event, mentionMenuHost, requestUpdate)) {
       return;
@@ -74,18 +81,24 @@ export function createComposerKeyDownHandler({
       return;
     }
 
-    if (props.connected && handleSkillMenuKeydown(event, state, skillMenuHost, requestUpdate)) {
+    if (menusEnabled && handleSkillMenuKeydown(event, state, skillMenuHost, requestUpdate)) {
       return;
     }
 
     if (
+      !home &&
       props.connected &&
       handleInlineSlashArgKeydown(event, state, slashMenuHost, requestUpdate, sendShortcut)
     ) {
       return;
     }
 
-    if (props.connected && handleSlashMenuKeydown(event, state, slashMenuHost, requestUpdate)) {
+    if (menusEnabled && handleSlashMenuKeydown(event, state, slashMenuHost, requestUpdate)) {
+      return;
+    }
+
+    if (home) {
+      handleHomeEnter(event, state, home);
       return;
     }
 

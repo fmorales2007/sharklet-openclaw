@@ -1,13 +1,13 @@
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
 import { html, nothing } from "lit";
-import { property } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 import { formatApprovalDisplayPath } from "../../../src/infra/approval-display-paths.ts";
 import type { ApprovalScope } from "../../../src/infra/approval-scope.ts";
 import type { GatewaySessionRow } from "../api/types.ts";
-import type {
-  ExecApprovalDecision,
-  ExecApprovalRequest,
-  ExecApprovalRequestPayload,
+import {
+  compactApprovalCommand,
+  type ExecApprovalDecision,
+  type ExecApprovalRequest,
+  type ExecApprovalRequestPayload,
 } from "../app/exec-approval.ts";
 import { t } from "../i18n/index.ts";
 import { formatCountdown } from "../lib/format.ts";
@@ -30,7 +30,11 @@ type ExecApprovalCardProps = {
   error: string | null;
   variant: "inline" | "modal";
   queueCount?: number;
-  onDecision: (approvalId: string, decision: ExecApprovalDecision) => void | Promise<void>;
+  onDecision: (
+    approvalId: string,
+    decision: ExecApprovalDecision,
+    explanation?: string,
+  ) => void | Promise<void>;
 };
 
 type SidebarApprovalRowProps = {
@@ -86,6 +90,58 @@ class ApprovalCountdown extends OpenClawLightDomContentsElement {
 
 if (!customElements.get("openclaw-approval-countdown")) {
   customElements.define("openclaw-approval-countdown", ApprovalCountdown);
+}
+
+/** "Deny and explain": a deny that also tells the agent what to do instead. */
+class ApprovalExplain extends OpenClawLightDomContentsElement {
+  @property({ type: Boolean }) disabled = false;
+  @property({ attribute: false }) onExplain: (text: string) => void = () => {};
+  @state() private open = false;
+  @state() private text = "";
+
+  override render() {
+    return html`<button
+        type="button"
+        class="btn"
+        aria-label=${t("execApproval.denyAndExplain")}
+        aria-expanded=${String(this.open)}
+        ?disabled=${this.disabled}
+        @click=${() => (this.open = !this.open)}
+      >
+        <span>${t("execApproval.denyAndExplain")}</span>
+      </button>
+      ${
+        this.open
+          ? html`<div class="exec-approval-explain">
+              <label>
+                <span>${t("execApproval.explainLabel")}</span>
+                <textarea
+                  rows="2"
+                  maxlength="2000"
+                  placeholder=${t("execApproval.explainPlaceholder")}
+                  .value=${this.text}
+                  @input=${(event: Event) => (this.text = (event.target as HTMLTextAreaElement).value)}
+                ></textarea>
+              </label>
+              <button
+                type="button"
+                class="btn danger"
+                ?disabled=${this.disabled || this.text.trim().length === 0}
+                @click=${() => this.onExplain(this.text.trim())}
+              >
+                ${t("execApproval.explainSend")}
+              </button>
+              <button type="button" class="btn" @click=${() => (this.open = false)}>
+                ${t("execApproval.explainCancel")}
+              </button>
+            </div>`
+          : nothing
+      }`;
+  }
+}
+
+if (!customElements.get("openclaw-approval-explain")) {
+  customElements.define("openclaw-approval-explain", ApprovalExplain);
 }
 
 function renderMetaRow(label: string, value?: string | null, opts?: { path?: boolean }) {
@@ -216,11 +272,6 @@ function renderPluginBody(active: ExecApprovalRequest, variant: ExecApprovalCard
         )
       : nothing
   }`;
-}
-
-export function compactApprovalCommand(command: string): string {
-  const singleLine = command.replace(/\s+/g, " ").trim();
-  return singleLine.length > 64 ? `${truncateUtf16Safe(singleLine, 61)}…` : singleLine;
 }
 
 function approvalDecisionLabel(decision: ExecApprovalDecision, kind: ExecApprovalRequest["kind"]) {
@@ -457,6 +508,14 @@ export function renderExecApprovalCard(props: ExecApprovalCardProps) {
           <span>${label}</span>
         </button>`;
       })}
+      ${
+        decisions.includes("deny")
+          ? html`<openclaw-approval-explain
+              ?disabled=${props.busy || !props.canGrant}
+              .onExplain=${(text: string) => props.onDecision(active.id, "deny", text)}
+            ></openclaw-approval-explain>`
+          : nothing
+      }
     </div>
   </div>`;
 }

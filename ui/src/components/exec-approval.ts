@@ -1,7 +1,11 @@
 // Control UI modal presents approvals after an explicit operator action.
 import { html, nothing, type PropertyValues } from "lit";
 import { property, query, state } from "lit/decorators.js";
-import type { ExecApprovalDecision, ExecApprovalRequest } from "../app/exec-approval.ts";
+import {
+  compactApprovalCommand,
+  type ExecApprovalDecision,
+  type ExecApprovalRequest,
+} from "../app/exec-approval.ts";
 import { t } from "../i18n/index.ts";
 import {
   KEYBOARD_SHORTCUT_COMBOS,
@@ -11,7 +15,6 @@ import { OpenClawLightDomContentsElement } from "../lit/openclaw-element.ts";
 import {
   approvalRemainingLabel,
   approvalTitle,
-  compactApprovalCommand,
   renderExecApprovalCard,
   resolveApprovalDecisions,
 } from "./exec-approval-card.ts";

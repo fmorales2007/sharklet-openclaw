@@ -419,6 +419,8 @@ export function createQuestionHandlers(
             },
           );
           await storeWriteService.reloadReference(binding.name);
+          // The log names the credential, never its value.
+          context.logGateway.info(`credential provided for ${binding.name}`);
           respond(true, result, undefined);
         } catch (error) {
           if (managerError(error, respond)) {

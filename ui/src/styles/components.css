@@ -709,10 +709,6 @@ openclaw-session-owner-chip {
   color: var(--muted);
 }
 
-.login-gate__failure-docs {
-  flex: 0 0 auto;
-}
-
 /* ── First-run help (no failure yet) ── */
 
 .login-gate__help {
@@ -740,11 +736,6 @@ openclaw-session-owner-chip {
 
 .login-gate__steps li:last-child {
   margin-bottom: 0;
-}
-
-.login-gate__docs {
-  margin-top: 10px;
-  font-size: 12px;
 }
 
 /* Phones (matches the layout.mobile.css breakpoint). The gate renders outside
@@ -1198,6 +1189,74 @@ openclaw-session-owner-chip {
 /* Passive notifications stay in the trailing top corner, away from the chat
  * composer and other bottom-docked controls. The host shows one toast at a time
  * (`show()` replaces the active one), so there is no stack to offset against. */
+.exec-approval-explain {
+  display: flex;
+  flex-wrap: wrap;
+  flex-basis: 100%;
+  gap: var(--space-2);
+}
+.exec-approval-explain label {
+  display: grid;
+  flex-basis: 100%;
+  gap: 4px;
+}
+.task-notices {
+  position: fixed;
+  right: calc(20px + var(--safe-area-right));
+  bottom: calc(20px + var(--safe-area-bottom));
+  z-index: var(--z-toast);
+  display: grid;
+  gap: var(--space-2);
+}
+.task-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 8px 8px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--popover);
+  box-shadow: var(--shadow-lg);
+}
+.task-notice--problem {
+  color: var(--danger);
+}
+.notice-bell {
+  position: relative;
+}
+.notice-bell__badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 14px;
+  border-radius: 7px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-size: 10px;
+  line-height: 14px;
+  text-align: center;
+}
+.notice-history {
+  position: fixed;
+  inset: auto;
+  max-width: 320px;
+  padding: var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--popover);
+  color: var(--popover-foreground);
+}
+.notice-history ul {
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+.notice-history li {
+  display: flex;
+  gap: var(--space-2);
+  padding: 4px 0;
+}
+
 .app-toast {
   position: fixed;
   right: calc(20px + var(--safe-area-right));
@@ -5573,40 +5632,11 @@ td.data-table-key-col {
 .device-pair-setup__footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 14px 20px;
   border-top: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg-elevated) 45%, transparent);
   font-size: 13px;
-}
-
-.device-pair-setup__footer a {
-  display: inline-flex;
-  min-height: 40px;
-  align-items: center;
-  gap: 4px;
-  border-radius: 4px;
-  color: var(--muted);
-  text-underline-offset: 2px;
-}
-
-.device-pair-setup__footer a:hover {
-  color: var(--text);
-}
-
-.device-pair-setup__footer a:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-  color: var(--text);
-}
-
-.device-pair-setup__external-icon {
-  display: inline-flex;
-}
-
-.device-pair-setup__external-icon svg {
-  width: 14px;
-  height: 14px;
 }
 
 @media (max-width: 640px) {
@@ -5629,10 +5659,6 @@ td.data-table-key-col {
 
   .device-pair-setup__access {
     grid-template-columns: 1fr;
-  }
-
-  .device-pair-setup__footer a {
-    min-height: 44px;
   }
 }
 

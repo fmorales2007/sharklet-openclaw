@@ -38,12 +38,6 @@ type AppSection = {
   cards: readonly AppCard[];
 };
 
-const docsCta = (path: string): AppCardCta => ({
-  kind: "external",
-  href: `https://docs.openclaw.ai${path}`,
-  label: () => t("appsPage.ctaDocs"),
-});
-
 const APP_SECTIONS: readonly AppSection[] = [
   {
     id: "mobile",
@@ -61,7 +55,6 @@ const APP_SECTIONS: readonly AppSection[] = [
             href: "https://apps.apple.com/app/openclaw-ai-that-does-things/id6780396132",
             label: () => t("appsPage.ctaAppStore"),
           },
-          docsCta("/platforms/ios"),
         ],
       },
       {
@@ -76,7 +69,6 @@ const APP_SECTIONS: readonly AppSection[] = [
             href: "https://play.google.com/store/apps/details?id=ai.openclaw.app",
             label: () => t("appsPage.ctaPlayStore"),
           },
-          docsCta("/platforms/android"),
         ],
       },
     ],
@@ -92,7 +84,7 @@ const APP_SECTIONS: readonly AppSection[] = [
         title: () => t("appsPage.cards.appleWatch.title"),
         desc: () => t("appsPage.cards.appleWatch.desc"),
         badge: () => t("appsPage.badgeBundledIos"),
-        ctas: [docsCta("/platforms/ios")],
+        ctas: [],
       },
       {
         id: "wear-os",
@@ -101,7 +93,7 @@ const APP_SECTIONS: readonly AppSection[] = [
         title: () => t("appsPage.cards.wearOs.title"),
         desc: () => t("appsPage.cards.wearOs.desc"),
         badge: () => t("appsPage.badgeBundledAndroid"),
-        ctas: [docsCta("/platforms/android")],
+        ctas: [],
       },
     ],
   },
@@ -121,7 +113,6 @@ const APP_SECTIONS: readonly AppSection[] = [
             href: "https://github.com/openclaw/openclaw/releases",
             label: () => t("appsPage.ctaDownload"),
           },
-          docsCta("/platforms/macos"),
         ],
       },
       {
@@ -136,7 +127,6 @@ const APP_SECTIONS: readonly AppSection[] = [
             href: "https://github.com/openclaw/openclaw-windows-node/releases/latest",
             label: () => t("appsPage.ctaDownload"),
           },
-          docsCta("/platforms/windows"),
         ],
       },
       {
@@ -151,7 +141,6 @@ const APP_SECTIONS: readonly AppSection[] = [
             href: "https://github.com/openclaw/openclaw/releases",
             label: () => t("appsPage.ctaDownload"),
           },
-          docsCta("/platforms/linux"),
         ],
       },
     ],
@@ -171,11 +160,6 @@ const APP_SECTIONS: readonly AppSection[] = [
             kind: "external",
             href: "https://chromewebstore.google.com/detail/openclaw/kcdjddhmeafeomebliikmbpblkmkfoig",
             label: () => t("appsPage.ctaChromeWebStore"),
-          },
-          {
-            kind: "external",
-            href: "https://docs.openclaw.ai/tools/chrome-extension",
-            label: () => t("appsPage.ctaSetupGuide"),
           },
         ],
       },
@@ -205,7 +189,6 @@ const COMMUNITY_LINKS: ReadonlyArray<{ href: string; icon: TemplateResult; label
       icon: brandIcons.discord,
       label: () => t("appsPage.linkDiscord"),
     },
-    { href: "https://docs.openclaw.ai", icon: icons.book, label: () => t("appsPage.linkDocs") },
   ];
 
 function renderCta(cta: AppCardCta, index: number, props: AppsProps) {

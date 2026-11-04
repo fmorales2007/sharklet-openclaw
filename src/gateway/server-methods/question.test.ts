@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it, vi } from "vitest";
 import { createDeferred } from "../../../test/helpers/promise.js";
 import { upsertSessionEntryCore } from "../../config/sessions/session-accessor.js";
@@ -722,6 +725,62 @@ describe("question gateway methods", () => {
         value,
       );
       expect(isSecretValueRegisteredForRedaction(value)).toBe(true);
+    });
+  });
+
+  it("logs only that a credential was provided and keeps the value in the secret store table alone", async () => {
+    await withOpenClawTestState({ scenario: "minimal" }, async (state) => {
+      const id = await requestSecretQuestion();
+      const value = "test-secret-value-leak-scan-456";
+      const logGateway = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
+      const client = { connect: { client: { displayName: "Trusted Operator" } } } as GatewayClient;
+
+      await call(
+        "question.resolve",
+        { id, answers: { answers: { secret_value: [value] } }, resolvedBy: "control-ui" },
+        { client, logGateway },
+      );
+
+      expect(logGateway.info).toHaveBeenCalledWith("credential provided for SERVICE_API_KEY");
+      expect(JSON.stringify(Object.values(logGateway).map((log) => log.mock.calls))).not.toContain(
+        value,
+      );
+      // State lives in SQLite beside the transcripts, so the scan is per table: the
+      // credential may sit in the secret store's table and in no other.
+      const db = new DatabaseSync(path.join(state.stateDir, "state", "openclaw.sqlite"), {
+        readOnly: true,
+      });
+      const tables = db
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
+        .all()
+        .map((row) => String(row.name));
+      const holders = tables.filter((table) =>
+        db
+          .prepare(`SELECT * FROM "${table}"`)
+          .all()
+          .some((row) =>
+            JSON.stringify(row, (_k, v) =>
+              v instanceof Uint8Array ? Buffer.from(v).toString("latin1") : v,
+            ).includes(value),
+          ),
+      );
+      db.close();
+      expect(holders.every((table) => /secret/i.test(table))).toBe(true);
+      // Plain files (logs, workspace memory) hold it nowhere.
+      const files: string[] = [];
+      const scan = (dir: string) => {
+        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+          const full = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            scan(full);
+          } else if (!/.sqlite/.test(entry.name) && fs.readFileSync(full).includes(value)) {
+            files.push(full);
+          }
+        }
+      };
+      scan(state.stateDir);
+      scan(state.workspaceDir);
+      expect(files).toEqual([]);
     });
   });
 

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { ApplicationGateway } from "../app/gateway.ts";
 import { PagesOffStore } from "./pages-off.ts";
 
@@ -20,6 +20,10 @@ function fakeGateway(request: (method: string) => Promise<unknown>) {
 }
 
 describe("PagesOffStore", () => {
+  // The store imports the RPC layer lazily; warm it so a cold import (slow CI, first test of a shard)
+  // doesn't eat the waitFor budget.
+  beforeAll(() => import("../api/rpc.ts"));
+
   it("reads pages.state, refreshes on config.changed and never turns off the way back", async () => {
     let off = [{ id: "usage", reason: "Repairs." }, { id: "chat" }];
     const request = vi.fn(async () => ({ off }));

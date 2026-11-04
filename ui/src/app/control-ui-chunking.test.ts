@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   controlUiBootManifestKey,
@@ -65,7 +66,8 @@ describe("Control UI build chunking", () => {
     const bootGroup = controlUiCodeSplitting.groups[2] as {
       test: (id: string) => boolean;
     };
-    const repoRoot = new URL("../../..", import.meta.url).pathname.replace(/\/$/, "");
+    // fileURLToPath, not URL.pathname: on Windows the pathname is "/C:/…".
+    const repoRoot = fileURLToPath(new URL("../../..", import.meta.url)).replace(/[\\/]$/u, "");
     // Representative always-loaded boot surface and a lazy island that must
     // keep its own chunk (terminal runtime is not part of the default boot).
     expect(bootGroup.test(`${repoRoot}/ui/src/components/app-sidebar.ts`)).toBe(true);

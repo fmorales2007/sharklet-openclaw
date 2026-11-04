@@ -541,11 +541,6 @@ export function renderUpdates(props: UpdatesViewProps): TemplateResult {
             `,
           }),
         ]),
-        html`<p class="settings-page__hint">
-          <a href="https://docs.openclaw.ai/install/update-troubleshooting" target="_blank"
-            >${t("updates.page.troubleshoot")}</a
-          >
-        </p>`,
       ])}
     </div>
   `;

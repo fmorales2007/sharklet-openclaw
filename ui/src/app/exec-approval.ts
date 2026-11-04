@@ -1,7 +1,14 @@
 // Application-owned approval parsing and queue state.
 import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
 import type { ApprovalScope } from "../../../src/infra/approval-scope.ts";
+
+/** One-line form of a command for notifications and compact rows. */
+export function compactApprovalCommand(command: string): string {
+  const singleLine = command.replace(/\s+/g, " ").trim();
+  return singleLine.length > 64 ? `${truncateUtf16Safe(singleLine, 61)}…` : singleLine;
+}
 
 export type ExecApprovalRequestPayload = {
   command: string;

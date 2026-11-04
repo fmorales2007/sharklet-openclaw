@@ -54,6 +54,8 @@ export type ApplicationOverlays = {
     decision: ExecApprovalDecision,
     approvalId?: string,
     projectedApproval?: ExecApprovalRequest,
+    /** With a deny: a note that is sent to the session as a steer message after the decision. */
+    explanation?: string,
   ) => Promise<void>;
   openDevicePairSetup: () => Promise<boolean>;
   refreshDevicePairSetup: () => Promise<void>;

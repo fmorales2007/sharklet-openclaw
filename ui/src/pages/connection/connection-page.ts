@@ -13,7 +13,6 @@ import {
   resolveGatewayCredentialsForUrlEdit,
   type UiSettings,
 } from "../../app/settings.ts";
-import { renderLearnMoreLink } from "../../components/settings-ui.ts";
 import { renderSettingsWorkspace } from "../../components/settings-workspace.ts";
 import { isMissingOperatorReadScopeError } from "../../lib/gateway-errors.ts";
 import {
@@ -26,7 +25,6 @@ import { isUnknownSystemInfoMethodError, supportsSystemInfo } from "./system-inf
 import { renderConnection } from "./view.ts";
 
 const SYSTEM_INFO_POLL_INTERVAL_MS = 10_000;
-const CONNECTION_DOCS_URL = "https://docs.openclaw.ai/gateway/remote";
 
 export class ConnectionPage extends OpenClawLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
@@ -237,9 +235,7 @@ export class ConnectionPage extends OpenClawLightDomElement {
       <section class="content-header">
         <div>
           <div class="page-title">${titleForRoute("connection")}</div>
-          <div class="page-subtitle">
-            ${subtitleForRoute("connection")} ${renderLearnMoreLink(CONNECTION_DOCS_URL)}
-          </div>
+          <div class="page-subtitle">${subtitleForRoute("connection")}</div>
         </div>
       </section>
       ${renderSettingsWorkspace(body)}

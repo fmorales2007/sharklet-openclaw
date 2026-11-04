@@ -108,7 +108,7 @@ describe("openclaw-exec-approval", () => {
       Array.from(container.querySelectorAll(".exec-approval-actions button > span")).map((label) =>
         label.textContent?.trim(),
       ),
-    ).toEqual(["Allow once", "Deny"]);
+    ).toEqual(["Allow once", "Deny", "Deny and explain"]);
     expect(container.querySelector(".exec-approval-warning")?.textContent?.trim()).toBe(
       "Allow Always is unavailable for this command.",
     );
@@ -125,6 +125,7 @@ describe("openclaw-exec-approval", () => {
       "Allow once",
       "Always allow here",
       "Deny",
+      "Deny and explain",
     ]);
     expect(buttons.every((button) => button.tabIndex === 0)).toBe(true);
   });
@@ -148,7 +149,7 @@ describe("openclaw-exec-approval", () => {
       Array.from(container.querySelectorAll(".exec-approval-actions button > span")).map((label) =>
         label.textContent?.trim(),
       ),
-    ).toEqual(["Allow once", "Deny"]);
+    ).toEqual(["Allow once", "Deny", "Deny and explain"]);
     expect(container.querySelector(".exec-approval-warning")).toBeNull();
   });
 

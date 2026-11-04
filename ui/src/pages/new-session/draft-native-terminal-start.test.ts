@@ -292,7 +292,7 @@ describe("DraftSubmissionFlow native terminal", () => {
       request.mockClear();
       data.terminalHosts = [];
       await flow.submit();
-      expect(flow.blockedSubmitNotice()).toContain("Native CLI host unavailable");
+      expect(flow.blockedSubmit.notice()).toContain("Native CLI host unavailable");
       expect(request).not.toHaveBeenCalled();
       expect(place.terminalHostId).toBe("node:chosen");
       expect(place.folder).toBe("/node/existing-project");
@@ -309,7 +309,7 @@ describe("DraftSubmissionFlow native terminal", () => {
       expect(place.terminalHostId).toBe("node:chosen");
       expect(place.folder).toBe("/node/revalidated-project");
       await flow.submit();
-      expect(flow.blockedSubmitNotice()).toBe("This session target is unavailable.");
+      expect(flow.blockedSubmit.notice()).toBe("This session target is unavailable.");
       expect(context.sessions.createResult).not.toHaveBeenCalled();
       expect(request).not.toHaveBeenCalled();
     },
@@ -351,13 +351,13 @@ describe("DraftSubmissionFlow native terminal", () => {
         failure === "mentions" ? [{ profileId: "profile-alex", start: 0, end: 5 }] : undefined,
       );
       await flow.submit();
-      expect(flow.blockedSubmitNotice()).toBeTruthy();
+      expect(flow.blockedSubmit.notice()).toBeTruthy();
       expect(context.sessions.createResult).not.toHaveBeenCalled();
       expect(request).not.toHaveBeenCalled();
       expect(flow.message).toBe(message);
       if (failure === "mentions") {
         expect(flow.mentions).toEqual([{ profileId: "profile-alex", start: 0, end: 5 }]);
-        expect(flow.blockedSubmitNotice()).toBe(
+        expect(flow.blockedSubmit.notice()).toBe(
           "Human mentions are not available in this mode. Remove the selected mentions or send from a normal chat.",
         );
       }

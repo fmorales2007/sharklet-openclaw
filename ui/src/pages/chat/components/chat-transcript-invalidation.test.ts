@@ -11,7 +11,6 @@ import { createTestChatPane } from "../chat-pane.test-support.ts";
 import * as chatThreadBuild from "../chat-thread-build.ts";
 import {
   buildCachedChatItems,
-  getExpandedToolCards,
   getExpandedUserMessages,
   getExpansionStateVersion,
 } from "../chat-thread.ts";
@@ -251,11 +250,10 @@ describe("chat transcript invalidation", () => {
           container.querySelector('[data-entry-id="settled-final"]'),
           "settled final reply",
         );
-        const workToggle = expectDefined(
-          finalBubble.closest(".chat-group")?.querySelector(".chat-work-group button"),
-          "completed work disclosure",
+        const workSummary = expectDefined(
+          finalBubble.closest(".chat-group")?.querySelector(".chat-work-group"),
+          "completed work summary",
         );
-        expect(workToggle.getAttribute("aria-expanded")).toBe("false");
         expect(container.querySelector(".chat-bubble.streaming")?.textContent).toContain(
           props.stream,
         );
@@ -270,7 +268,9 @@ describe("chat transcript invalidation", () => {
         );
         expect(container.querySelector('[data-entry-id="settled-final"]')).toBe(finalBubble);
         expect(finalBubble.textContent).toContain("Workspace checked");
-        expect(workToggle.getAttribute("aria-expanded")).toBe("false");
+        expect(finalBubble.closest(".chat-group")?.querySelector(".chat-work-group")).toBe(
+          workSummary,
+        );
         expect(renderGroup.mock.calls.filter(([group]) => group.runId === completedRunId)).toEqual(
           [],
         );
@@ -587,23 +587,14 @@ describe("chat transcript invalidation", () => {
     const props = {
       ...threadProps("retained-pane", sessionKey, [
         { role: "user", content: "long user message ".repeat(100), timestamp: 1 },
-        {
-          role: "assistant",
-          content: [
-            { type: "text", text: "assistant reply" },
-            { type: "toolcall", id: "retained-call", name: "browser.open" },
-          ],
-          timestamp: 2,
-        },
+        { role: "assistant", content: "assistant reply", timestamp: 2 },
       ]),
       showToolCalls: true,
     };
     const controller = createTestTranscript();
     const retainedPane = document.body.appendChild(document.createElement("div"));
     render(renderChatThread(props, controller), retainedPane);
-    const staleTools = getExpandedToolCards(sessionKey);
     const staleUsers = getExpandedUserMessages(sessionKey);
-    const previousToolVersion = getExpansionStateVersion(staleTools);
     const previousUserVersion = getExpansionStateVersion(staleUsers);
 
     for (let index = 0; index < 20; index += 1) {
@@ -622,101 +613,17 @@ describe("chat transcript invalidation", () => {
     }
 
     render(renderChatThread(props, controller), retainedPane);
-    const currentTools = getExpandedToolCards(sessionKey);
     const currentUsers = getExpandedUserMessages(sessionKey);
-    expect(currentTools).not.toBe(staleTools);
     expect(currentUsers).not.toBe(staleUsers);
-    expect(getExpansionStateVersion(currentTools)).toBe(previousToolVersion);
     expect(getExpansionStateVersion(currentUsers)).toBe(previousUserVersion);
-    const toolCardId = expectDefined(currentTools.keys().next().value, "retained tool card");
     expectDefined(
       retainedPane.querySelector<HTMLButtonElement>(
         ".chat-group.user .chat-message-disclosure__toggle",
       ),
       "mounted user disclosure",
     ).click();
-    expectDefined(
-      retainedPane.querySelector<HTMLButtonElement>(".chat-tool-msg-summary"),
-      "mounted tool disclosure",
-    ).click();
 
-    expect(currentTools.get(toolCardId)).toBe(true);
-    expect(staleTools.get(toolCardId)).toBe(false);
     expect(currentUsers.size).toBe(1);
     expect(staleUsers.size).toBe(0);
-
-    const toolVisibilitySession = "tool-visibility-session";
-    const toolVisibilityProps = {
-      ...props,
-      paneId: "tool-visibility-pane",
-      sessionKey: toolVisibilitySession,
-      messages: [
-        { role: "user", content: "tool visibility prompt", timestamp: 1 },
-        {
-          role: "toolResult",
-          toolCallId: "expanded-tool",
-          toolName: "browser.open",
-          content: "Expanded tool result",
-          timestamp: 2,
-        },
-        { role: "assistant", content: "The first tool completed.", timestamp: 3 },
-        { role: "user", content: "Show the next tool result.", timestamp: 4 },
-        {
-          role: "toolResult",
-          toolCallId: "collapsed-tool",
-          toolName: "browser.open",
-          content: "Collapsed tool result",
-          timestamp: 5,
-        },
-      ],
-    };
-    const toolVisibilityController = createTestTranscript();
-    const toolVisibilityPane = document.body.appendChild(document.createElement("div"));
-    const renderToolVisibility = (next = toolVisibilityProps) =>
-      render(renderChatThread(next, toolVisibilityController), toolVisibilityPane);
-    renderToolVisibility();
-    const visibilityState = getExpandedToolCards(toolVisibilitySession);
-    const visibilityIds = [...visibilityState.keys()].filter((key) => key.startsWith("toolmsg:"));
-    const expandedToolId = expectDefined(visibilityIds[0], "expanded standalone tool disclosure");
-    const collapsedToolId = expectDefined(visibilityIds[1], "collapsed standalone tool disclosure");
-    const disclosureButtons = () =>
-      Array.from(
-        toolVisibilityPane.querySelectorAll<HTMLButtonElement>(".chat-tool-msg-summary"),
-      ).filter((button) => !button.closest(".chat-tool-msg-body"));
-    expect(disclosureButtons()).toHaveLength(2);
-    expect(disclosureButtons().map((button) => button.getAttribute("aria-expanded"))).toEqual([
-      "false",
-      "false",
-    ]);
-    expectDefined(disclosureButtons()[0], "first mounted tool disclosure").click();
-    renderToolVisibility();
-    expectDefined(disclosureButtons()[1], "second mounted tool disclosure").click();
-    renderToolVisibility();
-    expectDefined(disclosureButtons()[1], "second mounted tool disclosure").click();
-    renderToolVisibility();
-    expect(disclosureButtons().map((button) => button.getAttribute("aria-expanded"))).toEqual([
-      "true",
-      "false",
-    ]);
-
-    renderToolVisibility({ ...toolVisibilityProps, showToolCalls: false });
-    expect(disclosureButtons()).toHaveLength(0);
-    renderToolVisibility();
-
-    expect(disclosureButtons()).toHaveLength(2);
-    expect(disclosureButtons().map((button) => button.getAttribute("aria-expanded"))).toEqual([
-      "true",
-      "false",
-    ]);
-    expect(visibilityState.get(expandedToolId)).toBe(true);
-    expect(visibilityState.get(collapsedToolId)).toBe(false);
-    renderToolVisibility({
-      ...toolVisibilityProps,
-      messages: toolVisibilityProps.messages.filter(
-        (message) => !("toolCallId" in message && message.toolCallId === "expanded-tool"),
-      ),
-    });
-    expect(visibilityState.has(expandedToolId)).toBe(false);
-    expect(visibilityState.get(collapsedToolId)).toBe(false);
   });
 });

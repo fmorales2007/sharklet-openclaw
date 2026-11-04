@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { MentionInboxItem } from "../../../packages/gateway-protocol/src/index.js";
 import type { GatewayBrowserClient } from "../api/gateway.ts";
 import type { CronJob, CronJobsListResult, ModelAuthStatusResult } from "../api/types.ts";
@@ -170,6 +170,12 @@ describe("model auth attention", () => {
 });
 
 describe("sidebar attention refresh ownership", () => {
+  // The panel module loads lazily on first open; a cold load on a slow host
+  // outlasts waitForFast's 1 s budget (Windows loop gate, 2026-11-04).
+  beforeAll(async () => {
+    await import("./sidebar-attention-panel.runtime.ts");
+  });
+
   const stores = new Set<SidebarAttentionStore>();
   afterEach(() => {
     for (const store of stores) {

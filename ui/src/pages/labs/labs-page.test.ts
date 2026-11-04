@@ -113,14 +113,6 @@ function labToggle(page: LabsPageElement, title: string) {
   return toggle;
 }
 
-function labDocsLink(page: LabsPageElement, title: string) {
-  const link = labRow(page, title).querySelector<HTMLAnchorElement>(".settings-row__desc a");
-  if (!link) {
-    throw new Error(`${title} documentation link not rendered`);
-  }
-  return link;
-}
-
 function codeModeToggle(page: LabsPageElement) {
   return labToggle(page, "Code Mode");
 }
@@ -142,20 +134,13 @@ describe("LabsPage", () => {
 
     expect(page.querySelector(".page-subtitle")?.textContent).toContain("experimental");
     expect(page.querySelector(".settings-page__intro")).toBeNull();
-    const introLink = page.querySelector<HTMLAnchorElement>(".page-subtitle a");
-    expect(introLink?.textContent?.trim()).toBe("Learn more");
-    expect(introLink?.href).toBe("https://docs.openclaw.ai/concepts/experimental-features");
+    expect(page.querySelector(".page-subtitle a")).toBeNull();
     expect(page.querySelectorAll(".settings-row")).toHaveLength(LAB_FEATURES.length);
     expect(page.textContent).toContain("Code Mode");
     expect(page.textContent).toContain("Swarm");
     expect(page.textContent).toContain("Host Desktop");
     expect(page.textContent).toContain("Cloud Worker Desktop");
     expect(codeModeToggle(page).checked).toBe(true);
-
-    const docs = LAB_FEATURES.map((feature) => labDocsLink(page, feature.title()));
-    expect(docs.map((link) => link.href)).toEqual(LAB_FEATURES.map((feature) => feature.docsUrl));
-    expect(docs.every((link) => link.target === "_blank")).toBe(true);
-    expect(docs.every((link) => link.rel.includes("noopener"))).toBe(true);
   });
 
   it("reflects the supported boolean Code Mode shorthand", async () => {

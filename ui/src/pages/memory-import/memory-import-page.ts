@@ -9,7 +9,7 @@ import type {
 import { subtitleForRoute, titleForRoute } from "../../app-navigation.ts";
 import { applicationContext, type ApplicationContext } from "../../app/context.ts";
 import { hasOperatorAdminAccess } from "../../app/operator-access.ts";
-import { renderLearnMoreLink, renderSettingsPageHeader } from "../../components/settings-ui.ts";
+import { renderSettingsPageHeader } from "../../components/settings-ui.ts";
 import { renderSettingsWorkspace } from "../../components/settings-workspace.ts";
 import { listSelectableAgents } from "../../lib/agents/display.ts";
 import { formatUiError } from "../../lib/format-error.ts";
@@ -25,7 +25,6 @@ import {
 } from "./view.ts";
 
 const SESSION_BACKFILL_BATCH_DAYS = 14;
-const MEMORY_IMPORT_DOCS_URL = "https://docs.openclaw.ai/install/migrating";
 
 type PendingMemoryImport = {
   providerId: string;
@@ -580,8 +579,7 @@ export class MemoryImportPage extends OpenClawLightDomElement {
     return html`
       ${renderSettingsPageHeader({
         title: titleForRoute("memory-import"),
-        subtitle: html`${subtitleForRoute("memory-import")}
-        ${renderLearnMoreLink(MEMORY_IMPORT_DOCS_URL)}`,
+        subtitle: subtitleForRoute("memory-import"),
       })}
       ${renderSettingsWorkspace(body)}
     `;

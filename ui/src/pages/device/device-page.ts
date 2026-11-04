@@ -11,7 +11,6 @@ import type {
   SettingKey,
 } from "../../app/native-device-settings.ts";
 import {
-  renderLearnMoreLink,
   renderSettingsEmpty,
   renderSettingsPage,
   renderSettingsPageHeader,
@@ -202,7 +201,6 @@ class DevicePage extends OpenClawLightDomElement {
                   rel="noopener noreferrer"
                   >${t("appsPage.ctaChromeWebStore")}</a
                 >
-                ${renderLearnMoreLink("https://docs.openclaw.ai/tools/chrome-extension")}
               </div>
               <p role="status">
                 ${
@@ -544,8 +542,11 @@ class DevicePage extends OpenClawLightDomElement {
     return html`
       ${renderSettingsPageHeader({
         title: t(deviceSettingsGroupLabelKey(snapshot)),
-        subtitle: html`${t(snapshot?.device.platform === "ios" ? "configPage.deviceSettings.introIos" : "configPage.deviceSettings.intro")}
-        ${renderLearnMoreLink(snapshot?.device.platform === "ios" ? "https://docs.openclaw.ai/platforms/ios" : "https://docs.openclaw.ai/platforms/macos")}`,
+        subtitle: t(
+          snapshot?.device.platform === "ios"
+            ? "configPage.deviceSettings.introIos"
+            : "configPage.deviceSettings.intro",
+        ),
       })}
       ${renderSettingsWorkspace(renderSettingsPage(body))}
     `;

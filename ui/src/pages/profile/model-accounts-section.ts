@@ -9,7 +9,6 @@ import type {
 import { providerDisplayLabel, renderProviderBrandIcon } from "../../components/provider-icon.ts";
 import { renderPicker } from "../../components/select-picker.ts";
 import {
-  renderLearnMoreLink,
   renderSettingsEmpty,
   renderSettingsRow,
   renderSettingsSection,
@@ -353,9 +352,6 @@ export function renderModelAccountsSection(
               <button type="button" class="btn btn--sm" @click=${context.onConnectionSettings}>
                 ${t("profilePage.modelAccounts.connectionSettings")}
               </button>
-              ${renderLearnMoreLink(
-                "https://docs.openclaw.ai/concepts/multi-user#per-person-model-accounts",
-              )}
             `,
           })
     }

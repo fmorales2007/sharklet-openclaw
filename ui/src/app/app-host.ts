@@ -75,6 +75,7 @@ import {
   retryStaleChunkReloadWhenReachable,
   scheduleStaleChunkReload,
 } from "./stale-chunk-reload.ts";
+import { observeTaskNotice } from "./task-notices.ts";
 
 const APP_SIDEBAR_TAG = "openclaw-app-sidebar";
 const APP_SIDEBAR_ELEMENT = {
@@ -520,6 +521,7 @@ class OpenClawShell
         invalidateChatMetadataStore(client);
       }
     }
+    void observeTaskNotice(event);
     this.shellGateway.handleGatewayEvent(event);
   };
 
