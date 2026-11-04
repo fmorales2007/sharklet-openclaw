@@ -355,6 +355,18 @@
   line-height: 1.2;
 }
 
+.chat-group-cost {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.chat-group-cost::before {
+  content: "·";
+  margin-inline: 6px;
+}
+
 /* ── Group footer action buttons ── */
 .chat-group-footer-actions button,
 .chat-group-footer .chat-send-status__action,
@@ -900,6 +912,7 @@ img.chat-avatar.chat-avatar--logo {
 
   .chat-group-footer-actions .chat-copy-btn,
   .chat-group-footer-actions .chat-reply-btn,
+  .chat-group-footer-actions .chat-retry-btn,
   .chat-message-actions-row .chat-copy-btn,
   .chat-message-actions-row .chat-reply-btn {
     min-width: 44px;
@@ -911,7 +924,8 @@ img.chat-avatar.chat-avatar--logo {
    above own their look; the muted color also covers .btn hosts like the file
    preview header. */
 .chat-copy-btn,
-.chat-reply-btn {
+.chat-reply-btn,
+.chat-retry-btn {
   color: var(--muted);
 }
 
@@ -983,7 +997,8 @@ img.chat-avatar.chat-avatar--logo {
 }
 
 .chat-copy-btn:focus-visible,
-.chat-reply-btn:focus-visible {
+.chat-reply-btn:focus-visible,
+.chat-retry-btn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -1168,7 +1183,6 @@ img.chat-avatar.chat-avatar--logo {
 .msg-meta__time,
 .msg-meta__tokens,
 .msg-meta__cache,
-.msg-meta__cost,
 .msg-meta__ctx,
 .msg-meta__model {
   display: inline-flex;
@@ -1182,10 +1196,6 @@ img.chat-avatar.chat-avatar--logo {
   padding: 1px 6px;
   border-radius: var(--radius-sm, 4px);
   font-family: var(--mono);
-}
-
-.msg-meta__cost {
-  color: var(--ok);
 }
 
 .msg-meta__ctx--warn {

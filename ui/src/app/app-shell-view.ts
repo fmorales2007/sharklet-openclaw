@@ -703,6 +703,7 @@ export function renderApplicationShell(host: ShellViewHost) {
           : nothing
       }
       <openclaw-toast-host></openclaw-toast-host>
+      <openclaw-task-notices></openclaw-task-notices>
     </div>
   `;
   return html`${renderPluginSurface(

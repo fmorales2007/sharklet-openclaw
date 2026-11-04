@@ -3,12 +3,14 @@ import type { ChatRunUiStatus } from "../run-lifecycle.ts";
 import {
   adjustTextareaHeight,
   disconnectComposerPopoverAnchorObserver,
+  disconnectTextareaOverflowObserver,
 } from "./chat-composer-dom.ts";
 import { clearGoalElapsedTimers } from "./chat-composer-goal.ts";
 import { HumanMentionMenu } from "./chat-composer-mention-menu.ts";
 import { createSkillMenuState } from "./chat-composer-skill-menu.ts";
 import { createSlashMenuState } from "./chat-composer-slash-menu.ts";
 import type { ChatComposerProps, ChatComposerState } from "./chat-composer-types.ts";
+import { TypingPlaceholder } from "./chat-composer-typing-placeholder.ts";
 
 function createChatComposerState(): ChatComposerState {
   return {
@@ -36,6 +38,8 @@ function createChatComposerState(): ChatComposerState {
     composerDraftScopeKey: null,
     dictationError: null,
     dictationSelection: null,
+    typingPlaceholder: new TypingPlaceholder(),
+    commandOwner: null,
   };
 }
 
@@ -147,11 +151,16 @@ export function suppressStaleSubmittedDraftReplay(
 
 function disposeChatComposerState(state: ChatComposerState) {
   state.mentionMenu.dispose();
+  state.typingPlaceholder.reset();
   state.composerDraftScopeKey = null;
   state.dictation?.dispose();
   state.microphonePicker?.dispose();
   if (state.composerInput) {
     disconnectComposerPopoverAnchorObserver(state.composerInput);
+  }
+  if (state.composerTextarea) {
+    disconnectTextareaOverflowObserver(state.composerTextarea);
+    state.composerTextarea = null;
   }
 }
 

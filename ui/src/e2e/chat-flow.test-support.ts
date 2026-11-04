@@ -303,3 +303,23 @@ export async function readOutboxPayloadAttachments(page: Page, key: string) {
     }
   }, key);
 }
+
+/** Tool steps are flat lines; their output opens in the detail panel one step at a time. */
+export async function openToolOutput(page: Page, text: string, timeout = 15_000) {
+  const deadline = Date.now() + timeout;
+  const panelText = page.locator("openclaw-chat-detail-panel").getByText(text).first();
+  while (Date.now() < deadline) {
+    for (const row of await page.locator(".chat-tool-row--link").all()) {
+      await row.click();
+      if (
+        await panelText.waitFor({ timeout: 500 }).then(
+          () => true,
+          () => false,
+        )
+      ) {
+        return panelText;
+      }
+    }
+  }
+  throw new Error(`No tool step opened output containing: ${text}`);
+}

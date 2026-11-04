@@ -4,7 +4,11 @@ import {
   defaultControlUiFeatureMethods,
   installMockGateway,
 } from "../test-helpers/control-ui-e2e.ts";
-import { captureUiProof, expectRequestCountStable } from "./chat-flow.test-support.ts";
+import {
+  captureUiProof,
+  expectRequestCountStable,
+  openToolOutput,
+} from "./chat-flow.test-support.ts";
 import { openChatSidePanelType } from "./chat-side-panel.test-support.ts";
 import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts";
 
@@ -125,23 +129,10 @@ suite.define(() => {
               },
             },
           });
-          const expandHistoryTools = async () => {
-            for (const summary of await page.locator(".chat-activity-group__summary").all()) {
-              if ((await summary.getAttribute("aria-expanded")) !== "true") {
-                await summary.click();
-              }
-            }
-            for (const summary of await page.locator(".chat-tool-msg-summary").all()) {
-              if ((await summary.getAttribute("aria-expanded")) !== "true") {
-                await summary.click();
-              }
-            }
-          };
           await page.goto(`${suite.server.baseUrl}chat`);
           await page.getByText("History is ready.", { exact: true }).waitFor();
           await expectRequestCountStable(gateway, "browser.request", 0);
           expect(await page.locator("openclaw-browser-tab-card").count()).toBe(0);
-          await expandHistoryTools();
           if (includeHistory) {
             for (const output of [
               "Standalone ordinary output 0",
@@ -149,7 +140,7 @@ suite.define(() => {
               "Nested ordinary output",
               "Envelope output",
             ]) {
-              await page.getByText(output, { exact: true }).waitFor();
+              await openToolOutput(page, output);
             }
           }
 
@@ -181,7 +172,6 @@ suite.define(() => {
               },
             });
           }
-          const liveTurn = page.locator(`.chat-group[data-chat-row-key*="${runId}"]`);
           const expectToolOutput = async (toolCallId: string, text: string) => {
             // Keep the former poll's overall budget; every native action owns only
             // the remaining time. Never pass zero: Playwright treats it as unlimited.
@@ -193,27 +183,7 @@ suite.define(() => {
               }
               return remaining;
             };
-            // Live calls can regroup and unmount individual rows on the next frame.
-            // Wait for this run's disclosure, then act on the exact tool identity.
-            const activity = liveTurn.locator(".chat-activity-group__summary");
-            await activity.waitFor({ timeout: remainingTimeout() });
-            const activityExpanded = await activity.getAttribute("aria-expanded", {
-              timeout: remainingTimeout(),
-            });
-            if (activityExpanded !== "true") {
-              await activity.click({ timeout: remainingTimeout() });
-            }
-            const tool = liveTurn.locator(`[data-message-id^="tool:assistant:${toolCallId}:"]`);
-            const summary = tool.locator(".chat-tool-msg-summary");
-            const toolExpanded = await summary.getAttribute("aria-expanded", {
-              timeout: remainingTimeout(),
-            });
-            if (toolExpanded !== "true") {
-              await summary.click({ timeout: remainingTimeout() });
-            }
-            const output = tool.getByText(text, { exact: true });
-            await output.waitFor({ timeout: remainingTimeout() });
-            await output.scrollIntoViewIfNeeded({ timeout: remainingTimeout() });
+            await openToolOutput(page, text, remainingTimeout());
             remainingTimeout();
           };
           await expectToolOutput("live-0", "Live ordinary output 0");
@@ -230,6 +200,8 @@ suite.define(() => {
           await openChatSidePanelType(page, "Browser");
           const panel = page.locator("section.bp");
           await panel.locator('.bp-shot[alt="Configured default"]').waitFor();
+          const rows = page.locator(".chat-tool-row");
+          const rowsBefore = await rows.count();
           await emitTool({ phase: "start", toolCallId: "live-after-open", name: "read", args: {} });
           await emitTool({
             phase: "result",
@@ -240,7 +212,8 @@ suite.define(() => {
               details,
             },
           });
-          await expectToolOutput("live-after-open", "Live output after opening Browser");
+          // Opening the output would replace the Browser panel, so only the step line is checked.
+          await expect.poll(() => rows.count()).toBeGreaterThan(rowsBefore);
           expect(await page.locator("openclaw-browser-tab-card").count()).toBe(0);
           expect(await panel.locator('.bp-shot[alt="Configured default"]').isVisible()).toBe(true);
           const requests = await gateway.getRequests("browser.request");

@@ -1183,7 +1183,7 @@
 }
 
 /* renderBody is shared by normal bubbles and expanded tool output. */
-:is(.chat-bubble, .chat-tool-msg-body, .chat-message-avatar-anchor) {
+:is(.chat-bubble, .chat-message-avatar-anchor) {
   > :is(
     .chat-message-images,
     .chat-assistant-attachments,

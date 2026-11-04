@@ -463,6 +463,7 @@ export function renderAppSidebarFooterBar(host: AppSidebarRenderHost) {
             : nothing
         }
         ${renderAppSidebarAttention(host)}
+        <openclaw-notice-bell></openclaw-notice-bell>
       </span>
     </div>
   `;

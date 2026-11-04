@@ -317,9 +317,7 @@ function renderWorkGroupSummaryMock(
 
 beforeEach(() => {
   vi.spyOn(chatThread, "buildCachedChatItems").mockImplementation(buildChatItemsMock);
-  vi.spyOn(chatThread, "getExpandedToolCards").mockReturnValue(new Map<string, boolean>());
   vi.spyOn(chatThread, "getExpandedUserMessages").mockReturnValue(new Map<string, boolean>());
-  vi.spyOn(chatThread, "syncToolCardExpansionState").mockImplementation(() => undefined);
   vi.spyOn(chatMessage, "getChatMediaRenderVersion").mockImplementation(
     () => chatMediaRenderVersionMock.value,
   );

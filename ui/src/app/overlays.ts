@@ -19,6 +19,9 @@ import {
   syncDevicePairSetupCountdown,
 } from "../lib/device-pair-setup.ts";
 import { formatUiError } from "../lib/format-error.ts";
+import { showToast } from "../lib/toast.ts";
+import { generateUUID } from "../lib/uuid.ts";
+import { notifyApprovalArrival } from "./approval-notification.ts";
 import type { ConnectionBootstrapCoordinator } from "./connection-bootstrap.ts";
 import {
   clearExecApprovalTimers,
@@ -272,6 +275,7 @@ export function createApplicationOverlays(
     const requestedApproval = parseApprovalRequestedEvent(event.event, event.payload);
     if (requestedApproval) {
       enqueueExecApprovalPrompt(promptState, requestedApproval);
+      notifyApprovalArrival(requestedApproval);
       publish();
       return;
     }
@@ -296,7 +300,7 @@ export function createApplicationOverlays(
     runUpdate: updates.runUpdate,
     holdUpdate: updates.holdUpdate,
     reportUpdateFailure: updates.reportUpdateFailure,
-    async decideApproval(decision, approvalId, projectedApproval) {
+    async decideApproval(decision, approvalId, projectedApproval, explanation) {
       const active = approvalId
         ? (promptState.execApprovalQueue.find((entry) => entry.id === approvalId) ??
           (projectedApproval?.id === approvalId ? projectedApproval : undefined))
@@ -340,6 +344,19 @@ export function createApplicationOverlays(
           return;
         }
         clearResolvedExecApprovalPrompt(promptState, active.id);
+        const sessionKey = active.request.sessionKey?.trim();
+        const note = explanation?.trim();
+        if (decision === "deny" && note && sessionKey) {
+          // The denial is already recorded; a failed note must not look like a failed denial.
+          await client
+            .request("chat.send", {
+              sessionKey,
+              message: note,
+              queueMode: "steer",
+              idempotencyKey: generateUUID(),
+            })
+            .catch(() => showToast({ message: t("execApproval.explainFailed") }));
+        }
       } catch (error) {
         if (isStaleApprovalResolutionError(error)) {
           if (!isCurrentOperation()) {

@@ -250,7 +250,7 @@ suite.define(() => {
       const start = page.getByRole("button", { name: "Start in terminal" });
       await expect.poll(() => start.getAttribute("aria-disabled")).toBe("true");
       await page.locator(".new-session-page__message").press("Enter");
-      await page.locator(".new-session-page__blocked-submit").waitFor();
+      await page.locator(".agent-chat__composer-underlaps [role='status']").waitFor();
       expect(await gateway.getRequests("sessions.create")).toHaveLength(0);
       expect(await gateway.getRequests("sessions.catalog.startTerminal")).toHaveLength(0);
       expect(await page.locator(".new-session-page__start-submit").count()).toBe(1);

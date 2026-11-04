@@ -33,9 +33,11 @@ import type { HumanMentionDirectory, HumanMentionMenu } from "./chat-composer-me
 import type {
   ChatComposerCapabilityMenuProps,
   ChatComposerPlusMenuView,
+  ChatComposerRootToggle,
 } from "./chat-composer-plus-menu.ts";
 import type { SkillMenuState } from "./chat-composer-skill-menu.ts";
 import type { SlashMenuState } from "./chat-composer-slash-menu.ts";
+import type { TypingPlaceholder } from "./chat-composer-typing-placeholder.ts";
 import type { ChatPermissionPickerProps } from "./chat-permission-picker.ts";
 
 /** One shape for queued-row edit state and actions. */
@@ -52,6 +54,42 @@ type ChatQueuedEditProps = {
 };
 
 export type CapabilityMenuProps = ChatComposerCapabilityMenuProps;
+
+/** One Home composer at a time; a second would need `new-session:${draftOwnerKey}`. */
+export const HOME_COMPOSER_PANE_ID = "new-session";
+
+/**
+ * Presence of this slot is the "no session yet" mode: the composer starts a
+ * session from the draft instead of sending into one. Only Home supplies it.
+ */
+export type ChatComposerHomeSlot = {
+  /** Target bar and draft errors, painted before the shell as siblings. */
+  header?: TemplateResult | typeof nothing;
+  /** Draft/incognito pill and override status, after the permission picker. */
+  leadControls?: TemplateResult | typeof nothing;
+  /** Extra plus-menu switches, such as the draft visibility toggle. */
+  rootToggles?: readonly ChatComposerRootToggle[];
+  /** Click-to-dictate microphone; Home has no Talk. */
+  voiceControl?: TemplateResult | typeof nothing;
+  dictation: { active: boolean; preview?: string; status?: TemplateResult | typeof nothing };
+  /** Already translated; typed in by the composer on first mount. */
+  placeholder: string;
+  /** Native terminal start: no menus, no attachments, no mentions. */
+  nativeTerminal: boolean;
+  submitting: boolean;
+  messageLocked: boolean;
+  requiresModifier: boolean;
+  start: {
+    canSubmit: boolean;
+    /** A reasoned gate: Enter still submits so the flow can surface the reason. */
+    disabledReason?: string;
+    label: string;
+    onSubmit: () => void;
+    onBackgroundSubmit?: () => void;
+  };
+  commandOwner: { client: GatewayBrowserClient | null; agentId: string; draftOwnerKey: string };
+  onUnsupportedAttachment?: () => void;
+};
 
 type ChatComposerDisabledBannerContent = {
   title?: string;
@@ -74,6 +112,7 @@ export type ChatComposerProps = ChatAttachmentControlsProps & {
   sessionKey: string;
   currentAgentId: string;
   connected: boolean;
+  home?: ChatComposerHomeSlot;
   offline?: boolean;
   queuedOutboxCount?: number;
   canSend: boolean;
@@ -209,4 +248,7 @@ export type ChatComposerState = SkillMenuState &
     composerDraftScopeKey: string | null;
     dictationError: string | null;
     dictationSelection: { start: number; end: number; value: string } | null;
+    typingPlaceholder: TypingPlaceholder;
+    /** Home only: the owner the pending skill menu generation belongs to. */
+    commandOwner: ChatComposerHomeSlot["commandOwner"] | null;
   };

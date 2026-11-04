@@ -16,6 +16,9 @@ import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import { focusChatComposerFromPrintableKeydown } from "../chat/chat-pane-shared.ts";
 import "../../styles/chat/composer.css";
 import "../../styles/new-session.css";
+import { ComposerDictationText } from "../chat/components/chat-composer-dictation-text.ts";
+import { getChatComposerState } from "../chat/components/chat-composer-state.ts";
+import { HOME_COMPOSER_PANE_ID } from "../chat/components/chat-composer-types.ts";
 import { renderChatImageLightbox } from "../chat/components/chat-image-lightbox.ts";
 import { renderWelcomeState } from "../chat/components/chat-welcome.ts";
 import * as catalog from "./catalog-target.ts";
@@ -168,7 +171,9 @@ export class NewSessionPage extends OpenClawLightDomElement {
       () => this.requestUpdate(),
     );
     this.dictation = new NewSessionDictationControl({
-      textarea: this.submission.composerTextarea,
+      textarea: new ComposerDictationText(
+        () => getChatComposerState(HOME_COMPOSER_PANE_ID).composerTextarea,
+      ),
       getClient: () => this.gateway.client,
       isConnected: () => this.gateway.connected,
       canCommit: () => !this.submission.submitting && !this.submission.pendingPlacement.sessionKey,

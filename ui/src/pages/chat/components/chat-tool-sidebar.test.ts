@@ -34,12 +34,14 @@ describe("tool detail sidebar", () => {
           outputText: "Opened page",
           messageId: "msg-tool-full",
         },
-        { messageKey: "test-message", expanded: true, onToggleExpanded: vi.fn(), onOpenSidebar },
+        { messageKey: "test-message", onOpenSidebar },
       ),
       container,
     );
 
-    container.querySelector<HTMLButtonElement>(".chat-tool-card__action-btn")?.click();
+    container
+      .querySelector<HTMLButtonElement>(".chat-tool-row__toggle, button.chat-tool-row")
+      ?.click();
 
     expect(onOpenSidebar).toHaveBeenCalledOnce();
     expect(onOpenSidebar.mock.calls[0]?.[0]).toEqual({

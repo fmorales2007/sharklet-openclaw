@@ -98,11 +98,15 @@ function historyMessages() {
   }));
 }
 
-async function openQuestionPage(viewport = { height: 900, width: 1440 }) {
+async function openQuestionPage(
+  viewport = { height: 900, width: 1440 },
+  contextOptions: { hasTouch?: boolean; isMobile?: boolean } = {},
+) {
   context = await suite.browser.newContext({
     locale: "en-US",
     serviceWorkers: "block",
     viewport,
+    ...contextOptions,
     ...(captureUiProof ? { recordVideo: { dir: proofDir, size: viewport } } : {}),
   });
   const page = await context.newPage();
@@ -594,6 +598,28 @@ suite.define(() => {
     expect(await page.locator("body").textContent()).not.toContain(fakeSecret);
     await screenshot(page, "09-secret-store-answered.png");
   });
+
+  it.each([
+    ["a phone drops", { hasTouch: true, isMobile: true }, { height: 844, width: 390 }, ""],
+    ["a desktop keeps", {}, { height: 900, width: 1440 }, "fake-secret-never-use-background-123"],
+  ] as const)(
+    "%s a typed credential when the page goes to the background",
+    async (_label, contextOptions, viewport, expected) => {
+      const { gateway, page } = await openQuestionPage(viewport, contextOptions);
+      await emitRequested(gateway, secretStoreQuestion("question-store-secret-background"));
+      const panel = panelFor(page, "Provide the deployment API key");
+      await panel.waitFor();
+      const secretInput = panel.getByLabel("API key", { exact: true });
+      await secretInput.fill("fake-secret-never-use-background-123");
+
+      await page.evaluate(() => {
+        Object.defineProperty(document, "visibilityState", { configurable: true, value: "hidden" });
+        document.dispatchEvent(new Event("visibilitychange"));
+      });
+
+      await expect.poll(() => secretInput.inputValue()).toBe(expected);
+    },
+  );
 
   it("keeps a store-bound question interactive after Gateway validation rejects its hosts", async () => {
     const { gateway, page } = await openQuestionPage();

@@ -8,6 +8,7 @@ import {
   formatDateMs,
   formatCompactTokenCount,
   formatContextTokenCapacity,
+  formatCost,
   formatDurationCompact,
   formatDurationHuman,
   formatMs,
@@ -171,6 +172,16 @@ describe("date/time millisecond formatters", () => {
     expect(
       formatTimeMs(timestamp, { hour: "numeric", minute: "2-digit", second: "2-digit" }),
     ).toMatch(/:55(?:\s|$)/u);
+  });
+});
+
+describe("formatCost", () => {
+  it("follows writing.md: two decimals, three under a cent", () => {
+    expect(formatCost(6.84)).toBe("$6.84");
+    expect(formatCost(0.04)).toBe("$0.04");
+    expect(formatCost(0.0042)).toBe("$0.004");
+    expect(formatCost(0)).toBe("$0.00");
+    expect(formatCost(null)).toBe("$0.00");
   });
 });
 

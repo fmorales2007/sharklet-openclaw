@@ -13,6 +13,7 @@ import "../../../styles/chat/reply-preview.css";
 import type { ComposerDictationController } from "../composer-dictation.ts";
 import { insertComposerDictation } from "../composer-dictation.ts";
 import {
+  createChatAttachmentDropHandlers,
   handleChatAttachmentPaste,
   renderAttachmentPreview,
   renderChatAttachmentInputs,
@@ -26,6 +27,11 @@ import {
 import { focusComposerFromChrome, paneDomId } from "./chat-composer-dom.ts";
 import type { GoalComposerController } from "./chat-composer-goal-mode.ts";
 import { renderChatGoal } from "./chat-composer-goal.ts";
+import {
+  homeKeyShortcuts,
+  homeReadingAttachmentNotice,
+  renderHomeStartControl,
+} from "./chat-composer-home.ts";
 import {
   renderSelectedHumanMentions,
   type HumanMentionMenuHost,
@@ -260,14 +266,17 @@ export function renderChatComposerView(context: ChatComposerViewContext) {
       : nothing;
   // Dictation previews at the captured selection. The textarea remains
   // read-only until stop commits the same insertion into the real draft.
-  const dictationPreviewDraft = dictation?.active
-    ? insertComposerDictation(
-        state.dictationSelection?.value ?? visibleDraft,
-        dictation.transcript,
-        state.dictationSelection?.start ?? visibleDraft.length,
-        state.dictationSelection?.end ?? visibleDraft.length,
-      ).value
-    : visibleDraft;
+  const home = props.home;
+  const dictationPreviewDraft = home
+    ? (home.dictation.preview ?? visibleDraft)
+    : dictation?.active
+      ? insertComposerDictation(
+          state.dictationSelection?.value ?? visibleDraft,
+          dictation.transcript,
+          state.dictationSelection?.start ?? visibleDraft.length,
+          state.dictationSelection?.end ?? visibleDraft.length,
+        ).value
+      : visibleDraft;
   const draftDirection = detectTextDirection(dictationPreviewDraft);
   const interruptedStatus = props.runError
     ? nothing
@@ -321,11 +330,36 @@ export function renderChatComposerView(context: ChatComposerViewContext) {
       </div>`
     : nothing;
   const compoundQuestionComposer = Boolean(questionPanelProps && showComposerInput);
+  const homeDictating = home?.dictation.active === true;
+  const attachmentsLocked = !canCompose || homeDictating;
+  const homeDrop = home
+    ? createChatAttachmentDropHandlers({
+        ...props,
+        disabled: attachmentsLocked,
+        canCompose: !attachmentsLocked && !home.nativeTerminal,
+      })
+    : null;
   return html`
+    ${home?.header ?? nothing}
     <div
       class="agent-chat__composer-shell ${
-        compoundQuestionComposer ? "agent-chat__composer-shell--question-composer" : ""
-      }"
+        home ? "new-session-page__composer" : ""
+      } ${compoundQuestionComposer ? "agent-chat__composer-shell--question-composer" : ""}"
+      @drop=${
+        home && homeDrop
+          ? (event: DragEvent) => {
+              if (home.nativeTerminal && event.dataTransfer?.files.length) {
+                event.preventDefault();
+                home.onUnsupportedAttachment?.();
+              } else {
+                homeDrop.onDrop(event);
+              }
+            }
+          : nothing
+      }
+      @dragenter=${homeDrop?.onDragenter ?? nothing}
+      @dragleave=${homeDrop?.onDragleave ?? nothing}
+      @dragover=${homeDrop?.onDragover ?? nothing}
     >
       <div class="agent-chat__composer-overlay">
         ${props.anchoredNotices ?? nothing} ${composerAlerts} ${fallbackStatus}
@@ -353,7 +387,7 @@ export function renderChatComposerView(context: ChatComposerViewContext) {
           ? html`<div
               class="agent-chat__input agent-chat__input--chat agent-chat__input--mobile-toolbar ${
                 props.offline ? "agent-chat__input--offline" : ""
-              }${dictation?.active ? " agent-chat__input--dictating" : ""}"
+              }${dictation?.active || homeDictating ? " agent-chat__input--dictating" : ""}"
               aria-busy=${props.disabledReasonBusy ? "true" : "false"}
               @wa-show=${handleChatComposerDropdownShow}
               @wa-after-show=${restorePointerOpenedChatComposerTrigger}
@@ -416,8 +450,12 @@ export function renderChatComposerView(context: ChatComposerViewContext) {
                       `
                     : nothing
                 }
-                ${renderComposerDictationStatus(dictation)}
-                ${renderChatAttachmentInputs({ ...props, disabled: !canCompose })}
+                ${home ? (home.dictation.status ?? nothing) : renderComposerDictationStatus(dictation)}
+                ${
+                  home?.nativeTerminal
+                    ? nothing
+                    : renderChatAttachmentInputs({ ...props, disabled: attachmentsLocked })
+                }
                 ${
                   props.realtimeTalkVideoStream
                     ? html`
@@ -464,10 +502,12 @@ export function renderChatComposerView(context: ChatComposerViewContext) {
                 <div class="agent-chat__composer-combobox">
                   <textarea
                     ${ref(state.textareaRef ?? undefined)}
+                    class=${home ? "new-session-page__message" : nothing}
+                    ?autofocus=${home ? (globalThis.matchMedia?.("(max-width: 560px)")?.matches ?? false) : false}
                     .value=${guard([dictationPreviewDraft], () => live(dictationPreviewDraft))}
                     dir=${draftDirection}
                     ?disabled=${!canCompose}
-                    ?readonly=${dictation?.locksComposer === true || goalComposer.pending}
+                    ?readonly=${dictation?.locksComposer === true || goalComposer.pending || homeDictating}
                     aria-autocomplete="list"
                     aria-controls=${ifDefined(
                       slashMenuVisible || skillMenuVisible || mentionMenuVisible
@@ -484,7 +524,11 @@ export function renderChatComposerView(context: ChatComposerViewContext) {
                       props.disabledReason ? ` ${disabledReasonId}` : ""
                     }`}
                     aria-keyshortcuts=${
-                      sendShortcut === "enter" ? "Enter" : "Control+Enter Meta+Enter"
+                      home
+                        ? homeKeyShortcuts(home)
+                        : sendShortcut === "enter"
+                          ? "Enter"
+                          : "Control+Enter Meta+Enter"
                     }
                     @keydown=${handleKeyDown}
                     @beforeinput=${handleBeforeInput}
@@ -503,11 +547,18 @@ export function renderChatComposerView(context: ChatComposerViewContext) {
                     @compositionend=${handleCompositionEnd}
                     @blur=${handleBlur}
                     @paste=${(event: ClipboardEvent) => {
-                      if (canCompose && !props.suggestionComposer) {
+                      if (home?.nativeTerminal && event.clipboardData?.files.length) {
+                        event.preventDefault();
+                        home.onUnsupportedAttachment?.();
+                      } else if (
+                        !attachmentsLocked &&
+                        !props.suggestionComposer &&
+                        !home?.nativeTerminal
+                      ) {
                         handleChatAttachmentPaste(event, props);
                       }
                     }}
-                    aria-label=${t("chat.composer.composerInput")}
+                    aria-label=${home ? home.placeholder : t("chat.composer.composerInput")}
                     placeholder=${dictation?.active ? "" : placeholder}
                     rows="1"
                   ></textarea>
@@ -531,41 +582,62 @@ export function renderChatComposerView(context: ChatComposerViewContext) {
 
               <div class="agent-chat__composer-footer">
                 <div class="agent-chat__composer-lead agent-chat__composer-meta">
-                  ${renderChatComposerPlusMenu({
-                    attachments: props,
-                    capabilityMenu: props.capabilityMenu,
-                    disabled: !canCompose || props.suggestionComposer === true,
-                    open: state.capabilityMenuOpen,
-                    view: state.capabilityMenuView,
-                    toolOverrides: props.toolOverrides,
-                    onOpenChange: (open) => {
-                      state.capabilityMenuOpen = open;
-                      if (!open) {
-                        state.capabilityMenuView = "root";
-                      }
-                      requestUpdate();
-                    },
-                    onViewChange: (view) => {
-                      state.capabilityMenuView = view;
-                      requestUpdate();
-                    },
-                  })}
-                  ${composerLeadControl}
+                  ${
+                    home?.nativeTerminal
+                      ? nothing
+                      : renderChatComposerPlusMenu({
+                          attachments: props,
+                          capabilityMenu: props.capabilityMenu,
+                          disabled: attachmentsLocked || props.suggestionComposer === true,
+                          open: state.capabilityMenuOpen,
+                          view: state.capabilityMenuView,
+                          toolOverrides: props.toolOverrides,
+                          rootToggles: home?.rootToggles,
+                          onOpenChange: (open) => {
+                            state.capabilityMenuOpen = open;
+                            if (!open) {
+                              state.capabilityMenuView = "root";
+                            }
+                            requestUpdate();
+                          },
+                          onViewChange: (view) => {
+                            state.capabilityMenuView = view;
+                            requestUpdate();
+                          },
+                        })
+                  }
+                  ${composerLeadControl} ${home?.leadControls ?? nothing}
                 </div>
                 <div class="agent-chat__composer-trail">
-                  <div class="agent-chat__composer-meta agent-chat__composer-context">
-                    ${contextNotice}
-                  </div>
+                  ${
+                    home
+                      ? nothing
+                      : html`<div class="agent-chat__composer-meta agent-chat__composer-context">
+                          ${contextNotice}
+                        </div>`
+                  }
                   ${
                     composerControls !== nothing
                       ? html` <div class="agent-chat__composer-controls">${composerControls}</div> `
                       : nothing
                   }
                   <div class="agent-chat__composer-actions">
-                    ${renderChatPrimaryActions(runControlsProps)}
+                    ${
+                      home
+                        ? html`${home.voiceControl ?? nothing}${
+                            homeDictating ? nothing : renderHomeStartControl(state, home)
+                          }`
+                        : renderChatPrimaryActions(runControlsProps)
+                    }
                   </div>
                 </div>
               </div>
+              ${
+                home &&
+                (props.getPendingAttachmentReads?.() ?? props.pendingAttachmentReads ?? 0) > 0
+                  ? homeReadingAttachmentNotice()
+                  : nothing
+              }
             </div> `
           : props.disabledBanner?.kind === "composer-replacement"
             ? disabledBanner

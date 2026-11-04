@@ -397,7 +397,6 @@ function activityAlignmentHtml() {
                 <span class="chat-tool-disclosure__content">
                   <span class="chat-activity-group__label">Activity: 2 tools</span>
                 </span>
-                <span class="chat-tool-row__chevron">${iconSvg()}</span>
               </button>
               <div class="chat-activity-group__body">
                 <div class="chat-bubble chat-bubble--tool-shell" data-activity-call-row>
@@ -409,7 +408,6 @@ function activityAlignmentHtml() {
                           <span class="chat-tool-msg-summary__label">Bash</span>
                           <span class="chat-tool-msg-summary__names">search a deliberately long workspace path without extra card chrome</span>
                         </span>
-                        <span class="chat-tool-row__chevron">${iconSvg()}</span>
                       </button>
                     </div>
                   </div>
@@ -422,7 +420,6 @@ function activityAlignmentHtml() {
                         <span class="chat-tool-msg-summary__label">Bash</span>
                         <span class="chat-tool-msg-summary__names">Bash</span>
                       </span>
-                      <span class="chat-tool-row__chevron">${iconSvg()}</span>
                     </button>
                   </div>
                 </div>
@@ -1589,8 +1586,6 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
       expect(activityGroup.left).toBeCloseTo(toolColumn.left, 0);
       const styles = await page.evaluate(() => {
         const activity = document.querySelector<HTMLElement>(".chat-activity-group__summary")!;
-        const label = activity.querySelector<HTMLElement>(".chat-activity-group__label")!;
-        const chevron = activity.querySelector<HTMLElement>(".chat-tool-row__chevron")!;
         const toolRows = [
           ...document.querySelectorAll<HTMLElement>(
             ".chat-activity-group__body .chat-tool-msg-summary",
@@ -1606,7 +1601,6 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
             getComputedStyle(activity).paddingTop,
             getComputedStyle(activity).paddingBottom,
           ],
-          chevronGap: chevron.getBoundingClientRect().left - label.getBoundingClientRect().right,
           tool: firstToolStyle.userSelect,
           toolPaddingBlock: [firstToolStyle.paddingTop, firstToolStyle.paddingBottom],
           toolRowGap: secondToolRect.top - firstToolRect.bottom,
@@ -1617,8 +1611,6 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
         activity: "text",
         activityBackground: "rgba(0, 0, 0, 0)",
         activityPaddingBlock: hasTouch ? ["8px", "8px"] : ["5px", "5px"],
-        // Summary gap (8px) less the chevron's own -3px inset.
-        chevronGap: 5,
         tool: "text",
         toolPaddingBlock: ["3px", "3px"],
       });
@@ -2887,39 +2879,6 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
       expect(metrics.valueRight).toBeLessThanOrEqual(metrics.rowRight + 1);
       expect(metrics.headingRight).toBeLessThanOrEqual(metrics.cardRight + 1);
       expect(metrics.rowRight).toBeLessThanOrEqual(metrics.cardRight + 1);
-    } finally {
-      await closeBrowserPage(page);
-    }
-  });
-
-  it("reserves command text space for flush tool-card actions", async () => {
-    const page = await openBrowserPage(320, 568);
-    try {
-      await page.setContent(
-        `<!doctype html><html><head><style>${readUiCss()}</style></head><body>
-          <div class="chat-tool-card chat-tool-card--flush" style="width: 220px;">
-            <div class="chat-tool-card__actions">
-              <button class="chat-tool-card__action-btn" type="button">${iconSvg()}</button>
-            </div>
-            <div class="chat-tool-term">
-              <div class="chat-tool-term__cmd"><span class="chat-tool-term__prompt">$</span><code>command with a long first line</code></div>
-            </div>
-          </div>
-        </body></html>`,
-      );
-
-      const layout = await page.evaluate(() => {
-        const command = document.querySelector<HTMLElement>(".chat-tool-term__cmd")!;
-        const actions = document.querySelector<HTMLElement>(".chat-tool-card__actions")!;
-        const commandRect = command.getBoundingClientRect();
-        return {
-          actionLeft: actions.getBoundingClientRect().left,
-          commandContentRight:
-            commandRect.right - Number.parseFloat(getComputedStyle(command).paddingRight),
-        };
-      });
-
-      expect(layout.commandContentRight).toBeLessThanOrEqual(layout.actionLeft + 1);
     } finally {
       await closeBrowserPage(page);
     }

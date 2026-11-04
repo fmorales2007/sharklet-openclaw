@@ -107,32 +107,22 @@ describe.runIf(browserMode)("chat sidebar layout", () => {
 
       try {
         await panel.updateComplete;
-        await expect.poll(() => panel.querySelector(".chat-tool-msg-body")).not.toBeNull();
+        await expect.poll(() => panel.querySelector(".chat-tool-msg-summary")).not.toBeNull();
         const bubble = panel.querySelector<HTMLElement>(".user .chat-bubble")!;
-        const body = panel.querySelector<HTMLElement>(".chat-tool-msg-body")!;
-        const row = body.closest<HTMLElement>(".chat-virtual-row")!;
+        const step = panel.querySelector<HTMLElement>(".chat-tool-msg-summary")!;
+        const row = step.closest<HTMLElement>(".chat-virtual-row")!;
         const narrow = bubble.getBoundingClientRect();
-        const narrowToolWidth = body.getBoundingClientRect().width;
         for (const width of [300, 400, 600, 700]) {
           container.style.width = `${width}px`;
           await new Promise(requestAnimationFrame);
           const clip = row.getBoundingClientRect();
-          for (const selector of [
-            ".chat-tool-msg-body",
-            ".chat-tool-msg-summary",
-            ".chat-tool-card__block-content",
-            ".chat-tool-card__outcome",
-          ]) {
-            const bounds = panel.querySelector(selector)!.getBoundingClientRect();
-            expect(bounds.left).toBeGreaterThanOrEqual(clip.left);
-            expect(bounds.right).toBeLessThanOrEqual(clip.right);
-          }
-          expect(body.scrollWidth).toBeLessThanOrEqual(body.clientWidth);
+          const bounds = step.getBoundingClientRect();
+          expect(bounds.left).toBeGreaterThanOrEqual(clip.left);
+          expect(bounds.right).toBeLessThanOrEqual(clip.right);
         }
         const wide = bubble.getBoundingClientRect();
         expect(wide.width).toBeGreaterThan(narrow.width + 150);
         expect(wide.height).toBeLessThan(narrow.height);
-        expect(body.getBoundingClientRect().width).toBeGreaterThan(narrowToolWidth + 290);
       } finally {
         container.remove();
       }

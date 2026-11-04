@@ -86,6 +86,7 @@ export type ChatProps = Omit<
     onApprovalDecision?: (
       approvalId: string,
       decision: ExecApprovalDecision,
+      explanation?: string,
     ) => void | Promise<void>;
     workspaceConflict?: WorkspaceResultConflict;
     onDismissWorkspaceConflict?: () => void;

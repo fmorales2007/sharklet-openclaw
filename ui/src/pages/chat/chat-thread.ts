@@ -1,13 +1,10 @@
 import {
   accumulatedStreamText,
   trimAccumulatedStreamPrefix,
-  type ChatItem,
   type MessageGroup,
 } from "../../lib/chat/chat-types.ts";
 import { stripHeartbeatTokenForDisplay } from "../../lib/chat/heartbeat-display.ts";
-import { isStandaloneToolMessageForDisplay } from "../../lib/chat/message-normalizer.ts";
 import { senderIdentityKey } from "../../lib/chat/sender-label.ts";
-import { extractToolCardsCached } from "../../lib/chat/tool-cards.ts";
 import { areUiSessionKeysEquivalent } from "../../lib/sessions/session-key.ts";
 import { resetWorkingProgress } from "./chat-progress.ts";
 import { buildChatItems, type BuildChatItemsProps } from "./chat-thread-build.ts";
@@ -39,20 +36,7 @@ type CachedChatItems = {
 
 type RenderChatItem = ReturnType<typeof buildChatItems>[number];
 
-type ToolCardExpansionState = {
-  expanded: Map<string, boolean>;
-  // Group disclosures share the map but must stay outside tool-only auto-expand and pruning.
-  initialized: Set<string>;
-  lastSync?: {
-    // The scan memo must not retain messages after their owning pane releases them.
-    items: WeakRef<readonly RenderChatItem[]>;
-    isFilteredProjection: boolean;
-    autoExpandToolCalls: boolean;
-  };
-};
-
 const chatItemsByPane = new Map<string, Map<string, CachedChatItems>>();
-const toolCardStateBySession = new Map<string, ToolCardExpansionState>();
 const expandedUserMessagesBySession = new Map<string, Map<string, boolean>>();
 const expansionMapVersions = new WeakMap<ReadonlyMap<string, unknown>, number>();
 
@@ -63,7 +47,6 @@ export function resetChatThreadState(paneId?: string): void {
   }
   chatItemsByPane.clear();
   resetWorkingProgress();
-  toolCardStateBySession.clear();
   expandedUserMessagesBySession.clear();
 }
 
@@ -358,18 +341,6 @@ export function deleteExpansionState<T>(values: Map<string, T>, key: string): vo
   }
 }
 
-function getToolCardExpansionState(sessionKey: string): ToolCardExpansionState {
-  // Expansion choices, initialization, and memoization share one eviction boundary.
-  return getOrCreateSessionCacheValue(toolCardStateBySession, sessionKey, () => ({
-    expanded: new Map(),
-    initialized: new Set(),
-  }));
-}
-
-export function getExpandedToolCards(sessionKey: string): Map<string, boolean> {
-  return getToolCardExpansionState(sessionKey).expanded;
-}
-
 export function getExpandedUserMessages(sessionKey: string): Map<string, boolean> {
   for (const [cachedKey, state] of expandedUserMessagesBySession) {
     if (areUiSessionKeysEquivalent(cachedKey, sessionKey)) {
@@ -387,68 +358,3 @@ export type AssistantMessageExpansionState =
   | { status: "loading"; revision: number }
   | { status: "error"; revision: number }
   | { status: "loaded"; markdown: string; revision: number };
-
-export function syncToolCardExpansionState(
-  sessionKey: string,
-  items: readonly (ChatItem | MessageGroup)[],
-  autoExpandToolCalls: boolean,
-  isFilteredProjection = false,
-): void {
-  const state = getToolCardExpansionState(sessionKey);
-  const { expanded, initialized, lastSync } = state;
-  if (
-    lastSync?.items.deref() === items &&
-    lastSync.isFilteredProjection === isFilteredProjection &&
-    lastSync.autoExpandToolCalls === autoExpandToolCalls
-  ) {
-    return;
-  }
-  const currentToolCardIds = new Set<string>();
-  for (const item of items) {
-    if (item.kind !== "group") {
-      continue;
-    }
-    for (const entry of item.messages) {
-      const cards = extractToolCardsCached(entry.message);
-      for (let cardIndex = 0; cardIndex < cards.length; cardIndex++) {
-        const disclosureId = `${entry.key}:toolcard:${cardIndex}`;
-        currentToolCardIds.add(disclosureId);
-        if (initialized.has(disclosureId)) {
-          continue;
-        }
-        setExpansionState(expanded, disclosureId, autoExpandToolCalls);
-        initialized.add(disclosureId);
-      }
-      if (!isStandaloneToolMessageForDisplay(entry.message)) {
-        continue;
-      }
-      const disclosureId = `toolmsg:${entry.key}`;
-      currentToolCardIds.add(disclosureId);
-      if (initialized.has(disclosureId)) {
-        continue;
-      }
-      setExpansionState(expanded, disclosureId, autoExpandToolCalls);
-      initialized.add(disclosureId);
-    }
-  }
-  if (autoExpandToolCalls && !lastSync?.autoExpandToolCalls) {
-    for (const toolCardId of initialized) {
-      setExpansionState(expanded, toolCardId, true);
-    }
-  }
-  // Search hides existing cards temporarily; pruning that projection would
-  // discard the user's disclosure choice before the full transcript returns.
-  if (!isFilteredProjection) {
-    for (const disclosureId of initialized) {
-      if (!currentToolCardIds.has(disclosureId)) {
-        initialized.delete(disclosureId);
-        deleteExpansionState(expanded, disclosureId);
-      }
-    }
-  }
-  state.lastSync = {
-    items: new WeakRef(items),
-    isFilteredProjection,
-    autoExpandToolCalls,
-  };
-}

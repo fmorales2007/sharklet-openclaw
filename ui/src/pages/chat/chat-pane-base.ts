@@ -22,6 +22,7 @@ import type {
 } from "../../app/native-gateways.runtime.ts";
 import {
   createQuestionPromptState,
+  dropBackgroundedSecretDrafts,
   listQuestionPrompts,
   type QuestionPrompt,
 } from "../../app/question-prompt.ts";
@@ -91,6 +92,17 @@ export abstract class ChatPaneBase extends OpenClawLightDomElement {
     if (document.visibilityState !== "hidden") {
       this.hiddenUpdateResume?.();
       return;
+    }
+    if (
+      globalThis.matchMedia?.("(pointer: coarse)").matches &&
+      dropBackgroundedSecretDrafts(this.questionPromptState)
+    ) {
+      // Hidden panes park their render, so the field itself must stop holding the value.
+      for (const field of this.querySelectorAll<HTMLInputElement>(
+        '.chat-question-panel input[type="password"]',
+      )) {
+        field.value = "";
+      }
     }
     const state = this.state;
     if (!state) {
