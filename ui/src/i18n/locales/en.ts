@@ -2242,7 +2242,7 @@ export const en: TranslationMap & {
     back: "Back",
     forward: "Forward",
     settings: "Settings",
-    askOpenClaw: "Help",
+    askHelp: "Help",
     settingsGroupDevice: "This Mac",
     settingsGroupThisIPhone: "This iPhone",
     settingsGroupThisIPad: "This iPad",
