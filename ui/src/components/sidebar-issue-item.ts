@@ -377,7 +377,7 @@ export function renderSidebarIssueItem(
   }
   const facts = item.action.kind === "askCustodian" ? item.action.alert.facts : [];
   const visibleFacts = facts.filter((fact) => fact !== item.label);
-  const actionLabel = item.action.kind === "askCustodian" ? t("nav.askOpenClaw") : item.label;
+  const actionLabel = item.action.kind === "askCustodian" ? t("nav.askHelp") : item.label;
   const inlineAction = item.inlineAction;
   return html`<details
     class="sidebar-issues-panel__details sidebar-issues-panel__details--${item.severity}"

@@ -430,7 +430,7 @@ export class OpenClawAssistantPanel extends OpenClawLightDomElement {
                     aria-pressed=${this.destination === destination}
                     @click=${() => this.openDestination(destination)}
                   >
-                    ${t(destination === "home" ? "assistantPanel.home" : "nav.askOpenClaw")}
+                    ${t(destination === "home" ? "assistantPanel.home" : "nav.askHelp")}
                   </button>`
                 : nothing,
             )}

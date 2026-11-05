@@ -119,7 +119,7 @@ function getCommandPaletteBaseItems(
       ? [
           {
             id: "panel-custodian",
-            label: t("nav.askOpenClaw"),
+            label: t("nav.askHelp"),
             icon: "circleQuestionMark" as const,
             category: "navigation" as const,
             action: "panel:custodian",
