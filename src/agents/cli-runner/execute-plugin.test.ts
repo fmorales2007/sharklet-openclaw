@@ -19,6 +19,7 @@ import {
   requestNativeTool,
   runPlugin,
   SUCCESS_RESULT,
+  TEST_SHELL,
 } from "./execute-plugin.test-support.js";
 import type { PreparedCliRunContext } from "./types.js";
 
@@ -32,7 +33,7 @@ const activeSessions = new Set<CliBackendLiveSessionHandle>();
 function registerOwnerSession(context: PreparedCliRunContext, generation: string) {
   const capability = createCliLiveSessionCapability({
     context,
-    argv: ["/bin/sh", "-p", "--permission-mode", "bypassPermissions"],
+    argv: [TEST_SHELL, "-p", "--permission-mode", "bypassPermissions"],
     env: { PATH: "/bin:/usr/bin", OPENCLAW_TEST_MARKER: "host-owned" },
     beginCapture: () => {},
     abortSignal: new AbortController().signal,
@@ -104,7 +105,7 @@ describe("plugin-owned CLI execution host boundary", () => {
     ]);
     expect(observedExecution).toEqual(
       expect.objectContaining({
-        command: "/bin/sh",
+        command: TEST_SHELL,
         cwd: "/tmp",
         prompt: "hello",
         promptContext: {

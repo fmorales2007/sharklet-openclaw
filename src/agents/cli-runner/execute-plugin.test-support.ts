@@ -11,6 +11,9 @@ import type { PreparedCliRunContext, RunCliAgentParams } from "./types.js";
 const activeAdmissions: Array<ReturnType<typeof prepareSystemAgentRunAdmission>> = [];
 let nextRunId = 0;
 
+/** A real executable on every host; the tests never run it as a shell. */
+export const TEST_SHELL = process.platform === "win32" ? process.execPath : "/bin/sh";
+
 export const SUCCESS_RESULT = {
   type: "result",
   subtype: "success",
@@ -51,7 +54,7 @@ export async function createExecution(
       : {}),
     systemPrompt: "  Follow host policy.  ",
     backend: {
-      command: "/bin/sh",
+      command: TEST_SHELL,
       args: [],
       ...(options.resumeArgs ? { resumeArgs: options.resumeArgs } : {}),
     },
@@ -88,7 +91,7 @@ export function runPlugin(
   return executePluginOwnedProcess({
     context,
     execute,
-    executionCommand: "/bin/sh",
+    executionCommand: TEST_SHELL,
     executionArgs: ["-p", "--permission-mode", "bypassPermissions"],
     env: { PATH: "/bin:/usr/bin", OPENCLAW_TEST_MARKER: "host-owned" },
     prompt: context.params.prompt,
