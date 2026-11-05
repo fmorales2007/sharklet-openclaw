@@ -27,8 +27,8 @@ export function renderCollapsedAssistantToggles(options: {
     {
       available: options.custodianAvailable,
       kind: "custodian",
-      label: t("nav.askOpenClaw"),
-      tooltip: t("nav.askOpenClaw"),
+      label: t("nav.askHelp"),
+      tooltip: t("nav.askHelp"),
       event: CUSTODIAN_PANEL_TOGGLE_EVENT,
       icon: icons.circleQuestionMark,
     },

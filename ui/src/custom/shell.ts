@@ -23,8 +23,8 @@ function mountHelpButton(): void {
   button.type = "button";
   button.className = "sk-help-btn";
   button.dataset.shell = "";
-  button.title = t("nav.askOpenClaw");
-  button.setAttribute("aria-label", t("nav.askOpenClaw"));
+  button.title = t("nav.askHelp");
+  button.setAttribute("aria-label", t("nav.askHelp"));
   render(icons.circleQuestionMark, button);
   button.addEventListener("click", () => {
     window.dispatchEvent(new CustomEvent(CUSTODIAN_PANEL_TOGGLE_EVENT));

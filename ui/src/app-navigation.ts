@@ -487,7 +487,7 @@ export function settingsNavigationLabelForRoute(
     return t(deviceSettingsGroupLabelKey(snapshot));
   }
   if (routeId === "custodian") {
-    return t("nav.askOpenClaw");
+    return t("nav.askHelp");
   }
   return titleForRoute(routeId);
 }
