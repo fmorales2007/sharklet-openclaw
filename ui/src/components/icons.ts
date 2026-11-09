@@ -327,6 +327,7 @@ export const icons = {
     <path d="M18 5v13" />
     <path d="M22 10v3" />`),
   chevronUp: strokeIcon(svg`<path d="m18 15-6-6-6 6" />`),
+  chevronDown: strokeIcon(svg`<path d="m6 9 6 6 6-6" />`),
   chevronsUpDown: strokeIcon(svg`<path d="m7 15 5 5 5-5" />
     <path d="m7 9 5-5 5 5" />`),
   arrowRight: strokeIcon(svg` <path d="M5 12h14" />

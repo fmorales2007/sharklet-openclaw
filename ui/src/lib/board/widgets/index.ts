@@ -32,33 +32,6 @@ export const CORE_BOARD_WIDGET_ELEMENTS: readonly CoreBoardWidgetElement[] = [
     previewSafe: true,
   },
   {
-    kind: "sharklet:working-now",
-    tagName: "sharklet-working-now-widget",
-    get label() {
-      return t("missionControl.workingNow.title");
-    },
-    loadModule: () => import("./mission-control.ts"),
-    previewSafe: false,
-  },
-  {
-    kind: "sharklet:up-next",
-    tagName: "sharklet-up-next-widget",
-    get label() {
-      return t("missionControl.upNext.title");
-    },
-    loadModule: () => import("./mission-control.ts"),
-    previewSafe: false,
-  },
-  {
-    kind: "sharklet:month-usage",
-    tagName: "sharklet-month-usage-widget",
-    get label() {
-      return t("missionControl.monthUsage.title");
-    },
-    loadModule: () => import("./mission-control.ts"),
-    previewSafe: false,
-  },
-  {
     kind: "sharklet:agents",
     tagName: "sharklet-agents-widget",
     get label() {
