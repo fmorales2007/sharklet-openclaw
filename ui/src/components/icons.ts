@@ -273,6 +273,7 @@ export const icons = {
     <path d="m15.5 7.5 3 3L22 7l-3-3" />`),
   flag: strokeIcon(svg` <path d="M5 22V4" />
     <path d="M5 4c5-4 9 4 14 0v11c-5 4-9-4-14 0" />`),
+  powerOff: strokeIcon(svg` <path d="M12 2v10" /> <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />`),
   lock: strokeIcon(svg` <rect width="18" height="11" x="3" y="11" rx="2" />
     <path d="M7 11V7a5 5 0 0 1 10 0v4" />`),
   pencil: strokeIcon(svg` <path

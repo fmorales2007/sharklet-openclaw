@@ -102,7 +102,7 @@ suite.define(() => {
     await expect.poll(() => header.locator(".chat-pane__palette-open").count()).toBe(0);
     await header.locator(".chat-header-session-menu__trigger").click();
     await page.getByText("Open command palette", { exact: true }).click();
-    await page.locator(".cmd-palette__input").waitFor({ state: "visible" });
+    await page.locator(".sk-palette-input input").waitFor({ state: "visible" });
   });
 
   it("keeps browser sidebar header geometry aligned in LTR and RTL", async () => {

@@ -1,10 +1,15 @@
 import { html, nothing } from "lit";
-import { isSettingsNavigationRoute, isSettingsTakeover } from "../app-navigation.ts";
+import {
+  isSettingsNavigationRoute,
+  isSettingsTakeover,
+  titleForRoute,
+} from "../app-navigation.ts";
 import { isSessionRouteId } from "../app-route-paths.ts";
 import { isRouteId, type RouteId } from "../app-routes.ts";
 import { icons } from "../components/icons.ts";
 import { renderLazyElementModal } from "../components/lazy-view-error.ts";
 import { renderConnectingSplash } from "../components/loading-skeleton.ts";
+import { renderPageOff } from "../components/page-off.ts";
 import { renderNewSessionLink } from "../components/new-session-link.ts";
 import {
   renderLazySettingsSidebar,
@@ -12,6 +17,7 @@ import {
 } from "../components/settings-sidebar-lazy.ts";
 import type { ThemeModeChangeDetail } from "../components/theme-mode-toggle.ts";
 import { t } from "../i18n/index.ts";
+import type { PagesOffStore } from "../lib/pages-off.ts";
 import { canCallGatewayMethod } from "../lib/gateway-methods.ts";
 import {
   formatKeyboardShortcutCombo,
@@ -76,6 +82,7 @@ export interface ShellViewHost extends DevicePairSetupHost {
   readonly runtime: ApplicationRuntime | undefined;
   readonly activeSessionKey: string;
   readonly commandPaletteElement: OptionalCustomElement;
+  readonly pagesOff: PagesOffStore;
   readonly custodianMinimizeRequestId: number;
   readonly desktopNavigationExpanded: boolean;
   readonly execApprovalElement: OptionalCustomElement;
@@ -149,6 +156,7 @@ export function renderApplicationShell(host: ShellViewHost) {
     canCallGatewayMethod(gatewaySnapshot, "openclaw.chat", "operator.admin");
   const lazyElementState = host.lazyCustomElements.visibleState;
   const activeRoute = host.routeState.routeId ?? "chat";
+  const pageOff = host.pagesOff.get(activeRoute);
   const sessionRoute = isSessionRouteId(activeRoute);
   // Session routes have an offline outbox, New Session keeps a local draft, and
   // Appearance persists local preference intent for replay. Their server actions
@@ -389,6 +397,7 @@ export function renderApplicationShell(host: ShellViewHost) {
         ? html`<openclaw-command-palette
             .desktopAvailable=${desktopPanelAvailable}
             .custodianAvailable=${custodianPanelAvailable}
+            .offPageIds=${host.pagesOff.ids()}
             .onNavigate=${(routeId: RouteId, options?: ApplicationNavigationOptions) =>
               host.navigate(routeId, options)}
             .onSelectSession=${(sessionKey: string) => host.selectChatSession(sessionKey)}
@@ -592,15 +601,23 @@ export function renderApplicationShell(host: ShellViewHost) {
           onOpenApprovals: () => host.openApprovals(),
         })}
         ${nativeEmbed ? navigationContent : nothing}
-        <openclaw-router-outlet
-          ?inert=${pageActionsBlocked || reloadRequired}
-          aria-disabled=${pageActionsBlocked || reloadRequired ? "true" : nothing}
-          .router=${runtime.router}
-          .retryContext=${context}
-          .retentionScope=${gatewayPresentationScope(context.gateway)}
-          .onNotFound=${() => host.recoverNotFoundRoute()}
-          .notFoundRecoveryReady=${gatewayConnected}
-        ></openclaw-router-outlet>
+        ${
+          pageOff
+            ? renderPageOff({
+                page: titleForRoute(activeRoute),
+                reason: pageOff.reason,
+                onGoHome: () => host.navigate("chat"),
+              })
+            : html`<openclaw-router-outlet
+                ?inert=${pageActionsBlocked || reloadRequired}
+                aria-disabled=${pageActionsBlocked || reloadRequired ? "true" : nothing}
+                .router=${runtime.router}
+                .retryContext=${context}
+                .retentionScope=${gatewayPresentationScope(context.gateway)}
+                .onNotFound=${() => host.recoverNotFoundRoute()}
+                .notFoundRecoveryReady=${gatewayConnected}
+              ></openclaw-router-outlet>`
+        }
       </main>
       <openclaw-terminal-panel
         ?inert=${navDrawerOpen}

@@ -187,6 +187,10 @@ export type OpenClawConfig = {
       /** Ordered page and pinned-session entries shown in the Control UI sidebar. */
       sidebarEntries?: string[];
     };
+    /** Page kill switch: Control UI route ids shown as "off", served by `pages.state`. */
+    pages?: {
+      off?: Record<string, { reason?: string }>;
+    };
   };
   /** Secret providers, defaults, and ref-resolution settings. */
   secrets?: SecretsConfig;

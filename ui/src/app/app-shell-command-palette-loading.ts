@@ -9,9 +9,11 @@ export function renderCommandPaletteLoading(onClose: () => void) {
     style="--openclaw-modal-width: min(640px, calc(100vw - 32px));"
     @modal-cancel=${onClose}
   >
-    <div class="cmd-palette" role="status" aria-label=${t("common.loading")}>
-      <input class="cmd-palette__input" disabled placeholder=${label} />
-      <div class="cmd-palette__empty">${t("common.loading")}</div>
+    <div class="sk-pop sk-palette" role="status" aria-label=${t("common.loading")}>
+      <div class="sk-palette-input"><input disabled placeholder=${label} /></div>
+      <div class="sk-palette-list">
+        <div class="sk-menu-head">${t("common.loading")}</div>
+      </div>
     </div>
   </openclaw-modal-dialog>`;
 }

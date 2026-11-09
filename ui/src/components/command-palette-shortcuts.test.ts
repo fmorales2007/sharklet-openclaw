@@ -67,7 +67,7 @@ describe("CommandPalette platform shortcuts", () => {
       await palette.updateComplete;
       expect(open.defaultPrevented).toBe(true);
       expect(palette.isOpen).toBe(true);
-      const input = palette.querySelector<HTMLInputElement>(".cmd-palette__input")!;
+      const input = palette.querySelector<HTMLInputElement>(".sk-palette-input input")!;
       const editQuery = chord(other);
       input.dispatchEvent(editQuery);
       expect(editQuery.defaultPrevented).toBe(false);

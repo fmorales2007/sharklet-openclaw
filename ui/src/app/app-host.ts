@@ -32,6 +32,7 @@ import {
 } from "../lib/sessions/session-key.ts";
 import { showToast } from "../lib/toast.ts";
 import { OpenClawLightDomElement } from "../lit/openclaw-element.ts";
+import { PagesOffStore } from "../lib/pages-off.ts";
 import { SubscriptionsController } from "../lit/subscriptions-controller.ts";
 import type { ChatPage } from "../pages/chat/chat-page.ts";
 import type { NewSessionTarget } from "../pages/new-session/location.ts";
@@ -120,6 +121,7 @@ class OpenClawShell
   @state() routeState: ShellRouteState = {};
   @state() nativeHistoryState: NativeHistoryState = readNativeHistoryState();
   readonly commandPaletteElement = COMMAND_PALETTE_ELEMENT;
+  readonly pagesOff = new PagesOffStore();
   readonly terminalPanelElement = TERMINAL_PANEL_ELEMENT;
   readonly browserPanelElement = BROWSER_PANEL_ELEMENT;
   readonly desktopPanelElement = DESKTOP_PANEL_ELEMENT;
@@ -312,6 +314,10 @@ class OpenClawShell
             }
           };
         },
+      )
+      .watch(
+        () => this.context?.gateway,
+        (gateway, notify) => this.pagesOff.connect(gateway, notify),
       )
       .watch(
         () => this.context?.nativeDeviceSettings,

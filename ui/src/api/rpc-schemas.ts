@@ -238,6 +238,10 @@ function projectSessionsList(value: unknown): unknown {
   };
 }
 
+const PagesStateResultSchema = closed({
+  off: Type.Array(closed({ id: str(40), reason: Type.Optional(str(200)) }), { maxItems: 64 }),
+});
+
 const METHOD_SCHEMAS = {
   "sessions.list": {
     params: SessionsListParamsSchema,
@@ -247,6 +251,7 @@ const METHOD_SCHEMAS = {
   "cron.list": { params: CronListParamsSchema, result: CronListResultSchema },
   "usage.cost": { params: UsageCostParamsSchema, result: UsageCostResultSchema },
   "agents.list": { params: AgentsListParamsSchema, result: AgentsListResultSchema },
+  "pages.state": { params: closed({}), result: PagesStateResultSchema },
 } satisfies Record<
   RpcMethod,
   { params: TSchema; result: TSchema; project?: (v: unknown) => unknown }
